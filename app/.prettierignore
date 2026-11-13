@@ -1,0 +1,4 @@
+dist/
+src/lib/wasm/
+src-tauri/
+pnpm-lock.yaml

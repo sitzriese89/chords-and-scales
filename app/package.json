@@ -1,0 +1,42 @@
+{
+  "name": "chords-and-scales",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT OR Apache-2.0",
+  "type": "module",
+  "packageManager": "pnpm@12.18.0",
+  "scripts": {
+    "wasm": "wasm-pack build ../crates/theory-wasm --target web --out-dir ../../app/src/lib/wasm",
+    "dev": "pnpm wasm && vite",
+    "build": "pnpm wasm && vite build",
+    "preview": "vite preview",
+    "check": "pnpm wasm && svelte-check --tsconfig ./tsconfig.json --fail-on-warnings --output human",
+    "lint": "eslint . && prettier --check .",
+    "format": "prettier --write .",
+    "test": "pnpm wasm && vitest run",
+    "tauri": "tauri"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@sveltejs/vite-plugin-svelte": "^7.3.1",
+    "@tauri-apps/cli": "^2.12.4",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/svelte": "^5.4.2",
+    "@tsconfig/svelte": "^5.0.9",
+    "@types/node": "^24.0.0",
+    "eslint": "^10.14.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-svelte": "^3.24.1",
+    "globals": "^17.14.0",
+    "jsdom": "^31.0.0",
+    "prettier": "^3.10.1",
+    "prettier-plugin-svelte": "^4.1.1",
+    "svelte": "^5.57.3",
+    "svelte-check": "^4.7.8",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.72.2",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.0",
+    "wasm-pack": "^0.15.1"
+  }
+}

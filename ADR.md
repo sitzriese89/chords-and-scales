@@ -24,6 +24,7 @@ ADR-1 to ADR-13 come from the design interview behind [SPEC.md](SPEC.md) (decisi
 | 11 | [One CSS theme system for the app and for exports](#adr-11-one-css-theme-system-for-the-app-and-for-exports) | Accepted |
 | 12 | [Audio is a Web Audio string synth](#adr-12-audio-is-a-web-audio-string-synth) | Accepted |
 | 13 | [English only](#adr-13-english-only) | Accepted |
+| 14 | [The WASM package is built by wasm-pack into the app's source tree](#adr-14-the-wasm-package-is-built-by-wasm-pack-into-the-apps-source-tree) | Accepted |
 
 ---
 
@@ -189,3 +190,28 @@ solfège) add work to every UI change.
 **Decision.** UI text and note names are English. No i18n framework for now.
 
 **Consequences.** Adding languages later means extracting strings across the UI.
+
+## ADR-14: The WASM package is built by wasm-pack into the app's source tree
+
+**Context.** ADR-2 has the UI call `crates/theory-wasm` as WASM. Something has to compile it,
+generate the JS glue and TypeScript types, and put them where Vite, svelte-check and vitest
+find them, on every OS, from a fresh clone, without a separate install step that can drift
+from the `wasm-bindgen` crate version.
+
+**Decision.** `wasm-pack build --target web` builds `crates/theory-wasm` into
+`app/src/lib/wasm/` (generated, git-ignored). wasm-pack is an npm dev dependency of `app/`, so
+`pnpm install` provides it (its download script is allowed in `app/pnpm-workspace.yaml`); it
+fetches the `wasm-bindgen` CLI matching the crate version itself. The `wasm` script runs it,
+and `dev`, `build`, `check` and `test` run `wasm` first. The `web` target needs no Vite plugin:
+`app/src/lib/theory.ts` loads the module once with `initTheory()` before the app mounts, and
+re-exports the bindings; components import theory functions from there. Tests pass the
+module bytes to `initTheory()` from a vitest setup file, since jsdom can't fetch the file.
+
+**Consequences.**
+- One command (`pnpm --dir app install`) after the Rust and Node prerequisites; no
+  `cargo install`.
+- Every `dev`/`build`/`check`/`test` run rebuilds the WASM (seconds when nothing changed).
+  `lint` doesn't need it.
+- Loading is asynchronous once, at startup; every call after that is synchronous.
+- A bundler-target build (ESM WASM imports via a Vite plugin) would drop `initTheory()`;
+  switching means a new ADR.
