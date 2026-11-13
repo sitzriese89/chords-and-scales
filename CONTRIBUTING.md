@@ -6,16 +6,40 @@ the way they are). Opening an issue to discuss is a good first step.
 
 ## Development setup
 
-> The workspace is being scaffolded in roadmap item M0.1. This section is completed there.
-
 Prerequisites (all platforms):
 
 1. [Rust](https://rustup.rs) stable, with the `wasm32-unknown-unknown` target:
    `rustup target add wasm32-unknown-unknown`.
-2. [Node.js](https://nodejs.org) LTS and [pnpm](https://pnpm.io).
+2. [Node.js](https://nodejs.org) LTS (24) and [pnpm](https://pnpm.io) (the version is pinned in
+   `app/package.json`; `corepack enable` or `npm install -g pnpm` both work).
 3. Tauri 2 system dependencies ([Tauri prerequisites](https://tauri.app/start/prerequisites/)):
    on Windows the Visual Studio C++ Build Tools and WebView2; on Debian/Ubuntu
-   `libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev`; on macOS the Xcode command line tools.
+   `libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev libayatana-appindicator3-dev libxdo-dev libssl-dev`;
+   on macOS the Xcode command line tools.
+
+Then, from the repository root:
+
+```bash
+pnpm --dir app install   # frontend tooling, including wasm-pack
+pnpm --dir app dev       # builds the WASM package, serves the UI on http://localhost:1420
+```
+
+The page shows the theory core's version, read from Rust through WASM. `pnpm --dir app tauri dev`
+shows the same page in a desktop window (the first build compiles Tauri and takes a few minutes).
+
+How the pieces fit:
+
+- The Cargo workspace (root `Cargo.toml`) holds `crates/theory`, `crates/theory-wasm` and the
+  Tauri shell `app/src-tauri`.
+- `pnpm --dir app wasm` runs `wasm-pack build --target web` on `crates/theory-wasm` and writes
+  the package to `app/src/lib/wasm/` (generated, git-ignored). `dev`, `build`, `check` and
+  `test` run it first, so you rarely call it yourself (ADR-14).
+- The UI imports theory functions from `app/src/lib/theory.ts`, which loads the WASM module
+  once (`initTheory()`) before the app mounts.
+- Vite's dev server runs on port 1420; `app/src-tauri/tauri.conf.json` points Tauri at it in
+  dev and at `app/dist` for release builds.
+- CI (`.github/workflows/ci.yml`) runs the checks from [AGENTS.md](AGENTS.md) on Linux and
+  clippy plus tests for the whole workspace, Tauri included, on Windows.
 
 > **`LNK1104: cannot open file ...` while linking on Windows?** The build path is too long for
 > the linker. Clone to a short path or set `CARGO_TARGET_DIR` to a short folder.
@@ -30,6 +54,8 @@ Prerequisites (all platforms):
 | Rust format / lint (CI fails on warnings) | `cargo fmt --all` / `cargo clippy --workspace --all-targets -- -D warnings` |
 | Frontend type check / lint / tests | `pnpm --dir app check` / `pnpm --dir app lint` / `pnpm --dir app test` |
 | Production build (incl. WASM) | `pnpm --dir app build` |
+| Rebuild only the WASM package | `pnpm --dir app wasm` |
+| Format the frontend | `pnpm --dir app format` |
 
 ## Project layout
 

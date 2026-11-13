@@ -1,0 +1,14 @@
+[package]
+name = "chords-and-scales"
+description = "Chords & Scales desktop shell (Tauri 2). Filesystem commands only (ADR-2, ADR-4)."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }

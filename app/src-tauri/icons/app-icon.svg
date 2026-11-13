@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Placeholder app icon: a fretboard with three dots. After changing it, regenerate the
+       icons by running `pnpm tauri icon src-tauri/icons/app-icon.svg` in app/. -->
+  <rect x="64" y="64" width="896" height="896" rx="192" fill="#3b2a1e"/>
+  <g stroke="#d9c7a3" stroke-width="20">
+    <line x1="224" y1="160" x2="224" y2="864"/>
+    <line x1="416" y1="160" x2="416" y2="864"/>
+    <line x1="608" y1="160" x2="608" y2="864"/>
+    <line x1="800" y1="160" x2="800" y2="864"/>
+  </g>
+  <g stroke="#f2f2f2" stroke-width="12">
+    <line x1="160" y1="256" x2="864" y2="256"/>
+    <line x1="160" y1="384" x2="864" y2="384"/>
+    <line x1="160" y1="512" x2="864" y2="512"/>
+    <line x1="160" y1="640" x2="864" y2="640"/>
+    <line x1="160" y1="768" x2="864" y2="768"/>
+  </g>
+  <circle cx="320" cy="384" r="56" fill="#e8a33d"/>
+  <circle cx="512" cy="640" r="56" fill="#e8a33d"/>
+  <circle cx="704" cy="256" r="56" fill="#e8a33d"/>
+</svg>
