@@ -15,3 +15,6 @@ node_modules/
 .DS_Store
 Thumbs.db
 *.log
+
+# Worker checkouts created by Claude Code (implement skill)
+/.claude/worktrees/
