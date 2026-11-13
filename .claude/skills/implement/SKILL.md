@@ -73,3 +73,8 @@ Done when: main is green, roadmap Status matches what merged, and the user has a
   them. The next push starts a fresh run.
 - The runners use the latest stable Rust. Run `rustup update stable` locally when CI's clippy
   disagrees with yours.
+- Clean up a worker's worktree after its PR merges: stop the dev server's `node` process
+  (stopping the background task leaves it running) and any `rust-analyzer-proc-macro-srv`
+  holding DLLs from the worktree's `target/`, run `git worktree remove`, then delete what's
+  left with `cmd /c rd /s /q "\?\<full path>"` (`node_modules` paths exceed MAX_PATH), and
+  delete the local branches.
