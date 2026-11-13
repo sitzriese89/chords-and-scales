@@ -1,0 +1,85 @@
+# Contributing
+
+Thanks for helping! Bug reports, scale and chord knowledge, and code are all welcome. Before
+larger changes, read [SPEC.md](SPEC.md) (what the app does) and [ADR.md](ADR.md) (why things are
+the way they are). Opening an issue to discuss is a good first step.
+
+## Development setup
+
+> The workspace is being scaffolded in roadmap item M0.1. This section is completed there.
+
+Prerequisites (all platforms):
+
+1. [Rust](https://rustup.rs) stable, with the `wasm32-unknown-unknown` target:
+   `rustup target add wasm32-unknown-unknown`.
+2. [Node.js](https://nodejs.org) LTS and [pnpm](https://pnpm.io).
+3. Tauri 2 system dependencies ([Tauri prerequisites](https://tauri.app/start/prerequisites/)):
+   on Windows the Visual Studio C++ Build Tools and WebView2; on Debian/Ubuntu
+   `libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev`; on macOS the Xcode command line tools.
+
+> **`LNK1104: cannot open file ...` while linking on Windows?** The build path is too long for
+> the linker. Clone to a short path or set `CARGO_TARGET_DIR` to a short folder.
+
+## Everyday commands
+
+| What | Command |
+|---|---|
+| UI in a browser (fast iteration) | `pnpm --dir app dev` → http://localhost:1420 |
+| Desktop app | `pnpm --dir app tauri dev` |
+| Rust tests | `cargo test --workspace` |
+| Rust format / lint (CI fails on warnings) | `cargo fmt --all` / `cargo clippy --workspace --all-targets -- -D warnings` |
+| Frontend type check / lint / tests | `pnpm --dir app check` / `pnpm --dir app lint` / `pnpm --dir app test` |
+| Production build (incl. WASM) | `pnpm --dir app build` |
+
+## Project layout
+
+```
+crates/theory/          pure music theory (no IO, no UI)
+  data/                 built-in catalogs and rules (TOML, embedded)
+crates/theory-wasm/     wasm-bindgen bindings, one module per core area
+app/                    Svelte + TypeScript frontend (Vite)
+  src-tauri/            Tauri 2 shell: filesystem commands only
+docs/                   roadmap, background
+```
+
+## Common contributions
+
+### Add a scale, chord or tuning
+
+Edit the TOML in `crates/theory/data/`. Run `cargo test -p theory`: the catalog validation
+tests reject unknown fields, duplicate ids and malformed interval lists.
+
+### Tune mood tags
+
+Weights and thresholds live in the tag rules TOML in `crates/theory/data/` (ADR-9). Say in the
+PR which scales/chords changed tags and why.
+
+### UI
+
+Svelte + TypeScript in `app/src`. Use `pnpm --dir app dev` for fast iteration. The UI calls the
+theory core through the WASM package and never does theory itself. Stored data goes through the
+`Storage` interface (ADR-4); a new stored document must work in both the Tauri and the browser
+implementation.
+
+## Tests
+
+- Core: unit tests plus property tests (transposition round trips, mode rotations, symbol
+  parse/format round trips). New behaviour needs a test that fails without the change.
+- Frontend: vitest component tests; WASM exports get a TS-side test.
+- Keep `cargo fmt`, `cargo clippy -D warnings`, `svelte-check` and lint clean; CI checks them.
+
+## Pull requests
+
+- One topic per PR, with a short description of what and why.
+- A design change? Add or supersede a record in [ADR.md](ADR.md) in the same PR.
+- User-facing behaviour changed? Update README or SPEC.md.
+- Finishes a roadmap item? Set its Status in [docs/roadmap.md](docs/roadmap.md) in the same PR.
+- By contributing you agree that your contribution is dual-licensed under the project's
+  MIT and Apache-2.0 licenses.
+
+## Working with AI coding agents
+
+Agents are welcome contributors too. [AGENTS.md](AGENTS.md) has the short version of the
+conventions above. With Claude Code, the `implement` skill (`.claude/skills/implement/`) runs one
+background worker per issue, each in its own git worktree and PR, and reviews and merges the PRs
+with you.
