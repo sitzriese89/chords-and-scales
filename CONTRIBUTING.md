@@ -103,6 +103,38 @@ implementation.
 - By contributing you agree that your contribution is dual-licensed under the project's
   MIT and Apache-2.0 licenses.
 
+## Releasing
+
+Releases are built by `.github/workflows/release.yml` when a tag `v<version>` is pushed
+(ADR-15). It produces a **draft** GitHub Release; nothing is published without a person.
+
+1. In a PR, set the new version everywhere and describe it:
+   - `version` in `[workspace.package]` of the root `Cargo.toml` (the crates inherit it), then
+     run `cargo check --workspace` so `Cargo.lock` follows;
+   - `version` in `app/package.json` (`tauri.conf.json` has none; Tauri takes the crate's);
+   - in `CHANGELOG.md`, a section `## [<version>] - <date>` with what changed for users, written
+     from the PRs merged since the last tag (move what is under `[Unreleased]` into it).
+2. Check locally: `node scripts/check-release.mjs v<version>` must pass. Its self-test is
+   `node --test scripts/check-release.test.mjs` (CI runs it too).
+3. Merge, then tag the merge commit on `main` and push the tag:
+   `git tag v<version> && git push origin v<version>`.
+4. The workflow checks the versions and the changelog section first and stops there on a
+   mismatch. Then it builds Windows (NSIS `.exe`), macOS (universal `.dmg`) and Linux
+   (`.AppImage`, `.deb`) and creates the draft with the installers, `SHA256SUMS.txt` and the
+   changelog section as release notes. Versions with a pre-release part (`0.2.0-beta.1`) become
+   pre-releases.
+5. Download the installers, check they start and show the fretboard on each OS (the release
+   gate in [docs/roadmap.md](docs/roadmap.md)), then publish the draft on GitHub.
+
+A failed build can be re-run from the Actions page; the last job updates the existing draft.
+A wrong tag: delete the draft (`gh release delete v<version> --yes`) and the tag
+(`git push origin :refs/tags/v<version>`, `git tag -d v<version>`), fix, tag again.
+
+The builds are unsigned (no code signing or notarisation yet); README's Install section says
+how users open them. To try the workflow without releasing, push a branch where every version
+is a pre-release such as `0.0.0-test.1`, tag it `v0.0.0-test.1`, and delete the tag, branch
+and draft afterwards.
+
 ## Working with AI coding agents
 
 Agents are welcome contributors too. [AGENTS.md](AGENTS.md) has the short version of the
