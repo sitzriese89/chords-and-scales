@@ -21,8 +21,8 @@ each PR names its issue with `Fixes #n`.
 
 ## Order of work
 
-1. **M0** (alone: every other item builds on the scaffold). **Now**
-2. **M1**, then release **v0.1.0**.
+1. **M0** (alone: every other item builds on the scaffold).
+2. **M1**, then release **v0.1.0**. **Now**
 3. **M2**, voicings (M2.11, M2.12) last, then release **v0.2.0**.
 4. **M3**, then release **v0.3.0**.
 5. **M4**, then release **v0.4.0**.
@@ -37,7 +37,7 @@ A workspace that builds, tests and runs in the browser and in Tauri, with CI on 
 
 | Item | Issue | Depends on | Status |
 |---|---|---|---|
-| M0.1 Workspace scaffold and CI | [#1][1] |  | Open |
+| M0.1 Workspace scaffold and CI | [#1][1] |  | Done (#34) |
 
 ## M1 · Scales on the fretboard (v1)
 
