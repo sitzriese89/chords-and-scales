@@ -1,7 +1,15 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Permissions for the main window.",
+  "description": "Permissions for the main window. Dialogs open from Rust, so no dialog or fs plugin permissions are granted to the webview.",
   "windows": ["main"],
-  "permissions": ["core:default"]
+  "permissions": [
+    "core:default",
+    "allow-read-document",
+    "allow-write-document",
+    "allow-list-documents",
+    "allow-delete-document",
+    "allow-export-file",
+    "allow-import-file"
+  ]
 }

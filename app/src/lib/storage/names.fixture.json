@@ -1,0 +1,42 @@
+{
+  "$comment": "Document-name cases shared by the TypeScript (names.test.ts) and Rust (storage.rs) validation tests. Length limits are tested in each language.",
+  "valid": [
+    "settings",
+    "scales",
+    "custom-tunings",
+    "tag_rules",
+    "settings-backup",
+    "a",
+    "0",
+    "preset-2",
+    "console",
+    "nul1",
+    "com10"
+  ],
+  "invalid": [
+    "",
+    "Settings",
+    "settings.toml",
+    "../settings",
+    "..",
+    ".",
+    ".hidden",
+    "a/b",
+    "a\\b",
+    "/etc/passwd",
+    "C:\\Windows",
+    "-leading-dash",
+    "_leading-underscore",
+    "with space",
+    "tab\tname",
+    "new\nline",
+    "ünïcode",
+    "a:b",
+    "con",
+    "nul",
+    "com1",
+    "lpt9",
+    "aux",
+    "prn"
+  ]
+}

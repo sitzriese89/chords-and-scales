@@ -25,6 +25,7 @@ ADR-1 to ADR-13 come from the design interview behind [SPEC.md](SPEC.md) (decisi
 | 12 | [Audio is a Web Audio string synth](#adr-12-audio-is-a-web-audio-string-synth) | Accepted |
 | 13 | [English only](#adr-13-english-only) | Accepted |
 | 14 | [The WASM package is built by wasm-pack into the app's source tree](#adr-14-the-wasm-package-is-built-by-wasm-pack-into-the-apps-source-tree) | Accepted |
+| 15 | [Stored documents: flat named TOML files, versioned settings, dialogs in Rust](#adr-15-stored-documents-flat-named-toml-files-versioned-settings-dialogs-in-rust) | Accepted |
 
 ---
 
@@ -215,3 +216,47 @@ module bytes to `initTheory()` from a vitest setup file, since jsdom can't fetch
 - Loading is asynchronous once, at startup; every call after that is synchronous.
 - A bundler-target build (ESM WASM imports via a Vite plugin) would drop `initTheory()`;
   switching means a new ADR.
+
+## ADR-15: Stored documents: flat named TOML files, versioned settings, dialogs in Rust
+
+**Context.** ADR-4 puts storage behind one interface of named TOML documents with a Tauri and
+a browser implementation. That leaves open what a name may be and where it lands on disk, how
+the settings file evolves without crashing on old or hand-broken files, and how import/export
+reaches files outside the app-data folder without handing the webview filesystem access.
+
+**Decision.**
+- A document name is 1–64 characters of `a-z`, `0-9`, `-`, `_`, starting with a letter or
+  digit, and not a Windows device name (`con`, `nul`, `com1`, …). Document `settings` is the
+  file `<app-data>/settings.toml`, directly in the folder Tauri reports as `app_data_dir`; in
+  the browser it is the localStorage entry `chords-and-scales:document:settings`. Names are
+  checked in TypeScript and again in Rust before any path is built, against one shared list of
+  cases (`app/src/lib/storage/names.fixture.json`). Lowercase only, so names can't collide on
+  case-insensitive filesystems, and no separators or dots, so a name can't leave the folder.
+- Writes go to a temporary file in the same folder, flushed, then renamed over the document.
+- `settings.toml` has a top-level `version` (1 now) and snake_case tables `display`,
+  `instrument`, `last_view`. A missing value takes its default silently, so a hand-written file
+  can be minimal; an invalid or unknown value falls back to its default and is named in a
+  warning. A file that isn't TOML, has no version, or has a version with no migration path
+  (older without a migration step, or newer than the app) is copied to `settings-backup.toml`
+  and replaced by the defaults, with a warning. Format changes bump the version and add a step
+  to the `MIGRATIONS` table in `app/src/lib/settings/schema.ts`.
+- Settings load once at start and are saved on every change; a missing file is created with
+  the defaults so there is always a file to edit. Tuning, root and scale are stored as plain
+  strings; whether they name a catalog entry is checked where the catalogs are used.
+- Import and export open native dialogs from Rust (`tauri-plugin-dialog` used only on the Rust
+  side). The webview gets no dialog or fs plugin permissions: it can only write to a path the
+  user picked in a save dialog and read a file the user picked in an open dialog. The app's
+  own commands are declared in `build.rs`, so each needs an explicit `allow-<command>` entry in
+  `capabilities/default.json`. In the browser, export is a Blob download and import a file
+  input. Imported files must parse as TOML and are stored under their file name, or under a
+  name the caller gives.
+- TOML in TypeScript is parsed and written with `smol-toml`.
+
+**Consequences.**
+- Every stored file is visible and editable in one folder; a typo costs one value, not all
+  settings, and a broken file is kept rather than overwritten.
+- Writing settings from the app drops comments a user added to `settings.toml` (the
+  serializer writes its own header). Accepted for settings; catalog-style user files are
+  rewritten only when the user saves in an editor.
+- No subfolders: a future need (e.g. many presets) means a new name rule or a new ADR.
+- A newer app's settings file is unusable for an older app (backed up, then defaults).
