@@ -31,8 +31,8 @@ Adding a token is fine; renaming or removing one is a breaking change and needs 
     `--degree-*`; `--fretboard-root-text` on `--fretboard-root`; `--fretboard-dim-text` on
     `--fretboard-dim`.
   - **Graphics, 3:1** (WCAG 1.4.11 AA): `--border-strong`, `--accent` and `--focus-ring` on
-    each `--surface*`; the nut, frets, strings, dots, root, focus ring and every `--degree-*` on
-    `--fretboard-wood`.
+    each `--surface*`; the nut, frets, strings, capo, dots, root, focus ring and every
+    `--degree-*` on `--fretboard-wood`.
   - **Degree palette:** any two `--degree-*` colours stay apart (OKLab distance at least 0.09,
     and at least 0.045 with simulated protanopia, deuteranopia and tritanopia).
 - Colour is never the only cue (ADR-11): the root also differs by shape, and dots carry labels.
@@ -73,6 +73,7 @@ Also used by the tab view and chord diagrams (ADR-3).
 | `--fretboard-dim` | De-emphasised dots, such as scale notes outside an overlaid chord (deliberately low contrast to the wood) |
 | `--fretboard-dim-text` | Labels on `--fretboard-dim` |
 | `--fretboard-focus` | Keyboard focus ring around a fretboard position |
+| `--fretboard-capo` | The capo bar; also the shade over the frets behind the capo, drawn at 25% opacity |
 
 ## Degree palette
 
