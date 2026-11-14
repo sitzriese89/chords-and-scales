@@ -2,7 +2,7 @@
 //!
 //! The UI calls the theory core directly as WASM; this process only hosts the window and the
 //! filesystem commands behind the `Storage` interface and user-file import/export
-//! (ADR-2, ADR-4, ADR-15).
+//! (ADR-2, ADR-4, ADR-17).
 
 // Hide the console window on Windows in release builds.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]

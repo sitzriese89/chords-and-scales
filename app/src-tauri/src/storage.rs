@@ -1,5 +1,5 @@
 //! Named TOML documents in the app-data folder: the Tauri side of the `Storage` interface
-//! (ADR-4, ADR-15).
+//! (ADR-4, ADR-17).
 //!
 //! A document `settings` is the file `<app-data>/settings.toml`. Names are checked before any
 //! path is built, so a name can never point outside the folder. Writes are atomic: the content

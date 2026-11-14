@@ -1,4 +1,4 @@
-//! Import and export of user files through native file dialogs (ADR-15).
+//! Import and export of user files through native file dialogs (ADR-17).
 //!
 //! The dialogs open from Rust, so the webview never names a path itself: it can only write to
 //! a file the user picked in a save dialog and read a file the user picked in an open dialog.

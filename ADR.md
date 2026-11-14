@@ -25,7 +25,9 @@ ADR-1 to ADR-13 come from the design interview behind [SPEC.md](SPEC.md) (decisi
 | 12 | [Audio is a Web Audio string synth](#adr-12-audio-is-a-web-audio-string-synth) | Accepted |
 | 13 | [English only](#adr-13-english-only) | Accepted |
 | 14 | [The WASM package is built by wasm-pack into the app's source tree](#adr-14-the-wasm-package-is-built-by-wasm-pack-into-the-apps-source-tree) | Accepted |
-| 15 | [Stored documents: flat named TOML files, versioned settings, dialogs in Rust](#adr-15-stored-documents-flat-named-toml-files-versioned-settings-dialogs-in-rust) | Accepted |
+| 15 | [Notes are MIDI numbers; intervals keep their degree labels](#adr-15-notes-are-midi-numbers-intervals-keep-their-degree-labels) | Accepted |
+| 16 | [Releases are unsigned drafts built by CI from a version tag](#adr-16-releases-are-unsigned-drafts-built-by-ci-from-a-version-tag) | Accepted |
+| 17 | [Stored documents: flat named TOML files, versioned settings, dialogs in Rust](#adr-17-stored-documents-flat-named-toml-files-versioned-settings-dialogs-in-rust) | Accepted |
 
 ---
 
@@ -217,7 +219,71 @@ module bytes to `initTheory()` from a vitest setup file, since jsdom can't fetch
 - A bundler-target build (ESM WASM imports via a Vite plugin) would drop `initTheory()`;
   switching means a new ADR.
 
-## ADR-15: Stored documents: flat named TOML files, versioned settings, dialogs in Rust
+## ADR-15: Notes are MIDI numbers; intervals keep their degree labels
+
+**Context.** Every theory feature builds on one note model (M1.1). Pitches need an octave for
+tunings and the fretboard, intervals need names for dot labels and formulas (`b3`, `#4`, `13`),
+and note names arrive typed by users (`Db`, `D♭`), from TOML catalogs and from storage.
+
+**Decision.** In `crates/theory/src/notes/`:
+
+- A `PitchClass` is 0–11. A `Note` is a MIDI number 0–127 (C4 = 60, scientific octaves);
+  transposing out of that range returns `None` rather than wrapping or saturating.
+- An `Interval` is ascending: a degree (1, 2, … 13, …) plus an accidental relative to the major
+  scale, its semitones following from the label. Labels are kept as given, so `#4` and `b5` are
+  different intervals of 6 semitones. Where only a width is known (between two notes, a
+  semitone picker) the default label is `1 b2 2 b3 3 4 b5 5 b6 6 b7 7`, plus 7 degrees per
+  octave (`b9`, `13`); scales and chords that mean `#4` or `#11` say so in their own labels.
+- A `NoteName` is a letter plus an accidental up to a double sharp or flat. `Spelling` applies
+  ADR-6: naturals or one sharp or flat by the global preference; the root's pitch class is
+  spelled as the root.
+- Parsing accepts ASCII and Unicode (`b`/`♭`, `#`/`♯`, `bb`/`𝄫`, `##`/`x`/`𝄪`, either letter
+  case) and returns a `ParseError` value, never panics. `Display` is ASCII (for TOML, storage
+  and logs). The WASM layer returns Unicode, for display, and turns errors into thrown JS
+  `Error`s.
+
+**Consequences.**
+- One integer per note and per pitch class: cheap to pass to the UI as numbers.
+- Notes below C-1 or above G9 can't be represented; no guitar or bass gets near either end.
+- Mood-tag rules and dot labels can tell `#4` from `b5` where a formula says which it means;
+  intervals measured between notes get the default label.
+- The Unicode double sharp and flat (`𝄪`, `𝄫`) need a font that has them. Only a root typed
+  that way shows them, since the preference spells with single accidentals.
+
+## ADR-16: Releases are unsigned drafts built by CI from a version tag
+
+**Context.** Every milestone from M1 on ends in a public release for Windows, macOS and Linux
+(SPEC §1, §2.4). Installers must come from CI, not from someone's machine, and the version in
+the installers, the tag and the release notes must agree. Code signing needs paid
+certificates (Windows) and an Apple Developer account with notarisation (macOS); SPEC §1
+defers it, together with auto-update.
+
+**Decision.** `.github/workflows/release.yml` runs on tags `v<semver>`. Its first job runs
+`scripts/check-release.mjs` (Node, no dependencies, self-tested with `node --test`): the tag
+minus `v` must equal the workspace version in `Cargo.toml`, every workspace crate's version
+and its `Cargo.lock` entry, `app/package.json`, and `tauri.conf.json` (which has no version of
+its own and inherits the Tauri crate's), and `CHANGELOG.md` must have a non-empty section for
+it. Only then do the build jobs start: `tauri-apps/tauri-action` builds Windows NSIS, a
+universal macOS dmg and a Linux AppImage plus deb (on the oldest supported Ubuntu, for glibc
+compatibility); each job only builds and uploads its bundles as workflow artifacts. A final
+job, the only one with `contents: write`, renames the files to URL-safe names, writes
+`SHA256SUMS.txt` over all of them and creates a **draft** release whose body is the
+`CHANGELOG.md` section (a pre-release when the version has one). A person publishes it after
+checking the installers. Release notes come from the hand-written changelog, not from
+GitHub's generated notes, because PR titles describe work, not what users get. Builds are
+unsigned.
+
+**Consequences.**
+- A mismatched version or a missing changelog section fails within seconds, before any build.
+- A release appears only when all three platforms built; no half-filled drafts.
+- Releasing means one PR (versions + changelog section) and one tag; CONTRIBUTING.md has the
+  steps.
+- Unsigned builds trigger Windows SmartScreen and macOS Gatekeeper warnings; README explains
+  how to open them. Signing, notarisation and an updater are later work and a new ADR.
+- No Rust build cache in release builds: slower (one universal macOS build compiles twice),
+  but nothing from earlier runs ends up in an installer.
+
+## ADR-17: Stored documents: flat named TOML files, versioned settings, dialogs in Rust
 
 **Context.** ADR-4 puts storage behind one interface of named TOML documents with a Tauri and
 a browser implementation. That leaves open what a name may be and where it lands on disk, how

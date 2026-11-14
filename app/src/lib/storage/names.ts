@@ -1,5 +1,5 @@
 /**
- * Document names (ADR-15). A document `settings` is the file `settings.toml` in the app-data
+ * Document names (ADR-17). A document `settings` is the file `settings.toml` in the app-data
  * folder, or one localStorage entry in the browser. The rule matches `validate_name` in
  * `app/src-tauri/src/storage.rs`; both test against `names.fixture.json`.
  */

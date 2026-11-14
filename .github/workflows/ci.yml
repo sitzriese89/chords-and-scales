@@ -54,6 +54,9 @@ jobs:
           cache: pnpm
           cache-dependency-path: app/pnpm-lock.yaml
 
+      - name: Release check self-test
+        run: node --test scripts/check-release.test.mjs
+
       - name: pnpm install
         run: pnpm --dir app install --frozen-lockfile
 

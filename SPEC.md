@@ -83,7 +83,7 @@ Stored as plain TOML files in the OS app-data directory:
 Files are hand-editable and shareable; the UI offers import/export of them.
 
 - One file per document, directly in the app-data folder (e.g. `settings.toml`). In a plain
-  browser (development) the same documents live in localStorage (ADR-4, ADR-15).
+  browser (development) the same documents live in localStorage (ADR-4, ADR-17).
 - `settings.toml` holds the display preferences (sharps/flats, dot labels, theme,
   left-handed), the last instrument (kind, string count, tuning, fret count, capo) and the
   last view (root, scale). It is created with the defaults on first start, read once at start
@@ -116,6 +116,9 @@ Files are hand-editable and shareable; the UI offers import/export of them.
   (e.g. `D♭` stays `D♭` while the toggle is on sharps); all other notes follow
   the toggle.
 - Theory-correct per-key spelling is intentionally **not** implemented.
+- Note names can be typed in ASCII (`C#`, `Db`) or with Unicode signs (`C♯`, `D♭`), in
+  either letter case, double sharps and flats included (`F##`, `Fx`, `E𝄫`). The app shows
+  ♯ and ♭.
 
 ### 4.2 Scale catalog (Q12)
 

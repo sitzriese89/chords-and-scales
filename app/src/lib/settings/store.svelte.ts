@@ -18,7 +18,7 @@ function message(error: unknown): string {
 }
 
 /**
- * The app's settings, loaded once at start and saved on every change (ADR-15). Components get
+ * The app's settings, loaded once at start and saved on every change (ADR-17). Components get
  * it with `getSettings()`; read `settings.current`, change it with `settings.update(...)`.
  *
  * Loading never fails: a missing file becomes a file with the defaults, a file with some bad

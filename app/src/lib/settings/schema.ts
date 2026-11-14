@@ -1,5 +1,5 @@
 /**
- * The settings document `settings.toml` (ADR-15): display preferences and the last view.
+ * The settings document `settings.toml` (ADR-17): display preferences and the last view.
  *
  * The file is hand-editable TOML with snake_case keys; in TypeScript it is a `Settings` object.
  * Reading is forgiving: a value that is missing or invalid falls back to its default and is
