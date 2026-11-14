@@ -25,6 +25,7 @@ ADR-1 to ADR-13 come from the design interview behind [SPEC.md](SPEC.md) (decisi
 | 12 | [Audio is a Web Audio string synth](#adr-12-audio-is-a-web-audio-string-synth) | Accepted |
 | 13 | [English only](#adr-13-english-only) | Accepted |
 | 14 | [The WASM package is built by wasm-pack into the app's source tree](#adr-14-the-wasm-package-is-built-by-wasm-pack-into-the-apps-source-tree) | Accepted |
+| 18 | [The fretboard component: absolute frets, string 1 on top, one keyboard grid](#adr-18-the-fretboard-component-absolute-frets-string-1-on-top-one-keyboard-grid) | Accepted |
 
 ---
 
@@ -215,3 +216,38 @@ module bytes to `initTheory()` from a vitest setup file, since jsdom can't fetch
 - Loading is asynchronous once, at startup; every call after that is synchronous.
 - A bundler-target build (ESM WASM imports via a Vite plugin) would drop `initTheory()`;
   switching means a new ADR.
+
+## ADR-18: The fretboard component: absolute frets, string 1 on top, one keyboard grid
+
+**Context.** The fretboard (`app/src/lib/fretboard/`, M1.5) is built before the core can feed
+it, and the scale explorer, chord overlay, settings and export all build on its props. Its
+coordinates, its look at 12 and at 27 frets, and how it is used without a mouse have to be
+settled once.
+
+**Decision.**
+- Presentational: it takes `strings`, `frets`, `capo`, `leftHanded`, `colorByDegree` and dots
+  `{string, fret, label, role: root|tone|dim, degree}` and calls `onactivate({string, fret})`.
+  Labels come computed from the core; the component knows no notes.
+- String 1 is the highest-pitched string, drawn at the top. `fret` is the absolute fret on the
+  neck (0 = open). With a capo the frets below it are shaded and not part of the grid, matching
+  the core, which excludes them.
+- Real fret spacing (1 − 2^(−n/12) of the scale length) over a drawing of fixed width, so a
+  given container shows the same string spacing for any fret count. Dots shrink only when the
+  last fret space can't hold a full one (27 frets).
+- Root is a square, other notes circles, dimmed notes smaller circles: shape and size carry the
+  meaning, colour adds to it (ADR-11). `degree` (semitones above the root) picks
+  `--degree-<n>` when colouring by degree.
+- Keyboard and screen readers: an ARIA grid (rows = strings, cells = playable frets) with a
+  roving tab stop. Arrow keys move in drawing direction (mirrored when left-handed), Home/End
+  go to the first/last fret, Enter/Space activate. Each cell is named like "String 2, fret 5,
+  C, root".
+- Components are looked at on dev-only fixture pages, separate Vite HTML entries in
+  `app/dev/` with hand-written data. `vite build` only builds `index.html`, so they never ship.
+
+**Consequences.**
+- Callers convert to absolute frets and string-1-on-top once, in the core's mapping (M1.3).
+- At 27 frets the high frets are narrow and the dots smaller than at 24; a "compressed"
+  spacing would need a new prop and ADR.
+- One tab stop keeps Tab moving through the app quickly; reaching a position takes arrow keys.
+- Fixture data is static, so it never does theory in TypeScript, but it doesn't follow the
+  user's tuning either.
