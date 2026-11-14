@@ -26,6 +26,7 @@ ADR-1 to ADR-13 come from the design interview behind [SPEC.md](SPEC.md) (decisi
 | 13 | [English only](#adr-13-english-only) | Accepted |
 | 14 | [The WASM package is built by wasm-pack into the app's source tree](#adr-14-the-wasm-package-is-built-by-wasm-pack-into-the-apps-source-tree) | Accepted |
 | 15 | [Notes are MIDI numbers; intervals keep their degree labels](#adr-15-notes-are-midi-numbers-intervals-keep-their-degree-labels) | Accepted |
+| 16 | [Releases are unsigned drafts built by CI from a version tag](#adr-16-releases-are-unsigned-drafts-built-by-ci-from-a-version-tag) | Accepted |
 
 ---
 
@@ -247,3 +248,36 @@ and note names arrive typed by users (`Db`, `D♭`), from TOML catalogs and from
   intervals measured between notes get the default label.
 - The Unicode double sharp and flat (`𝄪`, `𝄫`) need a font that has them. Only a root typed
   that way shows them, since the preference spells with single accidentals.
+
+## ADR-16: Releases are unsigned drafts built by CI from a version tag
+
+**Context.** Every milestone from M1 on ends in a public release for Windows, macOS and Linux
+(SPEC §1, §2.4). Installers must come from CI, not from someone's machine, and the version in
+the installers, the tag and the release notes must agree. Code signing needs paid
+certificates (Windows) and an Apple Developer account with notarisation (macOS); SPEC §1
+defers it, together with auto-update.
+
+**Decision.** `.github/workflows/release.yml` runs on tags `v<semver>`. Its first job runs
+`scripts/check-release.mjs` (Node, no dependencies, self-tested with `node --test`): the tag
+minus `v` must equal the workspace version in `Cargo.toml`, every workspace crate's version
+and its `Cargo.lock` entry, `app/package.json`, and `tauri.conf.json` (which has no version of
+its own and inherits the Tauri crate's), and `CHANGELOG.md` must have a non-empty section for
+it. Only then do the build jobs start: `tauri-apps/tauri-action` builds Windows NSIS, a
+universal macOS dmg and a Linux AppImage plus deb (on the oldest supported Ubuntu, for glibc
+compatibility); each job only builds and uploads its bundles as workflow artifacts. A final
+job, the only one with `contents: write`, renames the files to URL-safe names, writes
+`SHA256SUMS.txt` over all of them and creates a **draft** release whose body is the
+`CHANGELOG.md` section (a pre-release when the version has one). A person publishes it after
+checking the installers. Release notes come from the hand-written changelog, not from
+GitHub's generated notes, because PR titles describe work, not what users get. Builds are
+unsigned.
+
+**Consequences.**
+- A mismatched version or a missing changelog section fails within seconds, before any build.
+- A release appears only when all three platforms built; no half-filled drafts.
+- Releasing means one PR (versions + changelog section) and one tag; CONTRIBUTING.md has the
+  steps.
+- Unsigned builds trigger Windows SmartScreen and macOS Gatekeeper warnings; README explains
+  how to open them. Signing, notarisation and an updater are later work and a new ADR.
+- No Rust build cache in release builds: slower (one universal macOS build compiles twice),
+  but nothing from earlier runs ends up in an installer.
