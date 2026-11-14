@@ -6,6 +6,7 @@
 pub mod formula;
 pub mod fretboard;
 pub mod notes;
+pub mod scale_positions;
 pub mod scales;
 pub mod tuning;
 
@@ -15,6 +16,7 @@ pub use notes::{
     Accidental, Accidentals, Glyphs, Interval, Letter, Note, NoteName, ParseError, PitchClass,
     Spelling,
 };
+pub use scale_positions::{ThreeNpsPattern, fret_window, three_notes_per_string};
 pub use scales::{
     CatalogError, ParsedScales, Scale, ScaleCatalog, ScaleFamily, ScaleNote, Source,
     parse_user_scales,

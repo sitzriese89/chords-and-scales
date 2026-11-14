@@ -32,6 +32,7 @@ ADR-1 to ADR-13 come from the design interview behind [SPEC.md](SPEC.md) (decisi
 | 19 | [Theme tokens are hand-written CSS, checked by tests](#adr-19-theme-tokens-are-hand-written-css-checked-by-tests) | Accepted |
 | 20 | [The scale catalog: one shared formula type, per-item errors, user ids replace built-ins](#adr-20-the-scale-catalog-one-shared-formula-type-per-item-errors-user-ids-replace-built-ins) | Accepted |
 | 21 | [Tunings list strings low to high; positions come out in fretboard coordinates](#adr-21-tunings-list-strings-low-to-high-positions-come-out-in-fretboard-coordinates) | Accepted; WASM tuning API superseded by ADR-23 |
+| 22 | [Scale positions filter the fretboard mapping; 3NPS patterns take the lowest octave that fits](#adr-22-scale-positions-filter-the-fretboard-mapping-3nps-patterns-take-the-lowest-octave-that-fits) | Accepted |
 | 23 | [The scale explorer: one layout, user catalogs loaded alike, labels looked up from the core](#adr-23-the-scale-explorer-one-layout-user-catalogs-loaded-alike-labels-looked-up-from-the-core) | Accepted |
 
 ---
@@ -482,6 +483,45 @@ bad entry.
 - Instrument kind doesn't restrict string count or range; the UI decides what to offer.
 - Positions don't carry spellings: the UI spells `pitchClass` through the note functions with
   the sharp/flat preference, so the mapping doesn't depend on the root's spelling.
+
+## ADR-22: Scale positions filter the fretboard mapping; 3NPS patterns take the lowest octave that fits
+
+**Context.** M1.4 implements the two position systems of ADR-7 for the tab view (M1.10) and,
+later, the fretboard. They must work for any tuning, 4–9 strings, any fret count and capo, and
+any scale, including ones without seven notes. A 3NPS pattern is a fixed sequence of notes, so
+on a short neck or above a capo it may not fit where it is usually played.
+
+**Decision.** In `crates/theory/src/scale_positions.rs`, bound in
+`crates/theory-wasm/src/positions.rs`:
+
+- Both take what `positions` takes (tuning, frets, capo, pitch classes, root) and return
+  `Position`s in ADR-18 coordinates, in **tab order**: lowest string (highest number) first,
+  then by fret. The scale is a pitch-class set, not a `Scale`, so user scales and any set the
+  UI already has work the same way, and the binding needs no catalog.
+- `fret_window(…, start, span)` is literally `positions` filtered to frets
+  `start … start + span − 1`, then put in tab order; it inherits the fret and capo rules and
+  errors, and adds none (a span of 0 or a window off the neck is just empty).
+- `three_notes_per_string` returns one `ThreeNpsPattern { degree, positions }` per scale
+  degree, degrees counted up from the root over the distinct pitch classes. A pattern is the
+  `3 × strings` consecutive scale notes up from its degree on the lowest string, three per
+  string, low string to high, so it is strictly ascending for every tuning, re-entrant ones
+  included. Of the octaves that degree has on the lowest string, the lowest one whose notes all
+  lie between the capo and the last fret is used; if none does, the pattern is **left out**
+  (never shifted, folded or cut short). The list is ordered by degree, so a missing degree
+  shows that its pattern doesn't fit.
+- Nothing depends on the scale having seven notes: smaller scales wrap into the next octaves.
+- WASM: `fretWindow(tuning, frets, capo, pitchClasses, root, start, span)` and
+  `threeNotesPerString(tuning, frets, capo, pitchClasses, root)` return `NotePosition`
+  records (as `fretboardPositions`) and `ScalePattern { degree, positions }`.
+
+**Consequences.**
+- The tab view can show either system without any fretboard logic, and the fretboard can
+  highlight a position with the same records it already draws.
+- On 12 frets or with a high capo some 3NPS patterns are missing; the UI must show that
+  rather than assume one per degree. A pattern with a large reach (a pentatonic, or a tuning
+  in fifths) is generated as is: playability isn't judged.
+- The binding module keeps its own copy of the tuning and position records of
+  `fretboard.rs`, so the two can be merged into shared helpers later.
 
 ## ADR-23: The scale explorer: one layout, user catalogs loaded alike, labels looked up from the core
 

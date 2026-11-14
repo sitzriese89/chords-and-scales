@@ -6,6 +6,7 @@
 mod fretboard;
 mod meta;
 mod notes;
+mod positions;
 mod scales;
 mod user_files;
 
@@ -15,4 +16,5 @@ pub use notes::{
     Accidentals, format_interval, format_note, format_note_name, interval_label,
     interval_semitones, parse_note, pitch_class_of, spell_pitch_class,
 };
+pub use positions::{fret_window_positions, three_nps_patterns};
 pub use scales::{get_scale, list_scales, scale_notes, set_user_scales};
