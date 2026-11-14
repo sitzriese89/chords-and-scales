@@ -35,6 +35,12 @@ export { getScale, listScales, scaleNotes, setUserScales } from './wasm/theory_w
 export type { NotePosition, Tuning, TuningCatalog, TuningItemError } from './wasm/theory_wasm.js';
 export { fretboardPositions, tuningCatalog } from './wasm/theory_wasm.js';
 
+// Scale positions (crates/theory-wasm/src/positions.rs): a fret window and 3-notes-per-string
+// patterns, for a tuning and a scale given as pitch classes plus root. Positions use the
+// fretboard's coordinates and come in tab order: lowest string first, then by fret.
+export type { ScalePattern } from './wasm/theory_wasm.js';
+export { fretWindow, threeNotesPerString } from './wasm/theory_wasm.js';
+
 let ready: Promise<void> | undefined;
 
 /**

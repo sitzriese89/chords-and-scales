@@ -230,6 +230,26 @@ string count):
 
 CAGED is **not** supported.
 
+How positions are generated (`crates/theory/src/scale_positions.rs`, ADR-22):
+
+- Both systems take the tuning, fret count, capo, the scale as pitch classes and its root,
+  and follow the fretboard's rules for them (§5.1): frets below the capo and past the last
+  fret don't exist. Positions use the fretboard's coordinates (string 1 = highest, absolute
+  frets) and come in **tab order**: the lowest string first, then by fret.
+- **Fret window:** frets *start* … *start* + *span* − 1. Exactly the fretboard's positions
+  of the scale that fall in it; a window partly off the neck shows only the frets that exist,
+  a span of 0 is empty.
+- **3-notes-per-string:** one pattern per scale degree, counted up from the root (degree 0
+  starts on the root, or on the first scale note above it if the root isn't in the scale). A
+  pattern starts on its degree on the lowest string and walks up the scale, each note the next
+  scale note above the last, three on every string, low string to high. It is placed at the
+  lowest octave where every note is on the neck; if none fits, that pattern is left out rather
+  than moved or folded (on 12 frets, G major in standard tuning has 5 of its 7 patterns).
+- Any scale works the same way, whatever its size: a scale with fewer notes than 3 × strings
+  (every common scale) continues into the next octaves, so a pentatonic scale has 5 patterns
+  that climb the neck, and a scale of 1 or 2 notes spans so many frets that its patterns
+  rarely fit. Duplicate pitch classes count once; an empty scale has no patterns.
+
 ### 5.3 Chords (Q5, Q16, Q19, Q26)
 
 - Displayed in a **docked panel** (resizable/collapsible) in the main window,
