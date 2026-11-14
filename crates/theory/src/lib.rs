@@ -23,7 +23,7 @@ pub use scales::{
 };
 pub use tuning::{
     InstrumentKind, ParsedTunings, Tuning, TuningCatalog, TuningError, TuningFileError,
-    TuningItemError, builtin_tunings, parse_tunings,
+    TuningItemError, builtin_tunings, parse_tunings, write_tunings,
 };
 
 /// The version of the theory core, as set in the workspace `Cargo.toml`.

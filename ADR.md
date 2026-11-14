@@ -34,6 +34,7 @@ ADR-1 to ADR-13 come from the design interview behind [SPEC.md](SPEC.md) (decisi
 | 21 | [Tunings list strings low to high; positions come out in fretboard coordinates](#adr-21-tunings-list-strings-low-to-high-positions-come-out-in-fretboard-coordinates) | Accepted; WASM tuning API superseded by ADR-23 |
 | 22 | [Scale positions filter the fretboard mapping; 3NPS patterns take the lowest octave that fits](#adr-22-scale-positions-filter-the-fretboard-mapping-3nps-patterns-take-the-lowest-octave-that-fits) | Accepted |
 | 23 | [The scale explorer: one layout, user catalogs loaded alike, labels looked up from the core](#adr-23-the-scale-explorer-one-layout-user-catalogs-loaded-alike-labels-looked-up-from-the-core) | Accepted |
+| 24 | [Instrument settings: custom tunings saved by the core, stable generated ids, a catalog revision](#adr-24-instrument-settings-custom-tunings-saved-by-the-core-stable-generated-ids-a-catalog-revision) | Accepted |
 
 ---
 
@@ -571,7 +572,60 @@ file), and the explorer is the first code that loads both.
   fills `chords`.
 - The binding holds state for both catalogs, so the app must call the setter after every
   change to a user file. The catalogs are read once when the picker mounts: the editors will
-  need a way to tell the picker the catalog changed (a revision value is enough).
+  need a way to tell the picker the catalog changed (a revision value is enough; added by
+  ADR-24).
 - A user who edits `scales.toml` or `tunings.toml` by hand sees the change on the next start.
 - `explorerView` is plain TypeScript over WASM calls, so it is tested without the DOM, and the
   component test checks every dot of A Dorian on standard tuning.
+
+## ADR-24: Instrument settings: custom tunings saved by the core, stable generated ids, a catalog revision
+
+**Context.** M1.9 fills the `settings` region (ADR-23) with the instrument panel: string count,
+tuning presets, a per-string editor for custom tunings that the user can save, rename and
+delete, fret count, capo, left-handed and theme. Saving means writing `tunings.toml`, which
+until now only the user wrote. The catalogs live in the WASM binding, so the picker and the
+neck can't see a change by themselves (ADR-23 asked for a revision value).
+
+**Decision.**
+- **Writing is the core's job.** `theory::write_tunings(&[Tuning])` writes the `[[tuning]]`
+  format that `parse_tunings` reads back unchanged (a round-trip test checks it; notes are
+  written with sharps, `F#3`, since a tuning has no spelling). Two tunings with one id are an
+  error. The binding exports `writeTunings(tunings)`, which validates every tuning with
+  `Tuning::new` and throws `“<name>”: <reason>`; the editor shows that message as is. The
+  editor itself only checks form state: a non-blank name and a note and an octave on every
+  string. Notes cross as pitch class plus octave through `noteParts` / `noteFromParts`, so the
+  UI does no MIDI arithmetic.
+- **Ids are generated once and then stable.** `TuningCatalog::new_id(kind, strings, name)`
+  (WASM `newTuningId`) gives `<kind>-<strings>-<slug of the name>` like the built-ins, with
+  `-2`, `-3`, … when the id is in the catalog or is a built-in id, so a new tuning never
+  replaces another one. Overriding a built-in stays possible by writing its id into
+  `tunings.toml` by hand. Renaming or editing a tuning keeps its id, so the settings keep
+  pointing at it; the id's prefix is a hint, not checked.
+- **Deleting** the selected tuning falls back to the string count's standard preset (or, for a
+  user tuning that overrode a built-in id, to the built-in that comes back).
+- **String count.** Switching picks that count's standard preset of the current kind
+  (`bass-5-standard`), else the other kind's (four strings on a guitar give the four-string
+  bass), else the first preset of the count. Not the last-used tuning per count: that would
+  need new settings keys for little gain. Picking a tuning sets `strings` and `kind` to the
+  tuning's, so the three never disagree. Presets are grouped by kind (Guitar, Bass); the
+  user's tunings form their own group, labelled with their kind.
+- **Frets and capo** reuse the settings validation (`SettingsStore.update` rejects what the
+  file can't hold); the panel only clamps the capo to `frets - 1` when the neck gets shorter
+  and shows a message when a value is refused.
+- **The catalog revision.** `UserCatalogs` (`app/src/lib/user-catalogs.svelte.ts`, a context
+  next to the settings store) loads the user documents, holds the user's tunings and has a
+  `revision` counter that it bumps after every load and save. Components that read a catalog
+  read `revision` in the same `$derived` (the picker, the explorer, the panel). The scale
+  editor (M1.11) adds `saveUserScales` beside `saveUserTunings` and gets the refresh for free.
+- **Broken items are not lost silently.** The app rewrites `tunings.toml` with only the
+  tunings it understood, so before the first save over a file that had broken items it keeps
+  the old text as `tunings-backup.toml` and says so. Comments in a hand-edited file are not
+  kept.
+
+**Consequences.**
+- No TOML is built in TypeScript and no tuning rule is duplicated there.
+- A saved custom tuning is in the preset list, on the neck and in `tunings.toml` at once, and
+  after a restart.
+- Ids are stable but can drift from the name and kind after an edit; nothing depends on that.
+- The editor's string count is the selected tuning's: to make a 7-string tuning, switch to 7
+  strings first.

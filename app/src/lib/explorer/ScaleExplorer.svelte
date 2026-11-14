@@ -7,10 +7,16 @@
 <script lang="ts">
   import { Fretboard } from '../fretboard';
   import { getSettings } from '../settings';
+  import { getUserCatalogs } from '../user-catalogs.svelte';
   import { explorerView } from './view';
 
   const settings = getSettings();
-  const view = $derived(explorerView(settings.current));
+  const catalogs = getUserCatalogs();
+  const view = $derived.by(() => {
+    // Re-read the catalogs when a user scale or tuning was saved or deleted (ADR-24).
+    void catalogs.revision;
+    return explorerView(settings.current);
+  });
   const title = $derived(`${view.root} ${view.scale.name}`);
 </script>
 

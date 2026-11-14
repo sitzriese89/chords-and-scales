@@ -1,9 +1,10 @@
 <script lang="ts">
   import { ScaleExplorer, ScalePicker, ViewControls } from './lib/explorer';
+  import { InstrumentPanel } from './lib/instrument';
   import { SettingsStore, setSettings } from './lib/settings';
   import { createStorage, type Storage } from './lib/storage';
-  import { getTuning, version } from './lib/theory';
-  import { loadUserCatalogs } from './lib/user-catalogs';
+  import { version } from './lib/theory';
+  import { setUserCatalogs, UserCatalogs } from './lib/user-catalogs.svelte';
   import { applyTheme } from './styles/theme';
 
   // Tests pass their own storage; the app picks Tauri files or localStorage (ADR-4).
@@ -16,25 +17,20 @@
   // svelte-ignore state_referenced_locally
   const settings = new SettingsStore(storage);
   setSettings(settings);
+  // The user's scales and tunings; editors save through it and it tells the views (ADR-24).
+  // svelte-ignore state_referenced_locally
+  const catalogs = new UserCatalogs(storage);
+  setUserCatalogs(catalogs);
 
   // The views wait for the settings and the user's scales and tunings, so the last view
   // appears at once instead of after a flash of the defaults.
   let ready = $state(false);
-  let fileProblems = $state<string[]>([]);
-  // svelte-ignore state_referenced_locally
-  Promise.all([settings.load(), loadUserCatalogs(storage)]).then(([, problems]) => {
-    fileProblems = problems;
+  Promise.all([settings.load(), catalogs.load()]).then(() => {
     ready = true;
   });
+  const fileProblems = $derived(catalogs.problems);
 
   $effect(() => applyTheme(settings.current.theme));
-
-  const instrumentSummary = $derived.by(() => {
-    const { tuning: id, frets, capo } = settings.current.instrument;
-    const tuning = getTuning(id);
-    const name = tuning ? `${tuning.name}, ${tuning.notes.length} strings` : id;
-    return `${name} · ${frets} frets · ${capo === 0 ? 'no capo' : `capo on fret ${capo}`}`;
-  });
 </script>
 
 {#if settings.warning}
@@ -48,8 +44,8 @@
   Main layout (ADR-23). Regions, by grid area:
   - picker:   root and scale picker.
   - board:    the view toggles (labels, sharps/flats) and the fretboard.
-  - settings: instrument settings. #10 mounts its panel (instrument, tuning, frets, capo,
-              theme, left-handed) here, replacing the summary; the view toggles stay in board.
+  - settings: the instrument panel (strings, tuning and custom tunings, frets, capo,
+              left-handed, theme; ADR-24). The view toggles stay in board.
   - chords:   the docked chord panel (ADR-10), filled by #18.
   On narrow windows the regions stack in that order.
 -->
@@ -83,8 +79,7 @@
 
     <aside class="region settings" aria-label="Instrument settings">
       <h2>Instrument</h2>
-      <!-- #10: the instrument and tuning panel goes here. -->
-      <p class="muted">{instrumentSummary}</p>
+      <InstrumentPanel />
     </aside>
 
     <aside class="region chords" aria-label="Chords">

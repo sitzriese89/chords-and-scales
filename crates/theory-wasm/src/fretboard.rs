@@ -8,16 +8,18 @@
 //!
 //! Like the scale catalog, the binding keeps one current tuning catalog: the built-ins, with
 //! the user tunings last passed to `setUserTunings` on top, reported in the shared
-//! `UserFileReport` shape (`user_files`, ADR-23).
+//! `UserFileReport` shape (`user_files`, ADR-23). `writeTunings` and `newTuningId` are for
+//! the tuning editor, which saves the user's file (ADR-24).
 
 use std::cell::RefCell;
 
-use serde::{Deserialize, Serialize};
-use theory::{
-    Glyphs, InstrumentKind, Note, PitchClass, Tuning, TuningCatalog, parse_tunings, positions,
-};
+use theory::{TuningCatalog, parse_tunings, positions, write_tunings};
 use wasm_bindgen::prelude::*;
 
+use crate::records::{
+    PositionRecord, TuningRecord, kind_arg, pitch_classes_arg, small, to_js, to_pitch_class,
+    tuning_arg,
+};
 use crate::user_files::{UserFileError, UserFileReport};
 
 thread_local! {
@@ -56,78 +58,18 @@ extern "C" {
     pub type TuningValue;
     #[wasm_bindgen(typescript_type = "Tuning[]")]
     pub type TuningList;
+    #[wasm_bindgen(typescript_type = "readonly Tuning[]")]
+    pub type TuningListArg;
     #[wasm_bindgen(typescript_type = "Tuning | undefined")]
     pub type MaybeTuning;
+    #[wasm_bindgen(typescript_type = "'guitar' | 'bass'")]
+    pub type KindValue;
     #[wasm_bindgen(typescript_type = "UserFileReport")]
     pub type UserFileReportValue;
     #[wasm_bindgen(typescript_type = "NotePosition[]")]
     pub type FretPositions;
     #[wasm_bindgen(typescript_type = "readonly number[]")]
     pub type PitchClasses;
-}
-
-#[derive(Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-struct TuningRecord {
-    id: String,
-    name: String,
-    kind: String,
-    notes: Vec<u8>,
-}
-
-impl From<&Tuning> for TuningRecord {
-    fn from(tuning: &Tuning) -> Self {
-        Self {
-            id: tuning.id().to_owned(),
-            name: tuning.name().to_owned(),
-            kind: tuning.kind().as_str().to_owned(),
-            notes: tuning.notes().iter().map(|note| note.midi()).collect(),
-        }
-    }
-}
-
-impl TryFrom<TuningRecord> for Tuning {
-    type Error = JsError;
-
-    fn try_from(record: TuningRecord) -> Result<Self, JsError> {
-        let kind = match record.kind.as_str() {
-            "guitar" => InstrumentKind::Guitar,
-            "bass" => InstrumentKind::Bass,
-            other => {
-                return Err(JsError::new(&format!(
-                    "kind {other:?} must be \"guitar\" or \"bass\""
-                )));
-            }
-        };
-        let notes = record
-            .notes
-            .iter()
-            .map(|&midi| {
-                Note::from_midi(midi)
-                    .ok_or_else(|| JsError::new(&format!("{midi} is not a MIDI note (0 to 127)")))
-            })
-            .collect::<Result<_, _>>()?;
-        Ok(Tuning::new(record.id, record.name, kind, notes)?)
-    }
-}
-
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-struct PositionRecord {
-    string: u8,
-    fret: u8,
-    midi: u8,
-    pitch_class: u8,
-    degree: u8,
-    interval: String,
-}
-
-fn to_js<T: Serialize, J: JsCast>(value: &T) -> Result<J, JsError> {
-    crate::user_files::to_js(value).map(JsCast::unchecked_into)
-}
-
-fn small(value: u32, what: &str) -> Result<u8, JsError> {
-    u8::try_from(value).map_err(|_| JsError::new(&format!("{value} {what} is out of range")))
 }
 
 /// Every tuning in the current catalog: the built-in presets in file order, then the user's
@@ -190,6 +132,43 @@ fn load_user_tunings(toml: &str) -> (TuningCatalog, UserFileReport) {
     (catalog, report)
 }
 
+/// The text of a tunings file holding `tunings`, in order, which `setUserTunings` reads back
+/// unchanged. Each tuning is checked as one from a file is; the first invalid one throws,
+/// with its name and the reason, and so do two tunings with one id. Doesn't change the
+/// catalog: save the text, then pass it to `setUserTunings`.
+#[wasm_bindgen(js_name = writeTunings)]
+pub fn write_tunings_toml(tunings: TuningListArg) -> Result<String, JsError> {
+    let records: Vec<TuningRecord> = serde_wasm_bindgen::from_value(tunings.into())
+        .map_err(|err| JsError::new(&format!("not a list of tunings: {err}")))?;
+    write_tunings_text(records).map_err(|err| JsError::new(&err))
+}
+
+/// `writeTunings` without the JS conversion; errors name the tuning (`"Mine": …`).
+fn write_tunings_text(records: Vec<TuningRecord>) -> Result<String, String> {
+    let tunings = records
+        .into_iter()
+        .map(|record| {
+            let name = record.name.trim().to_owned();
+            record
+                .into_tuning()
+                .map_err(|err| format!("“{name}”: {err}"))
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    write_tunings(&tunings).map_err(|err| err.to_string())
+}
+
+/// The id for a new user tuning of `kind` with `strings` strings called `name`:
+/// `<kind>-<strings>-<slug>` (`bass-5-my-low-b`), with `-2`, `-3`, … if the current catalog
+/// or the built-ins already have it. A new tuning saved under it never replaces another.
+#[wasm_bindgen(js_name = newTuningId)]
+pub fn new_tuning_id(kind: KindValue, strings: u32, name: &str) -> Result<String, JsError> {
+    let kind = kind
+        .as_string()
+        .ok_or_else(|| JsError::new("kind must be \"guitar\" or \"bass\""))?;
+    let kind = kind_arg(&kind)?;
+    Ok(CATALOG.with_borrow(|catalog| catalog.new_id(kind, strings as usize, name)))
+}
+
 /// Every position of `pitchClasses` on a neck of `frets` frets (12 to 27) in `tuning`, with
 /// a capo on fret `capo` (0 = none, below `frets`; frets below it are left out), labelled by
 /// the interval from `root`. Ordered by string (1 = highest first), then fret.
@@ -201,42 +180,14 @@ pub fn fretboard_positions(
     pitch_classes: PitchClasses,
     root: u32,
 ) -> Result<FretPositions, JsError> {
-    let record: TuningRecord = serde_wasm_bindgen::from_value(tuning.into())
-        .map_err(|err| JsError::new(&format!("not a tuning: {err}")))?;
-    let tuning = Tuning::try_from(record)?;
-    let values: Vec<u32> = serde_wasm_bindgen::from_value(pitch_classes.into())
-        .map_err(|err| JsError::new(&format!("not a list of pitch classes: {err}")))?;
-    let set = values
-        .into_iter()
-        .map(to_pitch_class)
-        .collect::<Result<Vec<_>, _>>()?;
     let result = positions(
-        &tuning,
+        &tuning_arg(tuning.into())?,
         small(frets, "frets")?,
         small(capo, "capo fret")?,
-        &set,
+        &pitch_classes_arg(pitch_classes.into())?,
         to_pitch_class(root)?,
     )?;
-    to_js(
-        &result
-            .iter()
-            .map(|p| PositionRecord {
-                string: p.string,
-                fret: p.fret,
-                midi: p.note.midi(),
-                pitch_class: p.pitch_class().value(),
-                degree: p.degree(),
-                interval: p.interval.format(Glyphs::Unicode),
-            })
-            .collect::<Vec<_>>(),
-    )
-}
-
-fn to_pitch_class(value: u32) -> Result<PitchClass, JsError> {
-    u8::try_from(value)
-        .ok()
-        .and_then(PitchClass::new)
-        .ok_or_else(|| JsError::new(&format!("{value} is not a pitch class (0 to 11)")))
+    to_js(&result.iter().map(PositionRecord::from).collect::<Vec<_>>())
 }
 
 #[cfg(test)]
@@ -284,6 +235,34 @@ notes = ["E1", "A1", "D2"]
         assert_eq!(report.errors[0].id, None);
         assert!(report.errors[0].message.starts_with("not valid TOML"));
         assert_eq!(catalog, TuningCatalog::builtin());
+    }
+
+    fn record(id: &str, name: &str, notes: &[u8]) -> TuningRecord {
+        TuningRecord {
+            id: id.to_owned(),
+            name: name.to_owned(),
+            kind: "bass".to_owned(),
+            notes: notes.to_vec(),
+        }
+    }
+
+    #[test]
+    fn written_tunings_load_back_and_bad_ones_are_named() {
+        let text =
+            write_tunings_text(vec![record("bass-4-mine", "Mine", &[26, 33, 38, 43])]).unwrap();
+        let (catalog, report) = load_user_tunings(&text);
+        assert_eq!(report.loaded, ["bass-4-mine"]);
+        assert_eq!(catalog.get("bass-4-mine").unwrap().notes()[0].midi(), 26);
+
+        let error =
+            write_tunings_text(vec![record("bass-4-x", " High ", &[26, 33, 38, 90])]).unwrap_err();
+        assert!(error.starts_with("“High”: open string F#6"), "{error}");
+        let twice = vec![record("a", "A", &[28; 4]), record("a", "B", &[28; 4])];
+        assert!(
+            write_tunings_text(twice)
+                .unwrap_err()
+                .contains("more than one")
+        );
     }
 
     #[test]

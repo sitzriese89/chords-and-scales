@@ -4,8 +4,10 @@ import {
   fretboardPositions,
   getTuning,
   listTunings,
+  newTuningId,
   parseNote,
   setUserTunings,
+  writeTunings,
   type Tuning,
 } from './theory';
 
@@ -112,6 +114,51 @@ describe('tunings and fretboard mapping (WASM)', () => {
     // The user tunings are gone; the built-ins stay.
     expect(getTuning('guitar-4-mine')).toBeUndefined();
     expect(getTuning('guitar-6-standard')).toBeDefined();
+  });
+
+  it('writes tunings as a file that setUserTunings reads back unchanged', () => {
+    const mine: Tuning[] = [
+      {
+        id: 'bass-5-low-a',
+        name: 'Low A',
+        kind: 'bass',
+        notes: ['A0', 'E1', 'A1', 'D2', 'G2'].map(parseNote),
+      },
+      { id: 'guitar-6-mine', name: 'Mine "quoted"', kind: 'guitar', notes: standard().notes },
+    ];
+    const text = writeTunings(mine);
+    expect(text).toMatch(/^# Your tunings/);
+    expect(text).toContain('notes = ["A0", "E1", "A1", "D2", "G2"]');
+    // Writing changes nothing in the catalog.
+    expect(getTuning('bass-5-low-a')).toBeUndefined();
+    expect(setUserTunings(text)).toEqual({ loaded: ['bass-5-low-a', 'guitar-6-mine'], errors: [] });
+    expect(listTunings().slice(-2)).toEqual(mine);
+    expect(setUserTunings(writeTunings([]))).toEqual({ loaded: [], errors: [] });
+  });
+
+  it('refuses to write an invalid tuning, with the core’s reason and its name', () => {
+    const tooHigh = {
+      ...standard(),
+      id: 'guitar-6-x',
+      name: 'High',
+      notes: [40, 45, 50, 55, 59, 90],
+    };
+    expect(() => writeTunings([tooHigh])).toThrow(
+      '“High”: open string F#6 is outside the range C0 to C6',
+    );
+    expect(() => writeTunings([{ ...standard(), notes: [40, 45, 50] }])).toThrow(/3 strings/);
+    expect(() => writeTunings([{ ...standard(), id: 'Not an id' }])).toThrow(/kebab-case/);
+    expect(() => writeTunings([standard(), standard()])).toThrow(/more than one tuning/);
+  });
+
+  it('makes ids for new tunings that never take an existing one', () => {
+    expect(newTuningId('bass', 5, 'My low B')).toBe('bass-5-my-low-b');
+    expect(newTuningId('guitar', 6, 'E♭ standard (low)')).toBe('guitar-6-e-standard-low');
+    expect(newTuningId('guitar', 6, 'Standard')).toBe('guitar-6-standard-2');
+    expect(newTuningId('guitar', 7, '♯')).toBe('guitar-7-custom');
+    setUserTunings(writeTunings([{ ...standard(), id: 'guitar-6-mine', name: 'Mine' }]));
+    expect(newTuningId('guitar', 6, 'Mine')).toBe('guitar-6-mine-2');
+    expect(() => newTuningId('banjo' as 'bass', 5, 'x')).toThrow(/guitar.*bass/);
   });
 
   it('throws errors for invalid input', () => {

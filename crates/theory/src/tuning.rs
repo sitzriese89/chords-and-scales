@@ -8,13 +8,14 @@
 //! parsed from a string by [`parse_tunings`]; reading the file is the app's job (ADR-4). A bad
 //! item is reported with its number and reason and skipped, the rest still load.
 //! [`TuningCatalog::merge`] puts user tunings on top of the built-ins: one with a built-in id
-//! replaces it.
+//! replaces it. [`write_tunings`] writes tunings back in the same format, so the app can save
+//! the user's file, and [`TuningCatalog::new_id`] makes the id of a new user tuning.
 
 use std::collections::HashSet;
 use std::fmt;
 use std::sync::LazyLock;
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::notes::Note;
 
@@ -22,7 +23,7 @@ use crate::notes::Note;
 const BUILTIN_TOML: &str = include_str!("../data/tunings.toml");
 
 /// Guitar or bass. Only a label: it doesn't change how notes map onto the neck.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum InstrumentKind {
     Guitar,
@@ -156,6 +157,8 @@ pub enum TuningError {
     StringCount(usize),
     /// An open string below C0 or above C6.
     NoteOutOfRange(Note),
+    /// Two tunings with the same id in one file ([`write_tunings`]).
+    DuplicateId(String),
 }
 
 impl fmt::Display for TuningError {
@@ -182,6 +185,7 @@ impl fmt::Display for TuningError {
                 "open string {} is outside the range C0 to C6",
                 note.format(crate::Accidentals::Sharps, crate::Glyphs::Ascii)
             ),
+            Self::DuplicateId(id) => write!(f, "id {id:?} is used by more than one tuning"),
         }
     }
 }
@@ -323,6 +327,76 @@ pub fn parse_tunings(input: &str) -> Result<ParsedTunings, TuningFileError> {
     Ok(parsed)
 }
 
+/// The header of a tunings document written by [`write_tunings`].
+const WRITTEN_HEADER: &str = "\
+# Your tunings, written by Chords & Scales in the format of the built-in tunings.
+# You can edit this file while the app is closed; the app doesn't keep comments when it saves.
+";
+
+/// One `[[tuning]]` table as [`write_tunings`] writes it.
+#[derive(Serialize)]
+struct WrittenTuning<'a> {
+    id: &'a str,
+    name: &'a str,
+    kind: InstrumentKind,
+    notes: Vec<String>,
+}
+
+#[derive(Serialize)]
+struct WrittenFile<'a> {
+    tuning: Vec<WrittenTuning<'a>>,
+}
+
+/// Writes `tunings` as a tunings document that [`parse_tunings`] reads back unchanged and in
+/// order. Notes are written with sharps (`F#3`): a tuning keeps no spelling of its own. Two
+/// tunings with one id are an error ([`TuningError::DuplicateId`]), since reading the file
+/// back would skip the second.
+pub fn write_tunings(tunings: &[Tuning]) -> Result<String, TuningError> {
+    let mut seen = HashSet::new();
+    if let Some(tuning) = tunings.iter().find(|t| !seen.insert(t.id())) {
+        return Err(TuningError::DuplicateId(tuning.id().to_owned()));
+    }
+    if tunings.is_empty() {
+        return Ok(WRITTEN_HEADER.to_owned());
+    }
+    let file = WrittenFile {
+        tuning: tunings
+            .iter()
+            .map(|t| WrittenTuning {
+                id: t.id(),
+                name: t.name(),
+                kind: t.kind(),
+                notes: t
+                    .notes()
+                    .iter()
+                    .map(|note| note.format(crate::Accidentals::Sharps, crate::Glyphs::Ascii))
+                    .collect(),
+            })
+            .collect(),
+    };
+    let body = toml::to_string(&file).expect("a list of tunings is valid TOML");
+    Ok(format!("{WRITTEN_HEADER}\n{body}"))
+}
+
+/// The lowercase kebab-case form of `name`: ASCII letters and digits are kept, every run of
+/// anything else becomes one hyphen (`"E♭ standard (low)"` → `e-standard-low`).
+fn slug(name: &str) -> String {
+    let mut slug = String::new();
+    for c in name.chars() {
+        if c.is_ascii_alphanumeric() {
+            slug.push(c.to_ascii_lowercase());
+        } else if !slug.is_empty() && !slug.ends_with('-') {
+            slug.push('-');
+        }
+    }
+    slug.trim_end_matches('-').to_owned()
+}
+
+/// The ASCII `text` cut to at most `max` characters, without a trailing hyphen.
+fn cut(text: &str, max: usize) -> &str {
+    text[..text.len().min(max)].trim_end_matches('-')
+}
+
 static BUILTIN: LazyLock<Vec<Tuning>> = LazyLock::new(|| {
     let parsed = parse_tunings(BUILTIN_TOML).expect("data/tunings.toml is a tunings document");
     assert!(
@@ -371,6 +445,32 @@ impl TuningCatalog {
     /// The tuning with id `id`.
     pub fn get(&self, id: &str) -> Option<&Tuning> {
         self.tunings.iter().find(|t| t.id == id)
+    }
+
+    /// The id for a new user tuning called `name`: `<kind>-<strings>-<slug of the name>` as
+    /// for the built-ins (`bass-5-my-low-b`), with `-2`, `-3`, … appended if the id is taken
+    /// by a tuning in the catalog or a built-in. So a new tuning never replaces another one
+    /// (replacing a built-in stays possible by writing its id into `tunings.toml` by hand). A
+    /// name without ASCII letters or digits gives `…-custom`. At most [`Tuning::MAX_TEXT`]
+    /// characters.
+    pub fn new_id(&self, kind: InstrumentKind, strings: usize, name: &str) -> String {
+        let mut base = format!("{kind}-{strings}-{}", slug(name));
+        if base.ends_with('-') {
+            base.push_str("custom");
+        }
+        let taken =
+            |id: &str| self.get(id).is_some() || builtin_tunings().iter().any(|t| t.id == id);
+        let first = cut(&base, Tuning::MAX_TEXT);
+        if !taken(first) {
+            return first.to_owned();
+        }
+        (2..)
+            .map(|n| {
+                let suffix = format!("-{n}");
+                format!("{}{suffix}", cut(&base, Tuning::MAX_TEXT - suffix.len()))
+            })
+            .find(|id| !taken(id))
+            .expect("one of infinitely many suffixes is free")
     }
 }
 
@@ -695,5 +795,116 @@ mod tests {
                 .name(),
             "Drop D"
         );
+    }
+
+    fn tuning(id: &str, name: &str, kind: InstrumentKind, names: &[&str]) -> Tuning {
+        Tuning::new(id, name, kind, notes(names)).unwrap()
+    }
+
+    #[test]
+    fn written_tunings_read_back_unchanged() {
+        let tunings = vec![
+            tuning(
+                "guitar-6-my-open-d",
+                "My \"open\" D, low\\high",
+                InstrumentKind::Guitar,
+                &["D2", "A2", "D3", "F#3", "A3", "D4"],
+            ),
+            tuning(
+                "bass-5-low-a",
+                "Low A ♭ (re-entrant)",
+                InstrumentKind::Bass,
+                &["A0", "E1", "A1", "D2", "C1"],
+            ),
+            tuning(
+                "guitar-9-edges",
+                "Edges",
+                InstrumentKind::Guitar,
+                &["C0", "Db1", "B1", "E2", "A2", "D3", "G3", "B3", "C6"],
+            ),
+        ];
+        let text = write_tunings(&tunings).unwrap();
+        assert!(text.starts_with("# Your tunings"), "{text}");
+        assert!(text.contains("[[tuning]]"), "{text}");
+        assert!(
+            text.contains(r#"notes = ["D2", "A2", "D3", "F#3", "A3", "D4"]"#),
+            "{text}"
+        );
+        let parsed = parse_tunings(&text).unwrap();
+        assert_eq!(parsed.errors, []);
+        assert_eq!(parsed.tunings, tunings);
+        // And again, byte for byte.
+        assert_eq!(write_tunings(&parsed.tunings).unwrap(), text);
+    }
+
+    #[test]
+    fn writing_no_tunings_gives_an_empty_tunings_file() {
+        let text = write_tunings(&[]).unwrap();
+        assert_eq!(parse_tunings(&text).unwrap(), ParsedTunings::default());
+    }
+
+    #[test]
+    fn writing_two_tunings_with_one_id_fails() {
+        let a = tuning("a", "A", InstrumentKind::Bass, &["E1", "A1", "D2", "G2"]);
+        let b = tuning("a", "B", InstrumentKind::Bass, &["D1", "A1", "D2", "G2"]);
+        assert_eq!(
+            write_tunings(&[a, b]),
+            Err(TuningError::DuplicateId("a".to_owned()))
+        );
+    }
+
+    #[test]
+    fn new_ids_follow_the_builtin_format() {
+        let catalog = TuningCatalog::builtin();
+        use InstrumentKind::{Bass, Guitar};
+        assert_eq!(catalog.new_id(Bass, 5, "My low B"), "bass-5-my-low-b");
+        assert_eq!(
+            catalog.new_id(Guitar, 6, "  E♭ standard (low)!! "),
+            "guitar-6-e-standard-low"
+        );
+        assert_eq!(catalog.new_id(Guitar, 7, "Ünïcödé"), "guitar-7-n-c-d");
+        assert_eq!(catalog.new_id(Guitar, 7, "♯♭"), "guitar-7-custom");
+        assert_eq!(catalog.new_id(Guitar, 7, ""), "guitar-7-custom");
+        let long = "long name ".repeat(20);
+        for name in ["My low B", "E♭ standard", "♯", &long] {
+            let id = catalog.new_id(Bass, 9, name);
+            assert!(
+                Tuning::new(&id, "x", Bass, notes(&["E1"; 4])).is_ok(),
+                "{id}"
+            );
+        }
+        assert_eq!(
+            catalog.new_id(Bass, 4, &"x".repeat(100)).len(),
+            Tuning::MAX_TEXT
+        );
+    }
+
+    #[test]
+    fn new_ids_never_take_an_existing_id() {
+        let mut catalog = TuningCatalog::builtin();
+        use InstrumentKind::Guitar;
+        // "Standard" and "Drop D" are built-in names; a new tuning gets its own id.
+        assert_eq!(catalog.new_id(Guitar, 6, "Standard"), "guitar-6-standard-2");
+        assert_eq!(catalog.new_id(Guitar, 6, "Drop D"), "guitar-6-drop-d-2");
+        let six = ["E2", "A2", "D3", "G3", "B3", "E4"];
+        catalog.merge([
+            tuning("guitar-6-mine", "Mine", Guitar, &six),
+            tuning("guitar-6-mine-2", "Mine", Guitar, &six),
+        ]);
+        assert_eq!(catalog.new_id(Guitar, 6, "Mine"), "guitar-6-mine-3");
+
+        // A built-in id is never handed out, even by a catalog without the built-ins.
+        let empty = TuningCatalog {
+            tunings: Vec::new(),
+        };
+        assert_eq!(empty.new_id(Guitar, 6, "Standard"), "guitar-6-standard-2");
+
+        // The suffix still fits when the id is as long as it can be.
+        let long = "x".repeat(100);
+        let first = catalog.new_id(Guitar, 6, &long);
+        catalog.merge([tuning(&first, "Long", Guitar, &six)]);
+        let second = catalog.new_id(Guitar, 6, &long);
+        assert_eq!(second.len(), Tuning::MAX_TEXT);
+        assert!(second.ends_with("x-2"), "{second}");
     }
 }

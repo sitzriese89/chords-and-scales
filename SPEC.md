@@ -90,7 +90,9 @@ Files are hand-editable and shareable; the UI offers import/export of them.
   and saved on every change.
 - The user's own scales and tunings are `scales.toml` and `tunings.toml`, in the format of the
   built-in catalogs (§4.2, §5.1). They are read at start; a broken item is skipped and listed
-  in a collapsed note in the window, and the rest load (ADR-23).
+  in a collapsed note in the window, and the rest load (ADR-23). The tuning editor rewrites
+  `tunings.toml` when it saves (comments are not kept); if the file had items that didn't
+  load, the old file is first kept as `tunings-backup.toml` (ADR-24).
 - A value the app doesn't understand falls back to its default and the app shows a warning
   naming it. A file that can't be used at all (not TOML, missing or unsupported version) is
   kept as `settings-backup.toml`, the defaults are used, and the app says so. It never
@@ -229,6 +231,17 @@ Plus user-defined chords (§3.3).
   on every change and come back at the next start. The window has regions for the picker,
   the neck, the instrument settings and the docked chord panel (§5.3); on a narrow window
   they stack.
+- **Instrument panel** (the `settings` region, ADR-24): string count 4–9, the tuning presets
+  for that count grouped by kind (guitar, bass) with the user's own tunings in a group of
+  their own, fret count (12–27), capo (below the last fret; a shorter neck moves it down),
+  left-handed and theme. Changing the string count picks that count's standard preset.
+  Every change is saved and the neck follows at once.
+  - **Custom tunings:** "New tuning" opens an editor seeded with the selected tuning: a name,
+    guitar or bass, and a note and octave per string (string 1, the highest, first). Saving
+    writes `tunings.toml` and selects the tuning; its id is made from kind, string count and
+    name (`bass-5-low-a`, `-2` if taken) and never replaces another tuning. Edit (including
+    rename) keeps the id; deleting the selected tuning falls back to the standard preset.
+    The core checks the tuning and the editor shows its reason when it refuses one.
 
 ### 5.2 Tab view (Q4, Q13)
 

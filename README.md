@@ -9,8 +9,11 @@ Contributing: [CONTRIBUTING.md](CONTRIBUTING.md) · design decisions: [ADR.md](A
 Pick or type a root (`A`, `F#`, `Db`) and pick a scale from the list on the left (search by
 name or alias); the neck shows the scale over every fret. Above the neck, switch the dot
 labels between note names, intervals and none, and the spelling between sharps and flats
-(the root keeps the spelling you chose). Your choice is saved and comes back at the next
-start. Your own scales and tunings go in `scales.toml` and `tunings.toml` next to
+(the root keeps the spelling you chose). On the right, pick the number of strings (4–9) and a
+tuning, set the fret count and a capo, mirror the neck for left-handed playing and choose a
+light, dark or system theme. **New tuning** makes your own tuning, a note and octave per
+string; your tunings can be edited and deleted there too. Everything is saved and comes back
+at the next start. Your own scales and tunings go in `scales.toml` and `tunings.toml` next to
 `settings.toml` in the app-data folder, in the format described in [SPEC.md](SPEC.md).
 
 ## Install
