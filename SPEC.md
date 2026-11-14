@@ -133,6 +133,25 @@ Built-in, defined as interval formulas:
 
 Plus user-defined scales (§3.3).
 
+The catalog is `crates/theory/data/scales.toml`; user scale files use the same format
+(ADR-20). One table per scale:
+
+```toml
+[[scale]]
+id = "phrygian-dominant"           # lowercase kebab-case, unique; settings refer to it
+name = "Phrygian dominant"
+aliases = ["Spanish Phrygian"]     # optional
+family = "Harmonic minor modes"    # listing group; optional for user scales ("Custom")
+intervals = ["1", "b2", "3", "4", "5", "b6", "b7"]
+```
+
+- Intervals are degree labels (ASCII or Unicode) starting at `1`, strictly ascending, all
+  within the octave. Labels are kept as written: write `#4` for Lydian, `b5` for Locrian.
+- Unknown fields, duplicate ids and broken interval lists are errors. In a user file each bad
+  item is reported (which item, why) and skipped; the others load.
+- A user scale with a built-in id replaces the built-in one; other user scales are listed
+  after the built-ins.
+
 ### 4.3 Chord catalog (Q17)
 
 Built-in, defined as interval formulas in the same format as scales:

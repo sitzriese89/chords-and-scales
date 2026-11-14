@@ -18,6 +18,17 @@ export {
   spellPitchClass,
 } from './wasm/theory_wasm.js';
 
+// Scale catalog (crates/theory-wasm/src/scales.rs): the built-ins, with the user scales last
+// passed to setUserScales merged over them. Intervals and note names are Unicode.
+export type {
+  ScaleFamily,
+  ScaleFileError,
+  ScaleInfo,
+  ScaleNote,
+  UserScalesReport,
+} from './wasm/theory_wasm.js';
+export { getScale, listScales, scaleNotes, setUserScales } from './wasm/theory_wasm.js';
+
 // Tunings and the fretboard mapping (crates/theory-wasm/src/fretboard.rs). Tunings list MIDI
 // notes lowest string first; positions use the fretboard's coordinates (string 1 = highest,
 // absolute frets, ADR-18), so they pass straight to the Fretboard component.

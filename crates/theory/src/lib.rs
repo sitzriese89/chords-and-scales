@@ -3,14 +3,21 @@
 //! No IO, no UI, no `wasm-bindgen`: everything here is testable with `cargo test` (ADR-2).
 //! The frontend reaches it through the `theory-wasm` crate.
 
+pub mod formula;
 pub mod fretboard;
 pub mod notes;
+pub mod scales;
 pub mod tuning;
 
+pub use formula::{Formula, FormulaError};
 pub use fretboard::{FretboardError, Position, positions};
 pub use notes::{
     Accidental, Accidentals, Glyphs, Interval, Letter, Note, NoteName, ParseError, PitchClass,
     Spelling,
+};
+pub use scales::{
+    CatalogError, ParsedScales, Scale, ScaleCatalog, ScaleFamily, ScaleNote, Source,
+    parse_user_scales,
 };
 pub use tuning::{
     InstrumentKind, ParsedTunings, Tuning, TuningCatalog, TuningError, TuningFileError,
