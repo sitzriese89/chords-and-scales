@@ -49,6 +49,7 @@ How the pieces fit:
 | What | Command |
 |---|---|
 | UI in a browser (fast iteration) | `pnpm --dir app dev` → http://localhost:1420 |
+| Fretboard fixture page (dev only) | `pnpm --dir app dev` → http://localhost:1420/dev/fretboard.html |
 | Desktop app | `pnpm --dir app tauri dev` |
 | Rust tests | `cargo test --workspace` |
 | Rust format / lint (CI fails on warnings) | `cargo fmt --all` / `cargo clippy --workspace --all-targets -- -D warnings` |
@@ -64,6 +65,7 @@ crates/theory/          pure music theory (no IO, no UI)
   data/                 built-in catalogs and rules (TOML, embedded)
 crates/theory-wasm/     wasm-bindgen bindings, one module per core area
 app/                    Svelte + TypeScript frontend (Vite)
+  dev/                  dev-only fixture pages (not built)
   src-tauri/            Tauri 2 shell: filesystem commands only
 docs/                   roadmap, background
 ```
@@ -86,6 +88,15 @@ Svelte + TypeScript in `app/src`. Use `pnpm --dir app dev` for fast iteration. T
 theory core through the WASM package and never does theory itself. Stored data goes through the
 `Storage` interface (ADR-4); a new stored document must work in both the Tauri and the browser
 implementation.
+
+Presentational components can be looked at on dev-only fixture pages in `app/dev/`, with
+hand-written sample data (ADR-18). `pnpm --dir app dev` serves them; `vite build` leaves them
+out.
+
+- Fretboard (`app/src/lib/fretboard/`):
+  http://localhost:1420/dev/fretboard.html. The controls set strings, frets, capo, labels,
+  width, left-handed, colour by degree and a dimmed overlay; the same settings work as URL
+  parameters, e.g. `?strings=9&frets=27&capo=2&left&degrees&overlay&labels=intervals`.
 
 ## Tests
 

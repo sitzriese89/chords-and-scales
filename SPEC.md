@@ -167,10 +167,15 @@ Plus user-defined chords (§3.3).
 - **No** multiscale/fanned-fret visualization.
 - **Orientation:** horizontal; **left-handed mirror toggle**.
 - **Visual encoding:**
-  - Root note visually emphasized
+  - Root note visually emphasized: drawn as a square, other notes as circles
   - Optional per-interval/degree coloring
-  - Inlay markers at frets 3, 5, 7, 9, 12 (and octave repeats)
+  - Dimmed notes (e.g. the scale behind a chord) drawn smaller
+  - Inlay markers at frets 3, 5, 7, 9, 12 (and octave repeats; double at 12 and 24)
+  - Realistic fret spacing; the neck scales to the window width
   - Accessible palette; never rely on color alone (shape/label redundancy)
+- **Interaction:** click a position, or use the keyboard: Tab reaches the
+  fretboard, arrow keys move between positions, Enter/Space activate. Every
+  position has a spoken name (string, fret, note). (ADR-18)
 - **Dot labels (toggle):** note names / intervals (scale degrees: 1, ♭3, 5…) / none.
 
 ### 5.2 Tab view (Q4, Q13)
