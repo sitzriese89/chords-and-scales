@@ -106,7 +106,7 @@ implementation.
 ## Releasing
 
 Releases are built by `.github/workflows/release.yml` when a tag `v<version>` is pushed
-(ADR-15). It produces a **draft** GitHub Release; nothing is published without a person.
+(ADR-16). It produces a **draft** GitHub Release; nothing is published without a person.
 
 1. In a PR, set the new version everywhere and describe it:
    - `version` in `[workspace.package]` of the root `Cargo.toml` (the crates inherit it), then

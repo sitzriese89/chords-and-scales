@@ -102,6 +102,9 @@ Files are hand-editable and shareable; the UI offers import/export of them.
   (e.g. `D♭` stays `D♭` while the toggle is on sharps); all other notes follow
   the toggle.
 - Theory-correct per-key spelling is intentionally **not** implemented.
+- Note names can be typed in ASCII (`C#`, `Db`) or with Unicode signs (`C♯`, `D♭`), in
+  either letter case, double sharps and flats included (`F##`, `Fx`, `E𝄫`). The app shows
+  ♯ and ♭.
 
 ### 4.2 Scale catalog (Q12)
 
