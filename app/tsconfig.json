@@ -14,6 +14,14 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src/**/*.ts", "src/**/*.js", "src/**/*.svelte", "*.config.ts", "*.config.js"],
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.js",
+    "src/**/*.svelte",
+    "dev/**/*.ts",
+    "dev/**/*.svelte",
+    "*.config.ts",
+    "*.config.js"
+  ],
   "exclude": ["src/lib/wasm"]
 }

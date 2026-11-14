@@ -4,6 +4,20 @@ import init from './wasm/theory_wasm.js';
 
 export { version } from './wasm/theory_wasm.js';
 
+// Notes and intervals (crates/theory-wasm/src/notes.rs). Inputs accept ASCII and Unicode
+// (`Db`, `D♭`); outputs are Unicode, for display. Invalid input throws an Error.
+export type { Accidentals } from './wasm/theory_wasm.js';
+export {
+  formatInterval,
+  formatNote,
+  formatNoteName,
+  intervalLabel,
+  intervalSemitones,
+  parseNote,
+  pitchClassOf,
+  spellPitchClass,
+} from './wasm/theory_wasm.js';
+
 let ready: Promise<void> | undefined;
 
 /**
