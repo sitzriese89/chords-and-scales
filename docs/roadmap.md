@@ -53,7 +53,7 @@ Any scale, any tuning, 4–9 strings, on a fretboard and as tab. First public re
 | M1.6 Theme tokens, light and dark | [#7][7] | M0.1 | Done (#40) |
 | M1.7 Storage: settings, last view and user files | [#8][8] | M0.1 | Done (#38) |
 | M1.8 Scale explorer view | [#9][9] | M1.2, M1.3, M1.5, M1.7 | Done (#44) |
-| M1.9 Instrument and tuning settings | [#10][10] | M1.3, M1.5, M1.6, M1.7 | Open |
+| M1.9 Instrument and tuning settings | [#10][10] | M1.3, M1.5, M1.6, M1.7 | Done (#45) |
 | M1.10 Tab view | [#11][11] | M1.4, M1.8 | Open |
 | M1.11 Custom scale editor | [#12][12] | M1.2, M1.7, M1.8 | Open |
 | M1.12 Release workflow for Windows, macOS and Linux | [#13][13] | M0.1 | Done (#37) |
