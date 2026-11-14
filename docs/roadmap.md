@@ -47,7 +47,7 @@ Any scale, any tuning, 4–9 strings, on a fretboard and as tab. First public re
 |---|---|---|---|
 | M1.1 Pitch, interval and note-spelling model | [#2][2] | M0.1 | Done (#36) |
 | M1.2 Scale catalog in TOML | [#3][3] | M1.1 | Open |
-| M1.3 Tunings and fretboard mapping | [#4][4] | M1.1 | Open |
+| M1.3 Tunings and fretboard mapping | [#4][4] | M1.1 | Done (#42) |
 | M1.4 Scale positions: fret window and 3-notes-per-string | [#5][5] | M1.2, M1.3 | Open |
 | M1.5 Fretboard SVG component | [#6][6] | M0.1 | Done (#39) |
 | M1.6 Theme tokens, light and dark | [#7][7] | M0.1 | Done (#40) |
