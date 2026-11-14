@@ -25,6 +25,7 @@ ADR-1 to ADR-13 come from the design interview behind [SPEC.md](SPEC.md) (decisi
 | 12 | [Audio is a Web Audio string synth](#adr-12-audio-is-a-web-audio-string-synth) | Accepted |
 | 13 | [English only](#adr-13-english-only) | Accepted |
 | 14 | [The WASM package is built by wasm-pack into the app's source tree](#adr-14-the-wasm-package-is-built-by-wasm-pack-into-the-apps-source-tree) | Accepted |
+| 19 | [Theme tokens are hand-written CSS, checked by tests](#adr-19-theme-tokens-are-hand-written-css-checked-by-tests) | Accepted |
 
 ---
 
@@ -215,3 +216,33 @@ module bytes to `initTheory()` from a vitest setup file, since jsdom can't fetch
 - Loading is asynchronous once, at startup; every call after that is synchronous.
 - A bundler-target build (ESM WASM imports via a Vite plugin) would drop `initTheory()`;
   switching means a new ADR.
+
+## ADR-19: Theme tokens are hand-written CSS, checked by tests
+
+**Context.** ADR-11 makes the theme tokens a contract for the app and for v4 export and user
+themes. The app needs light and dark, following the OS unless the user picks one, and the
+token values must meet WCAG AA contrast in both. The values have to live somewhere both the
+browser and a contrast test can read, without a build step or a second copy that can drift.
+
+**Decision.** `app/src/styles/tokens.css` is the single source: plain custom properties with
+opaque `#rrggbb` values. Light is the `:root` default; a `prefers-color-scheme: dark` block
+applies dark unless `data-theme="light"` is on the root element, and a
+`:root[data-theme="dark"]` block applies dark regardless of the OS. `applyTheme()` in
+`app/src/styles/theme.ts` sets or clears `data-theme` for a `'system' | 'light' | 'dark'`
+preference. A vitest test parses `tokens.css` with the DOM's CSS parser and checks that both
+themes define exactly the token list, that the two dark blocks are identical, the WCAG AA
+contrast pairs (4.5:1 for text, 3:1 for graphics) and that the 12 degree colours stay apart
+in OKLab, including under simulated protanopia, deuteranopia and tritanopia. Another test
+checks every token has a row in `docs/theme-tokens.md`. Names follow `--<area>[-<part>]`, and
+`--<fill>-text` is the text colour on the fill `--<fill>`.
+
+**Consequences.**
+- No generator and no runtime injection: exports can embed the same file, and a theme is just
+  a block of the same properties.
+- The dark values are written twice (CSS can't share one block between a media query and an
+  attribute selector without `light-dark()`, which older WebKitGTK lacks); the test catches
+  drift.
+- `light-dark()`, translucent values and `var()` references between tokens are out until the
+  test can resolve them.
+- jsdom ignores media queries, so the OS-preference path is checked structurally and by hand,
+  not by a rendering test.
