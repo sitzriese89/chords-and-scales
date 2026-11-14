@@ -4,6 +4,15 @@ Chords and scales visualization tool for different guitar tunings and other usef
 What it does: [SPEC.md](SPEC.md). Plan and status: [docs/roadmap.md](docs/roadmap.md).
 Contributing: [CONTRIBUTING.md](CONTRIBUTING.md) · design decisions: [ADR.md](ADR.md).
 
+## Using it
+
+Pick or type a root (`A`, `F#`, `Db`) and pick a scale from the list on the left (search by
+name or alias); the neck shows the scale over every fret. Above the neck, switch the dot
+labels between note names, intervals and none, and the spelling between sharps and flats
+(the root keeps the spelling you chose). Your choice is saved and comes back at the next
+start. Your own scales and tunings go in `scales.toml` and `tunings.toml` next to
+`settings.toml` in the app-data folder, in the format described in [SPEC.md](SPEC.md).
+
 ## Install
 
 Early development: there are no releases yet. Once there are, installers for Windows, macOS

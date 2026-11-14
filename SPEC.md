@@ -88,6 +88,9 @@ Files are hand-editable and shareable; the UI offers import/export of them.
   left-handed), the last instrument (kind, string count, tuning, fret count, capo) and the
   last view (root, scale). It is created with the defaults on first start, read once at start
   and saved on every change.
+- The user's own scales and tunings are `scales.toml` and `tunings.toml`, in the format of the
+  built-in catalogs (§4.2, §5.1). They are read at start; a broken item is skipped and listed
+  in a collapsed note in the window, and the rest load (ADR-23).
 - A value the app doesn't understand falls back to its default and the app shows a warning
   naming it. A file that can't be used at all (not TOML, missing or unsupported version) is
   kept as `settings-backup.toml`, the defaults are used, and the app says so. It never
@@ -218,6 +221,14 @@ Plus user-defined chords (§3.3).
   fretboard, arrow keys move between positions, Enter/Space activate. Every
   position has a spoken name (string, fret, note). (ADR-18)
 - **Dot labels (toggle):** note names / intervals (scale degrees: 1, ♭3, 5…) / none.
+- **Scale explorer** (the main view, ADR-23): pick or type a root and pick a scale from a
+  list grouped by family, with a search over names and aliases; the neck shows every note of
+  the scale across all frets of the current instrument, the root as a square, with the scale
+  spelled out above it. The label and sharp/flat toggles sit next to the neck; interval
+  labels are the scale's own (`♯4` in Lydian). Root, scale, labels and sharps/flats are saved
+  on every change and come back at the next start. The window has regions for the picker,
+  the neck, the instrument settings and the docked chord panel (§5.3); on a narrow window
+  they stack.
 
 ### 5.2 Tab view (Q4, Q13)
 

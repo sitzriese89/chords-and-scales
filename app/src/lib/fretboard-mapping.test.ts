@@ -1,9 +1,16 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { DEFAULT_SETTINGS } from './settings/schema';
-import { fretboardPositions, parseNote, type Tuning, tuningCatalog } from './theory';
+import {
+  fretboardPositions,
+  getTuning,
+  listTunings,
+  parseNote,
+  setUserTunings,
+  type Tuning,
+} from './theory';
 
 const standard = (): Tuning => {
-  const tuning = tuningCatalog().tunings.find((t) => t.id === 'guitar-6-standard');
+  const tuning = getTuning('guitar-6-standard');
   if (!tuning) throw new Error('no standard tuning');
   return tuning;
 };
@@ -12,9 +19,14 @@ const E = 4;
 const A = 9;
 
 describe('tunings and fretboard mapping (WASM)', () => {
+  afterEach(() => {
+    setUserTunings('');
+  });
+
   it('lists the built-in presets, lowest string first', () => {
-    const { tunings, errors } = tuningCatalog();
-    expect(errors).toEqual([]);
+    const tunings = listTunings();
+    expect(tunings[0]).toEqual(standard());
+    expect(getTuning('no-such-tuning')).toBeUndefined();
     expect(standard()).toEqual({
       id: 'guitar-6-standard',
       name: 'Standard',
@@ -52,8 +64,8 @@ describe('tunings and fretboard mapping (WASM)', () => {
     expect(Math.min(...capo.map((p) => p.fret))).toBe(2);
   });
 
-  it('merges user tunings and reports the bad items', () => {
-    const { tunings, errors } = tuningCatalog(`
+  it('merges user tunings and reports the bad items like user scales', () => {
+    const report = setUserTunings(`
       [[tuning]]
       id = "guitar-6-drop-d"
       name = "My drop D"
@@ -65,16 +77,44 @@ describe('tunings and fretboard mapping (WASM)', () => {
       name = "Three"
       kind = "bass"
       notes = ["E1", "A1", "D2"]
+
+      [[tuning]]
+      id = "guitar-4-mine"
+      name = "Mine"
+      kind = "guitar"
+      notes = ["D3", "G3", "B3", "E4"]
     `);
-    expect(tunings.find((t) => t.id === 'guitar-6-drop-d')?.name).toBe('My drop D');
-    expect(tunings.some((t) => t.id === 'bass-3')).toBe(false);
-    expect(errors).toEqual([
-      { number: 2, id: 'bass-3', message: expect.stringMatching(/tuning 2.*3 strings/) },
-    ]);
+    // Same shape as setUserScales: 0-based item, null when there is no id or no item.
+    expect(report).toEqual({
+      loaded: ['guitar-6-drop-d', 'guitar-4-mine'],
+      errors: [{ item: 1, id: 'bass-3', message: expect.stringMatching(/^tuning 2.*3 strings/) }],
+    });
+    const tunings = listTunings();
+    expect(getTuning('guitar-6-drop-d')?.name).toBe('My drop D');
+    expect(tunings.findIndex((t) => t.id === 'guitar-6-drop-d')).toBe(1);
+    expect(tunings.at(-1)?.id).toBe('guitar-4-mine');
+    expect(getTuning('bass-3')).toBeUndefined();
+
+    expect(setUserTunings('')).toEqual({ loaded: [], errors: [] });
+    expect(getTuning('guitar-6-drop-d')?.name).toBe('Drop D');
+    expect(getTuning('guitar-4-mine')).toBeUndefined();
+  });
+
+  it('reports a tunings file that is not TOML as a whole, without throwing', () => {
+    setUserTunings(
+      '[[tuning]]\nid = "guitar-4-mine"\nname = "M"\nkind = "guitar"\nnotes = ["D3", "G3", "B3", "E4"]\n',
+    );
+    const report = setUserTunings('[[tuning]');
+    expect(report).toEqual({
+      loaded: [],
+      errors: [{ item: null, id: null, message: expect.stringMatching(/^not valid TOML/) }],
+    });
+    // The user tunings are gone; the built-ins stay.
+    expect(getTuning('guitar-4-mine')).toBeUndefined();
+    expect(getTuning('guitar-6-standard')).toBeDefined();
   });
 
   it('throws errors for invalid input', () => {
-    expect(() => tuningCatalog('[[tuning]')).toThrow(/not valid TOML/);
     expect(() => fretboardPositions(standard(), 11, 0, [E], E)).toThrow(/12 to 27 frets/);
     expect(() => fretboardPositions(standard(), 24, 24, [E], E)).toThrow(/below the last fret/);
     expect(() => fretboardPositions(standard(), 24, 0, [12], E)).toThrow(/not a pitch class/);

@@ -7,8 +7,9 @@ mod fretboard;
 mod meta;
 mod notes;
 mod scales;
+mod user_files;
 
-pub use fretboard::{fretboard_positions, tuning_catalog};
+pub use fretboard::{fretboard_positions, get_tuning, list_tunings, set_user_tunings};
 pub use meta::version;
 pub use notes::{
     Accidentals, format_interval, format_note, format_note_name, interval_label,
