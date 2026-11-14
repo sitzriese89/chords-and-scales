@@ -18,22 +18,23 @@ export {
   spellPitchClass,
 } from './wasm/theory_wasm.js';
 
+// User catalog files (crates/theory-wasm/src/user_files.rs, ADR-23). Scales and tunings load
+// the same way: `setUserScales(toml)` / `setUserTunings(toml)` replace the user items in the
+// current catalog and return a UserFileReport (0-based `item`, null for the whole file; a bad
+// file never throws). Call them at start and after each change to the user file.
+export type { UserFileError, UserFileReport } from './wasm/theory_wasm.js';
+
 // Scale catalog (crates/theory-wasm/src/scales.rs): the built-ins, with the user scales last
 // passed to setUserScales merged over them. Intervals and note names are Unicode.
-export type {
-  ScaleFamily,
-  ScaleFileError,
-  ScaleInfo,
-  ScaleNote,
-  UserScalesReport,
-} from './wasm/theory_wasm.js';
+export type { ScaleFamily, ScaleInfo, ScaleNote } from './wasm/theory_wasm.js';
 export { getScale, listScales, scaleNotes, setUserScales } from './wasm/theory_wasm.js';
 
-// Tunings and the fretboard mapping (crates/theory-wasm/src/fretboard.rs). Tunings list MIDI
-// notes lowest string first; positions use the fretboard's coordinates (string 1 = highest,
-// absolute frets, ADR-18), so they pass straight to the Fretboard component.
-export type { NotePosition, Tuning, TuningCatalog, TuningItemError } from './wasm/theory_wasm.js';
-export { fretboardPositions, tuningCatalog } from './wasm/theory_wasm.js';
+// Tunings and the fretboard mapping (crates/theory-wasm/src/fretboard.rs): the built-ins,
+// with the user tunings last passed to setUserTunings on top. Tunings list MIDI notes lowest
+// string first; positions use the fretboard's coordinates (string 1 = highest, absolute
+// frets, ADR-18), so they pass straight to the Fretboard component.
+export type { NotePosition, Tuning } from './wasm/theory_wasm.js';
+export { fretboardPositions, getTuning, listTunings, setUserTunings } from './wasm/theory_wasm.js';
 
 // Scale positions (crates/theory-wasm/src/positions.rs): a fret window and 3-notes-per-string
 // patterns, for a tuning and a scale given as pitch classes plus root. Positions use the

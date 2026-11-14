@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import {
   fretboardPositions,
+  getTuning,
   fretWindow,
   scaleNotes,
   threeNotesPerString,
   type Tuning,
-  tuningCatalog,
 } from './theory';
 
 const tuning = (id: string): Tuning => {
-  const found = tuningCatalog().tunings.find((t) => t.id === id);
+  const found = getTuning(id);
   if (!found) throw new Error(`no tuning ${id}`);
   return found;
 };

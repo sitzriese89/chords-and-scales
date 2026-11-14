@@ -31,8 +31,9 @@ ADR-1 to ADR-13 come from the design interview behind [SPEC.md](SPEC.md) (decisi
 | 18 | [The fretboard component: absolute frets, string 1 on top, one keyboard grid](#adr-18-the-fretboard-component-absolute-frets-string-1-on-top-one-keyboard-grid) | Accepted |
 | 19 | [Theme tokens are hand-written CSS, checked by tests](#adr-19-theme-tokens-are-hand-written-css-checked-by-tests) | Accepted |
 | 20 | [The scale catalog: one shared formula type, per-item errors, user ids replace built-ins](#adr-20-the-scale-catalog-one-shared-formula-type-per-item-errors-user-ids-replace-built-ins) | Accepted |
-| 21 | [Tunings list strings low to high; positions come out in fretboard coordinates](#adr-21-tunings-list-strings-low-to-high-positions-come-out-in-fretboard-coordinates) | Accepted |
+| 21 | [Tunings list strings low to high; positions come out in fretboard coordinates](#adr-21-tunings-list-strings-low-to-high-positions-come-out-in-fretboard-coordinates) | Accepted; WASM tuning API superseded by ADR-23 |
 | 22 | [Scale positions filter the fretboard mapping; 3NPS patterns take the lowest octave that fits](#adr-22-scale-positions-filter-the-fretboard-mapping-3nps-patterns-take-the-lowest-octave-that-fits) | Accepted |
+| 23 | [The scale explorer: one layout, user catalogs loaded alike, labels looked up from the core](#adr-23-the-scale-explorer-one-layout-user-catalogs-loaded-alike-labels-looked-up-from-the-core) | Accepted |
 
 ---
 
@@ -425,7 +426,8 @@ as data it can list and group, without doing theory (ADR-2).
 - The WASM binding holds one current catalog: `setUserScales(toml)` replaces the user scales
   and returns the report, `listScales()`, `getScale(id)` and `scaleNotes(id, root,
   accidentals)` read it. Results are plain objects serialised with `serde-wasm-bindgen`, typed
-  in TypeScript by a custom section; labels and note names are Unicode.
+  in TypeScript by a custom section; labels and note names are Unicode. (ADR-23 gives the
+  report the shared name `UserFileReport` and loads user tunings the same way.)
 
 **Consequences.**
 - The chord catalog reuses `Formula` and the same parse-and-report pattern with its own
@@ -468,7 +470,10 @@ bad entry.
 - The WASM layer passes records as plain objects through `serde-wasm-bindgen`, typed by a
   hand-written TypeScript section: `tuningCatalog(userToml?)` returns built-ins merged with
   the user's tunings plus the item errors, and `fretboardPositions(tuning, …)` takes a tuning
-  object back (validated again), so the core keeps no state.
+  object back (validated again), so the core keeps no state. *Superseded by ADR-23:* the
+  binding now holds the tuning catalog like the scale catalog (`setUserTunings`,
+  `listTunings`, `getTuning`), with the shared 0-based error shape; `fretboardPositions`
+  still takes a tuning object.
 
 **Consequences.**
 - The scale explorer passes positions to the fretboard without remapping; only the core
@@ -517,3 +522,56 @@ on a short neck or above a capo it may not fit where it is usually played.
   in fifths) is generated as is: playability isn't judged.
 - The binding module keeps its own copy of the tuning and position records of
   `fretboard.rs`, so the two can be merged into shared helpers later.
+
+## ADR-23: The scale explorer: one layout, user catalogs loaded alike, labels looked up from the core
+
+**Context.** M1.8 puts the pieces together: settings (ADR-17), the scale and tuning catalogs
+(ADR-20, ADR-21) and the fretboard (ADR-18). Instrument settings (M1.9), the tab view
+(M1.10), the editors (M1.11) and the chord panel (M2.5, ADR-10) all build on the layout. The
+two catalogs loaded user files in two different ways (a stateful `setUserScales` with 0-based
+errors; a stateless `tuningCatalog(userToml?)` with 1-based errors that threw for a broken
+file), and the explorer is the first code that loads both.
+
+**Decision.**
+- **Layout.** `App.svelte` is a CSS grid with four named regions: `picker` (root and scale),
+  `board` (the view toggles above the fretboard and the scale summary), `settings`
+  (instrument settings: M1.9 mounts its panel there; until then it shows a summary) and
+  `chords` (the docked chord panel, a placeholder until M2.5). On narrow windows they stack.
+  The label-mode and sharp/flat toggles belong to the view and sit in `board`, not in
+  `settings`. The regions render once the settings and the user catalogs have loaded, so the
+  last view appears without a flash of the defaults.
+- **The view is the settings.** Root, scale, label mode and sharp/flat are read from and
+  written to the settings (`last_view.root`, `last_view.scale`, `display.labels`,
+  `display.accidentals`); every change saves (ADR-17), so restart restores the view. The root
+  is a text field with the 17 common spellings offered as suggestions (made by the core's
+  `spellPitchClass`); what is typed is checked and normalised by `formatNoteName` (`db` →
+  `D♭`) and stored as shown, keeping its spelling. A stored root, scale or tuning that can't
+  be used is shown as the default with a note, but not overwritten.
+- **Labels are looked up, not computed.** `explorerView()` asks the core for the scale's
+  notes on the root (`scaleNotes`, names by the preference, root as typed) and for the
+  positions (`fretboardPositions`), then labels each position by its pitch class from the
+  scale's notes: the note name, or the scale's own interval label (`♯4` in Lydian, where the
+  position's default label would be `♭5`). Degree 0 is the root (a square, ADR-18).
+- **User catalogs load one way.** Both catalogs are held by the binding:
+  `setUserScales(toml)` and `setUserTunings(toml)` replace the user items and return a
+  `UserFileReport { loaded: string[], errors: UserFileError[] }`, where an error is
+  `{ item: number | null, id: string | null, message }`: `item` 0-based, `null` for the file as
+  a whole. Neither throws for a bad file; it is reported and leaves the built-ins.
+  `listTunings()` and `getTuning(id)` read the tuning catalog as `listScales()`/`getScale()`
+  read the scales; `fretboardPositions` keeps taking a tuning object, so an unsaved custom
+  tuning can be shown too. The messages keep numbering items from 1, as people count them.
+- **User files.** The documents `scales` and `tunings` (`scales.toml`, `tunings.toml` in the
+  app-data folder) hold the user's scales and tunings in the built-in format. The app reads
+  both at start (`loadUserCatalogs`); a missing document means none. Skipped items are listed
+  in a collapsed note under the title, prefixed with the file name. The editors (M1.9, M1.11)
+  write these documents and call the matching `setUser…` again.
+
+**Consequences.**
+- M1.9 replaces the content of the `settings` region and needn't move the view toggles; M2.5
+  fills `chords`.
+- The binding holds state for both catalogs, so the app must call the setter after every
+  change to a user file. The catalogs are read once when the picker mounts: the editors will
+  need a way to tell the picker the catalog changed (a revision value is enough).
+- A user who edits `scales.toml` or `tunings.toml` by hand sees the change on the next start.
+- `explorerView` is plain TypeScript over WASM calls, so it is tested without the DOM, and the
+  component test checks every dot of A Dorian on standard tuning.
