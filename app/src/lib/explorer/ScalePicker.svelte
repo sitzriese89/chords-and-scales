@@ -8,11 +8,17 @@
 <script lang="ts">
   import { getSettings } from '../settings';
   import { listScales } from '../theory';
+  import { getUserCatalogs } from '../user-catalogs.svelte';
   import { displayRoot, rootChoices } from './view';
 
   const settings = getSettings();
+  const catalogs = getUserCatalogs();
   const roots = rootChoices();
-  const families = listScales();
+  const families = $derived.by(() => {
+    // Re-read the catalog when a user scale was saved or deleted (ADR-24).
+    void catalogs.revision;
+    return listScales();
+  });
 
   let rootError = $state<string | null>(null);
   let query = $state('');

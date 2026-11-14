@@ -6,6 +6,8 @@ import {
   formatNoteName,
   intervalLabel,
   intervalSemitones,
+  noteFromParts,
+  noteParts,
   parseNote,
   pitchClassOf,
   spellPitchClass,
@@ -14,6 +16,22 @@ import {
 const twelve = (f: (n: number) => string) => Array.from({ length: 12 }, (_, n) => f(n)).join(' ');
 
 describe('notes (WASM)', () => {
+  it('splits a note into pitch class and octave and puts it back together', () => {
+    expect(noteParts(parseNote('E2'))).toEqual({ pitchClass: 4, octave: 2 });
+    expect(noteParts(parseNote('B0'))).toEqual({ pitchClass: 11, octave: 0 });
+    expect(noteParts(0)).toEqual({ pitchClass: 0, octave: -1 });
+    expect(noteFromParts(4, 2)).toBe(parseNote('E2'));
+    expect(noteFromParts(0, 4)).toBe(60);
+    for (let midi = 0; midi <= 127; midi++) {
+      const { pitchClass, octave } = noteParts(midi);
+      expect(noteFromParts(pitchClass, octave)).toBe(midi);
+    }
+    expect(() => noteParts(128)).toThrow(/not a MIDI note/);
+    expect(() => noteFromParts(12, 4)).toThrow(/not a pitch class/);
+    expect(() => noteFromParts(8, 9)).toThrow(/outside the MIDI range/);
+    expect(() => noteFromParts(0, -2)).toThrow(/outside the MIDI range/);
+  });
+
   it('parses ASCII and Unicode note names to the same pitch class', () => {
     expect(pitchClassOf('C')).toBe(0);
     expect(pitchClassOf('C#')).toBe(1);

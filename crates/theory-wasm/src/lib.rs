@@ -7,14 +7,18 @@ mod fretboard;
 mod meta;
 mod notes;
 mod positions;
+mod records;
 mod scales;
 mod user_files;
 
-pub use fretboard::{fretboard_positions, get_tuning, list_tunings, set_user_tunings};
+pub use fretboard::{
+    fretboard_positions, get_tuning, list_tunings, new_tuning_id, set_user_tunings,
+    write_tunings_toml,
+};
 pub use meta::version;
 pub use notes::{
     Accidentals, format_interval, format_note, format_note_name, interval_label,
-    interval_semitones, parse_note, pitch_class_of, spell_pitch_class,
+    interval_semitones, note_from_parts, note_parts, parse_note, pitch_class_of, spell_pitch_class,
 };
 pub use positions::{fret_window_positions, three_nps_patterns};
 pub use scales::{get_scale, list_scales, scale_notes, set_user_scales};

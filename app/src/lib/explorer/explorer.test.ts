@@ -5,7 +5,7 @@ import App from '../../App.svelte';
 import { defaultSettings, SETTINGS_DOCUMENT, serializeSettings, type Settings } from '../settings';
 import { BrowserStorage } from '../storage';
 import { setUserScales, setUserTunings } from '../theory';
-import { USER_SCALES_DOCUMENT, USER_TUNINGS_DOCUMENT } from '../user-catalogs';
+import { USER_SCALES_DOCUMENT, USER_TUNINGS_DOCUMENT } from '../user-catalogs.svelte';
 
 /**
  * A Dorian on six-string standard tuning, 24 frets, per string (1 = high E): `fret:label`.
@@ -241,7 +241,7 @@ notes = ["E1", "A1", "D2"]
 
     expect(screen.getByRole('heading', { name: 'C My scale' })).toBeInTheDocument();
     expect(new Set(dots().map((d) => d.string))).toEqual(new Set([1, 2, 3, 4]));
-    expect(screen.getByText(/High four, 4 strings/)).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'Tuning' })).toHaveValue('guitar-4-high');
     expect(screen.getByText('One item in your files could not be loaded')).toBeInTheDocument();
     expect(screen.getByText(/^tunings\.toml: tuning 2 \("bass-3"\)/)).toBeInTheDocument();
   });

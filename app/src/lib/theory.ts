@@ -6,13 +6,15 @@ export { version } from './wasm/theory_wasm.js';
 
 // Notes and intervals (crates/theory-wasm/src/notes.rs). Inputs accept ASCII and Unicode
 // (`Db`, `D♭`); outputs are Unicode, for display. Invalid input throws an Error.
-export type { Accidentals } from './wasm/theory_wasm.js';
+export type { Accidentals, NoteParts } from './wasm/theory_wasm.js';
 export {
   formatInterval,
   formatNote,
   formatNoteName,
   intervalLabel,
   intervalSemitones,
+  noteFromParts,
+  noteParts,
   parseNote,
   pitchClassOf,
   spellPitchClass,
@@ -32,9 +34,18 @@ export { getScale, listScales, scaleNotes, setUserScales } from './wasm/theory_w
 // Tunings and the fretboard mapping (crates/theory-wasm/src/fretboard.rs): the built-ins,
 // with the user tunings last passed to setUserTunings on top. Tunings list MIDI notes lowest
 // string first; positions use the fretboard's coordinates (string 1 = highest, absolute
-// frets, ADR-18), so they pass straight to the Fretboard component.
+// frets, ADR-18), so they pass straight to the Fretboard component. `writeTunings` turns
+// tunings into the text of `tunings.toml` (checked by the core) and `newTuningId` makes the id
+// of a new user tuning (ADR-24).
 export type { NotePosition, Tuning } from './wasm/theory_wasm.js';
-export { fretboardPositions, getTuning, listTunings, setUserTunings } from './wasm/theory_wasm.js';
+export {
+  fretboardPositions,
+  getTuning,
+  listTunings,
+  newTuningId,
+  setUserTunings,
+  writeTunings,
+} from './wasm/theory_wasm.js';
 
 // Scale positions (crates/theory-wasm/src/positions.rs): a fret window and 3-notes-per-string
 // patterns, for a tuning and a scale given as pitch classes plus root. Positions use the

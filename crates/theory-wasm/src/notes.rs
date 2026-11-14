@@ -4,8 +4,10 @@
 //! numbers 0 … 127, interval widths in semitones. Inputs accept ASCII and Unicode (`Db`,
 //! `D♭`); outputs are Unicode, for display. Invalid input throws a JS `Error`.
 
-use theory::{Glyphs, Interval, Note, NoteName, PitchClass, Spelling};
+use theory::{Glyphs, Interval, Note, NoteName, Spelling};
 use wasm_bindgen::prelude::*;
+
+use crate::records::to_pitch_class;
 
 /// The global sharp/flat preference.
 #[wasm_bindgen]
@@ -28,13 +30,6 @@ impl TryFrom<Accidentals> for theory::Accidentals {
             }
         }
     }
-}
-
-fn to_pitch_class(value: u32) -> Result<PitchClass, JsError> {
-    u8::try_from(value)
-        .ok()
-        .and_then(PitchClass::new)
-        .ok_or_else(|| JsError::new(&format!("{value} is not a pitch class (0 to 11)")))
 }
 
 /// The pitch class (0 = C … 11 = B) of a note name such as `C#`, `Db` or `E♭`.
@@ -80,6 +75,52 @@ pub fn format_note(midi: u32, accidentals: Accidentals) -> Result<String, JsErro
         .and_then(Note::from_midi)
         .ok_or_else(|| JsError::new(&format!("{midi} is not a MIDI note (0 to 127)")))?;
     Ok(note.format(accidentals.try_into()?, Glyphs::Unicode))
+}
+
+#[wasm_bindgen(typescript_custom_section)]
+const NOTE_PARTS: &str = r#"
+/** A note as pitch class and octave: `{ pitchClass: 4, octave: 2 }` is E2 (C4 = middle C). */
+export interface NoteParts {
+  pitchClass: number;
+  octave: number;
+}
+"#;
+
+#[wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen(typescript_type = "NoteParts")]
+    pub type NotePartsValue;
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct NotePartsRecord {
+    pitch_class: u8,
+    octave: i8,
+}
+
+/// The pitch class and octave of MIDI note `midi`: 40 → `{ pitchClass: 4, octave: 2 }`.
+#[wasm_bindgen(js_name = noteParts)]
+pub fn note_parts(midi: u32) -> Result<NotePartsValue, JsError> {
+    let note = u8::try_from(midi)
+        .ok()
+        .and_then(Note::from_midi)
+        .ok_or_else(|| JsError::new(&format!("{midi} is not a MIDI note (0 to 127)")))?;
+    crate::records::to_js(&NotePartsRecord {
+        pitch_class: note.pitch_class().value(),
+        octave: note.octave(),
+    })
+}
+
+/// The MIDI number of `pitchClass` in `octave`: `(4, 2)` → 40. Throws outside the MIDI range.
+#[wasm_bindgen(js_name = noteFromParts)]
+pub fn note_from_parts(pitch_class: u32, octave: i32) -> Result<u8, JsError> {
+    let pitch_class = to_pitch_class(pitch_class)?;
+    i8::try_from(octave)
+        .ok()
+        .and_then(|octave| Note::new(pitch_class, octave))
+        .map(Note::midi)
+        .ok_or_else(|| JsError::new(&format!("octave {octave} is outside the MIDI range")))
 }
 
 /// The width in semitones of an interval label such as `b3`, `#4` or `13`.
