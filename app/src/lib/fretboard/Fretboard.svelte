@@ -401,8 +401,9 @@
     fill: var(--fretboard-root-text, #ffffff);
   }
 
+  /* --fretboard-dot-text is the label colour on every --degree-* colour, the root's included. */
   .degrees .dot:not(.dim) .label {
-    fill: var(--fretboard-degree-text, var(--fretboard-dot-text, #ffffff));
+    fill: var(--fretboard-dot-text, #ffffff);
   }
 
   .dot.dim .label {
