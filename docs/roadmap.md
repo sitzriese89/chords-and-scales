@@ -50,7 +50,7 @@ Any scale, any tuning, 4–9 strings, on a fretboard and as tab. First public re
 | M1.3 Tunings and fretboard mapping | [#4][4] | M1.1 | Open |
 | M1.4 Scale positions: fret window and 3-notes-per-string | [#5][5] | M1.2, M1.3 | Open |
 | M1.5 Fretboard SVG component | [#6][6] | M0.1 | Open |
-| M1.6 Theme tokens, light and dark | [#7][7] | M0.1 | Open |
+| M1.6 Theme tokens, light and dark | [#7][7] | M0.1 | Done (#40) |
 | M1.7 Storage: settings, last view and user files | [#8][8] | M0.1 | Open |
 | M1.8 Scale explorer view | [#9][9] | M1.2, M1.3, M1.5, M1.7 | Open |
 | M1.9 Instrument and tuning settings | [#10][10] | M1.3, M1.5, M1.6, M1.7 | Open |
