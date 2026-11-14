@@ -30,6 +30,7 @@ ADR-1 to ADR-13 come from the design interview behind [SPEC.md](SPEC.md) (decisi
 | 17 | [Stored documents: flat named TOML files, versioned settings, dialogs in Rust](#adr-17-stored-documents-flat-named-toml-files-versioned-settings-dialogs-in-rust) | Accepted |
 | 18 | [The fretboard component: absolute frets, string 1 on top, one keyboard grid](#adr-18-the-fretboard-component-absolute-frets-string-1-on-top-one-keyboard-grid) | Accepted |
 | 19 | [Theme tokens are hand-written CSS, checked by tests](#adr-19-theme-tokens-are-hand-written-css-checked-by-tests) | Accepted |
+| 20 | [The scale catalog: one shared formula type, per-item errors, user ids replace built-ins](#adr-20-the-scale-catalog-one-shared-formula-type-per-item-errors-user-ids-replace-built-ins) | Accepted |
 
 ---
 
@@ -393,3 +394,43 @@ checks every token has a row in `docs/theme-tokens.md`. Names follow `--<area>[-
   test can resolve them.
 - jsdom ignores media queries, so the OS-preference path is checked structurally and by hand,
   not by a rendering test.
+
+## ADR-20: The scale catalog: one shared formula type, per-item errors, user ids replace built-ins
+
+**Context.** M1.2 fixes the TOML format that scales and, later, chords (M2.1) are written in
+(ADR-5). Chords need compound intervals (`9`, `#11`, `13`); scales stay within the octave.
+User scale files are hand-edited (SPEC §3.2), so one broken entry must not hide the rest, and
+a user may want to change a built-in scale, not only add new ones. The UI needs the catalog
+as data it can list and group, without doing theory (ADR-2).
+
+**Decision.**
+
+- `theory::Formula` is the shared type: a list of `Interval`s (ADR-15) that starts at `1` and
+  strictly ascends in semitones, labels kept as written. It knows nothing of octaves; the
+  scale validation adds "every interval below 12 semitones". `Formula::rotate` gives the mode
+  on a degree, with default labels.
+- `crates/theory/data/scales.toml` holds `[[scale]]` tables with `id` (lowercase kebab-case,
+  unique), `name`, optional `aliases`, `family` and `intervals`; unknown fields are errors.
+  Families are listed in the order they first appear. A user scale without a `family` goes
+  under `Custom`.
+- User files use the same format and are parsed item by item: the core takes a TOML string and
+  returns the valid scales plus one error per broken item (its index, its id if any, a
+  readable message); a file that is not TOML, or has keys other than `scale`, gives a
+  file-level error. Within a file the first item with an id wins.
+- Merging: a user scale with the id of a built-in one replaces it in place (keeping its spot
+  in the list unless its family differs); other user scales are added after the built-ins in
+  file order. Every scale records whether it is built in or from the user.
+- The WASM binding holds one current catalog: `setUserScales(toml)` replaces the user scales
+  and returns the report, `listScales()`, `getScale(id)` and `scaleNotes(id, root,
+  accidentals)` read it. Results are plain objects serialised with `serde-wasm-bindgen`, typed
+  in TypeScript by a custom section; labels and note names are Unicode.
+
+**Consequences.**
+- The chord catalog reuses `Formula` and the same parse-and-report pattern with its own
+  rules (compound intervals allowed).
+- A user can shadow a built-in scale by id, and the UI can show which ones are theirs. To get
+  the original back they remove their item.
+- The binding has state (the merged catalog), so the app calls `setUserScales` once at start
+  and after each change to the user file; the core stays stateless.
+- Built-in ids are a contract: settings and user files refer to them (`major` is the
+  settings default). Renaming one needs a settings migration.

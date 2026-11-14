@@ -5,9 +5,11 @@
 
 mod meta;
 mod notes;
+mod scales;
 
 pub use meta::version;
 pub use notes::{
     Accidentals, format_interval, format_note, format_note_name, interval_label,
     interval_semitones, parse_note, pitch_class_of, spell_pitch_class,
 };
+pub use scales::{get_scale, list_scales, scale_notes, set_user_scales};
