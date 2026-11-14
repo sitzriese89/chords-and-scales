@@ -13,3 +13,5 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 theory.workspace = true
 wasm-bindgen = "0.2.130"
+serde = { version = "1", features = ["derive"] }
+serde-wasm-bindgen = "0.6"

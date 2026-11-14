@@ -30,6 +30,7 @@ ADR-1 to ADR-13 come from the design interview behind [SPEC.md](SPEC.md) (decisi
 | 17 | [Stored documents: flat named TOML files, versioned settings, dialogs in Rust](#adr-17-stored-documents-flat-named-toml-files-versioned-settings-dialogs-in-rust) | Accepted |
 | 18 | [The fretboard component: absolute frets, string 1 on top, one keyboard grid](#adr-18-the-fretboard-component-absolute-frets-string-1-on-top-one-keyboard-grid) | Accepted |
 | 19 | [Theme tokens are hand-written CSS, checked by tests](#adr-19-theme-tokens-are-hand-written-css-checked-by-tests) | Accepted |
+| 21 | [Tunings list strings low to high; positions come out in fretboard coordinates](#adr-21-tunings-list-strings-low-to-high-positions-come-out-in-fretboard-coordinates) | Accepted |
 
 ---
 
@@ -393,3 +394,45 @@ checks every token has a row in `docs/theme-tokens.md`. Names follow `--<area>[-
   test can resolve them.
 - jsdom ignores media queries, so the OS-preference path is checked structurally and by hand,
   not by a rendering test.
+
+## ADR-21: Tunings list strings low to high; positions come out in fretboard coordinates
+
+**Context.** M1.3 adds tunings and the mapping of pitch classes onto the neck. Tunings are
+written the way players write them (`E A D G B E`, low string first) in a built-in TOML file
+and in the user's own file, while the fretboard component (ADR-18) numbers strings from the
+highest and uses absolute frets. The scale catalog (M1.2) is built at the same time, so the
+mapping can't take a scale type, and the app needs to keep working when a user file has a
+bad entry.
+
+**Decision.** In `crates/theory/src/tuning.rs` and `fretboard.rs`:
+
+- A `Tuning` is an id (lowercase kebab-case), a name, a kind (`guitar` | `bass`, a label only)
+  and 4–9 open-string `Note`s, **lowest string first**, each from C0 to C6. Notes need not
+  rise (re-entrant tunings). Built-in ids follow `<kind>-<strings>-<name>`
+  (`guitar-6-standard`, the settings default); a test enforces it for the built-ins only.
+- Built-ins and user tunings share one format (`[[tuning]]` tables with `id`, `name`, `kind`,
+  `notes`, unknown fields rejected). `parse_tunings` takes a string, no file IO. An item that
+  fails (missing or unknown field, bad note, invalid tuning, id repeated in the same file) is
+  skipped and reported with its 1-based number, its id if any, and the reason; the others
+  load. Only a document that isn't TOML or has keys other than `tuning` fails as a whole.
+  `TuningCatalog::merge` puts user tunings on top: a user tuning with a built-in id replaces
+  it in place, others are appended.
+- `positions(tuning, frets, capo, pitch_classes, root)` takes the pitch classes as a plain
+  slice and returns every matching position in **ADR-18 coordinates**: string 1 = highest,
+  absolute frets, ordered by string then fret, each with its note (MIDI), its interval from
+  the root (default label) and its degree (semitones, 0–11). Frets are 12–27. The capo sits
+  on fret `c`, 0 for none, and must be below the last fret: frets `c` … `frets` are listed,
+  so a capo on the second-to-last fret leaves two frets and one on the last fret is an error.
+- The WASM layer passes records as plain objects through `serde-wasm-bindgen`, typed by a
+  hand-written TypeScript section: `tuningCatalog(userToml?)` returns built-ins merged with
+  the user's tunings plus the item errors, and `fretboardPositions(tuning, …)` takes a tuning
+  object back (validated again), so the core keeps no state.
+
+**Consequences.**
+- The scale explorer passes positions to the fretboard without remapping; only the core
+  converts between "low string first" and "string 1 on top".
+- A user can override a preset by reusing its id, and a typo in one user tuning hides only
+  that tuning, with a message saying which and why.
+- Instrument kind doesn't restrict string count or range; the UI decides what to offer.
+- Positions don't carry spellings: the UI spells `pitchClass` through the note functions with
+  the sharp/flat preference, so the mapping doesn't depend on the root's spelling.

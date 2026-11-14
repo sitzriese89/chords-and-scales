@@ -1,0 +1,136 @@
+# Built-in tunings (SPEC §5.1, ADR-5, ADR-21). Embedded into the theory core at build time.
+#
+# One [[tuning]] table per preset:
+#   id    lowercase kebab-case, `<kind>-<strings>-<name>` for built-ins (`guitar-6-drop-d`)
+#   name  shown in the UI, next to the instrument and string count
+#   kind  "guitar" or "bass"
+#   notes the open strings with octaves (C4 = middle C), lowest string first, 4 to 9 of them
+#
+# User tunings use the same format; one with a built-in id replaces the built-in.
+# `cargo test -p theory` checks every entry here (`builtin_tunings_are_valid`).
+
+# Guitar, 6 strings
+
+[[tuning]]
+id = "guitar-6-standard"
+name = "Standard"
+kind = "guitar"
+notes = ["E2", "A2", "D3", "G3", "B3", "E4"]
+
+[[tuning]]
+id = "guitar-6-drop-d"
+name = "Drop D"
+kind = "guitar"
+notes = ["D2", "A2", "D3", "G3", "B3", "E4"]
+
+[[tuning]]
+id = "guitar-6-dadgad"
+name = "DADGAD"
+kind = "guitar"
+notes = ["D2", "A2", "D3", "G3", "A3", "D4"]
+
+[[tuning]]
+id = "guitar-6-open-g"
+name = "Open G"
+kind = "guitar"
+notes = ["D2", "G2", "D3", "G3", "B3", "D4"]
+
+[[tuning]]
+id = "guitar-6-open-d"
+name = "Open D"
+kind = "guitar"
+notes = ["D2", "A2", "D3", "F#3", "A3", "D4"]
+
+[[tuning]]
+id = "guitar-6-open-e"
+name = "Open E"
+kind = "guitar"
+notes = ["E2", "B2", "E3", "G#3", "B3", "E4"]
+
+[[tuning]]
+id = "guitar-6-open-c"
+name = "Open C"
+kind = "guitar"
+notes = ["C2", "G2", "C3", "G3", "C4", "E4"]
+
+[[tuning]]
+id = "guitar-6-eb-standard"
+name = "E♭ standard (half step down)"
+kind = "guitar"
+notes = ["Eb2", "Ab2", "Db3", "Gb3", "Bb3", "Eb4"]
+
+[[tuning]]
+id = "guitar-6-d-standard"
+name = "D standard (whole step down)"
+kind = "guitar"
+notes = ["D2", "G2", "C3", "F3", "A3", "D4"]
+
+[[tuning]]
+id = "guitar-6-drop-c"
+name = "Drop C"
+kind = "guitar"
+notes = ["C2", "G2", "C3", "F3", "A3", "D4"]
+
+# Extended-range guitar
+
+[[tuning]]
+id = "guitar-7-standard"
+name = "Standard"
+kind = "guitar"
+notes = ["B1", "E2", "A2", "D3", "G3", "B3", "E4"]
+
+[[tuning]]
+id = "guitar-7-drop-a"
+name = "Drop A"
+kind = "guitar"
+notes = ["A1", "E2", "A2", "D3", "G3", "B3", "E4"]
+
+[[tuning]]
+id = "guitar-8-standard"
+name = "Standard"
+kind = "guitar"
+notes = ["F#1", "B1", "E2", "A2", "D3", "G3", "B3", "E4"]
+
+[[tuning]]
+id = "guitar-8-drop-e"
+name = "Drop E"
+kind = "guitar"
+notes = ["E1", "B1", "E2", "A2", "D3", "G3", "B3", "E4"]
+
+[[tuning]]
+id = "guitar-9-standard"
+name = "Standard"
+kind = "guitar"
+notes = ["C#1", "F#1", "B1", "E2", "A2", "D3", "G3", "B3", "E4"]
+
+# Bass
+
+[[tuning]]
+id = "bass-4-standard"
+name = "Standard"
+kind = "bass"
+notes = ["E1", "A1", "D2", "G2"]
+
+[[tuning]]
+id = "bass-4-drop-d"
+name = "Drop D"
+kind = "bass"
+notes = ["D1", "A1", "D2", "G2"]
+
+[[tuning]]
+id = "bass-5-standard"
+name = "Standard"
+kind = "bass"
+notes = ["B0", "E1", "A1", "D2", "G2"]
+
+[[tuning]]
+id = "bass-5-high-c"
+name = "High C"
+kind = "bass"
+notes = ["E1", "A1", "D2", "G2", "C3"]
+
+[[tuning]]
+id = "bass-6-standard"
+name = "Standard"
+kind = "bass"
+notes = ["B0", "E1", "A1", "D2", "G2", "C3"]

@@ -161,9 +161,31 @@ Plus user-defined chords (§3.3).
 
 - **Instruments:** 4–9 strings, guitar and bass.
 - **Tunings:** presets per string count (Standard E, Drop D, DADGAD, 7/8-string
-  standard, 4/5/6-string bass standard, …) plus fully custom per-string tuning.
-- **Fret count:** configurable, default 24.
-- **Capo:** supported as an offset.
+  standard, 4/5/6-string bass standard, …) plus fully custom per-string tuning. (ADR-21)
+  - Built-in presets (`crates/theory/data/tunings.toml`), ids `<kind>-<strings>-<name>`:
+    - Guitar, 6 strings: standard (`guitar-6-standard`, E A D G B E), Drop D, DADGAD,
+      open G, open D, open E, open C, E♭ standard, D standard, Drop C.
+    - Guitar, 7 strings: standard (B E A D G B E), Drop A. 8 strings: standard
+      (F♯ B E A D G B E), Drop E. 9 strings: standard (C♯ F♯ B E A D G B E).
+    - Bass, 4 strings: standard (E A D G), Drop D. 5 strings: standard (B E A D G),
+      high C (E A D G C). 6 strings: standard (B E A D G C).
+  - Format, shared by the built-ins and the user's tunings file:
+
+    ```toml
+    [[tuning]]
+    id = "guitar-6-open-c"   # lowercase kebab-case, at most 64 characters
+    name = "Open C"          # shown in the UI
+    kind = "guitar"          # "guitar" or "bass"
+    notes = ["C2", "G2", "C3", "G3", "C4", "E4"]   # open strings, lowest string first
+    ```
+
+    4–9 notes with octaves (C4 = middle C), each from C0 to C6; they need not rise from
+    string to string. A user tuning with a built-in id replaces the built-in. An invalid
+    item is skipped and reported with its number and the reason; the other items still
+    load. A file with other top-level keys, or that isn't TOML, is refused as a whole.
+- **Fret count:** configurable, 12–27, default 24.
+- **Capo:** supported as an offset: a capo on fret *c* (0 = none, below the last fret)
+  hides frets below *c*; fret *c* acts as the open string and frets keep their numbers.
 - **No** multiscale/fanned-fret visualization.
 - **Orientation:** horizontal; **left-handed mirror toggle**.
 - **Visual encoding:**

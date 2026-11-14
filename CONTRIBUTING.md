@@ -75,7 +75,9 @@ docs/                   roadmap, background
 ### Add a scale, chord or tuning
 
 Edit the TOML in `crates/theory/data/`. Run `cargo test -p theory`: the catalog validation
-tests reject unknown fields, duplicate ids and malformed interval lists.
+tests reject unknown fields, duplicate ids and malformed interval lists. Tunings
+(`tunings.toml`, format in SPEC §5.1) use ids `<kind>-<strings>-<name>`, list their notes
+lowest string first, and must keep a standard preset for every string count 4–9.
 
 ### Tune mood tags
 

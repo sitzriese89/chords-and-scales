@@ -3,11 +3,18 @@
 //! No IO, no UI, no `wasm-bindgen`: everything here is testable with `cargo test` (ADR-2).
 //! The frontend reaches it through the `theory-wasm` crate.
 
+pub mod fretboard;
 pub mod notes;
+pub mod tuning;
 
+pub use fretboard::{FretboardError, Position, positions};
 pub use notes::{
     Accidental, Accidentals, Glyphs, Interval, Letter, Note, NoteName, ParseError, PitchClass,
     Spelling,
+};
+pub use tuning::{
+    InstrumentKind, ParsedTunings, Tuning, TuningCatalog, TuningError, TuningFileError,
+    TuningItemError, builtin_tunings, parse_tunings,
 };
 
 /// The version of the theory core, as set in the workspace `Cargo.toml`.

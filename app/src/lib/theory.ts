@@ -18,6 +18,12 @@ export {
   spellPitchClass,
 } from './wasm/theory_wasm.js';
 
+// Tunings and the fretboard mapping (crates/theory-wasm/src/fretboard.rs). Tunings list MIDI
+// notes lowest string first; positions use the fretboard's coordinates (string 1 = highest,
+// absolute frets, ADR-18), so they pass straight to the Fretboard component.
+export type { NotePosition, Tuning, TuningCatalog, TuningItemError } from './wasm/theory_wasm.js';
+export { fretboardPositions, tuningCatalog } from './wasm/theory_wasm.js';
+
 let ready: Promise<void> | undefined;
 
 /**
