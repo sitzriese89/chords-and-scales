@@ -1,0 +1,361 @@
+# Built-in scale catalog (SPEC §4.2, ADR-5, ADR-20). Embedded into the binary at build time.
+#
+# One [[scale]] table per scale:
+#   id         lowercase kebab-case, unique; what settings and user files refer to
+#   name       display name
+#   aliases    other names (optional)
+#   family     the group the scale is listed under; families appear in file order
+#   intervals  degree labels from the root: start at "1", strictly ascending, within the octave.
+#              Write the label the scale means: "#4" in Lydian, "b5" in Locrian.
+#
+# `cargo test -p theory` checks every entry (builtin_scales_are_valid).
+
+# --- Diatonic modes: the modes of the major scale, in mode order --------------------------
+
+[[scale]]
+id = "major"
+name = "Major"
+aliases = ["Ionian"]
+family = "Diatonic modes"
+intervals = ["1", "2", "3", "4", "5", "6", "7"]
+
+[[scale]]
+id = "dorian"
+name = "Dorian"
+family = "Diatonic modes"
+intervals = ["1", "2", "b3", "4", "5", "6", "b7"]
+
+[[scale]]
+id = "phrygian"
+name = "Phrygian"
+family = "Diatonic modes"
+intervals = ["1", "b2", "b3", "4", "5", "b6", "b7"]
+
+[[scale]]
+id = "lydian"
+name = "Lydian"
+family = "Diatonic modes"
+intervals = ["1", "2", "3", "#4", "5", "6", "7"]
+
+[[scale]]
+id = "mixolydian"
+name = "Mixolydian"
+family = "Diatonic modes"
+intervals = ["1", "2", "3", "4", "5", "6", "b7"]
+
+[[scale]]
+id = "aeolian"
+name = "Natural minor"
+aliases = ["Aeolian", "Minor"]
+family = "Diatonic modes"
+intervals = ["1", "2", "b3", "4", "5", "b6", "b7"]
+
+[[scale]]
+id = "locrian"
+name = "Locrian"
+family = "Diatonic modes"
+intervals = ["1", "b2", "b3", "4", "b5", "b6", "b7"]
+
+# --- Harmonic minor and its modes, in mode order -------------------------------------------
+
+[[scale]]
+id = "harmonic-minor"
+name = "Harmonic minor"
+family = "Harmonic minor modes"
+intervals = ["1", "2", "b3", "4", "5", "b6", "7"]
+
+[[scale]]
+id = "locrian-natural-6"
+name = "Locrian ♮6"
+family = "Harmonic minor modes"
+intervals = ["1", "b2", "b3", "4", "b5", "6", "b7"]
+
+[[scale]]
+id = "ionian-augmented"
+name = "Ionian ♯5"
+aliases = ["Ionian augmented"]
+family = "Harmonic minor modes"
+intervals = ["1", "2", "3", "4", "#5", "6", "7"]
+
+[[scale]]
+id = "dorian-sharp-4"
+name = "Dorian ♯4"
+aliases = ["Ukrainian Dorian", "Romanian minor"]
+family = "Harmonic minor modes"
+intervals = ["1", "2", "b3", "#4", "5", "6", "b7"]
+
+[[scale]]
+id = "phrygian-dominant"
+name = "Phrygian dominant"
+aliases = ["Spanish Phrygian", "Freygish"]
+family = "Harmonic minor modes"
+intervals = ["1", "b2", "3", "4", "5", "b6", "b7"]
+
+[[scale]]
+id = "lydian-sharp-2"
+name = "Lydian ♯2"
+family = "Harmonic minor modes"
+intervals = ["1", "#2", "3", "#4", "5", "6", "7"]
+
+[[scale]]
+id = "ultralocrian"
+name = "Ultralocrian"
+aliases = ["Altered ♭♭7", "Super Locrian ♭♭7"]
+family = "Harmonic minor modes"
+intervals = ["1", "b2", "b3", "b4", "b5", "b6", "bb7"]
+
+# --- Melodic minor (ascending) and its modes, in mode order --------------------------------
+
+[[scale]]
+id = "melodic-minor"
+name = "Melodic minor"
+aliases = ["Jazz minor"]
+family = "Melodic minor modes"
+intervals = ["1", "2", "b3", "4", "5", "6", "7"]
+
+[[scale]]
+id = "dorian-flat-2"
+name = "Dorian ♭2"
+aliases = ["Phrygian ♮6"]
+family = "Melodic minor modes"
+intervals = ["1", "b2", "b3", "4", "5", "6", "b7"]
+
+[[scale]]
+id = "lydian-augmented"
+name = "Lydian augmented"
+aliases = ["Lydian ♯5"]
+family = "Melodic minor modes"
+intervals = ["1", "2", "3", "#4", "#5", "6", "7"]
+
+[[scale]]
+id = "lydian-dominant"
+name = "Lydian dominant"
+aliases = ["Overtone", "Acoustic", "Mixolydian ♯4"]
+family = "Melodic minor modes"
+intervals = ["1", "2", "3", "#4", "5", "6", "b7"]
+
+[[scale]]
+id = "mixolydian-flat-6"
+name = "Mixolydian ♭6"
+aliases = ["Aeolian dominant", "Hindu"]
+family = "Melodic minor modes"
+intervals = ["1", "2", "3", "4", "5", "b6", "b7"]
+
+[[scale]]
+id = "locrian-natural-2"
+name = "Locrian ♮2"
+aliases = ["Half-diminished", "Aeolian ♭5"]
+family = "Melodic minor modes"
+intervals = ["1", "2", "b3", "4", "b5", "b6", "b7"]
+
+[[scale]]
+id = "altered"
+name = "Altered"
+aliases = ["Super Locrian"]
+family = "Melodic minor modes"
+intervals = ["1", "b2", "b3", "b4", "b5", "b6", "b7"]
+
+# --- Pentatonics ---------------------------------------------------------------------------
+
+[[scale]]
+id = "major-pentatonic"
+name = "Major pentatonic"
+family = "Pentatonic"
+intervals = ["1", "2", "3", "5", "6"]
+
+[[scale]]
+id = "minor-pentatonic"
+name = "Minor pentatonic"
+family = "Pentatonic"
+intervals = ["1", "b3", "4", "5", "b7"]
+
+[[scale]]
+id = "egyptian"
+name = "Egyptian"
+aliases = ["Suspended pentatonic"]
+family = "Pentatonic"
+intervals = ["1", "2", "4", "5", "b7"]
+
+[[scale]]
+id = "man-gong"
+name = "Man gong"
+aliases = ["Blues minor pentatonic"]
+family = "Pentatonic"
+intervals = ["1", "b3", "4", "b6", "b7"]
+
+[[scale]]
+id = "ritusen"
+name = "Ritusen"
+aliases = ["Blues major pentatonic"]
+family = "Pentatonic"
+intervals = ["1", "2", "4", "5", "6"]
+
+[[scale]]
+id = "dominant-pentatonic"
+name = "Dominant pentatonic"
+family = "Pentatonic"
+intervals = ["1", "2", "3", "5", "b7"]
+
+[[scale]]
+id = "minor-6-pentatonic"
+name = "Minor 6 pentatonic"
+family = "Pentatonic"
+intervals = ["1", "b3", "4", "5", "6"]
+
+# --- Blues ---------------------------------------------------------------------------------
+
+[[scale]]
+id = "blues"
+name = "Blues"
+aliases = ["Minor blues"]
+family = "Blues"
+intervals = ["1", "b3", "4", "b5", "5", "b7"]
+
+[[scale]]
+id = "major-blues"
+name = "Major blues"
+family = "Blues"
+intervals = ["1", "2", "b3", "3", "5", "6"]
+
+# --- Bebop ---------------------------------------------------------------------------------
+
+[[scale]]
+id = "bebop-dominant"
+name = "Bebop dominant"
+family = "Bebop"
+intervals = ["1", "2", "3", "4", "5", "6", "b7", "7"]
+
+[[scale]]
+id = "bebop-major"
+name = "Bebop major"
+family = "Bebop"
+intervals = ["1", "2", "3", "4", "5", "#5", "6", "7"]
+
+[[scale]]
+id = "bebop-dorian"
+name = "Bebop Dorian"
+family = "Bebop"
+intervals = ["1", "2", "b3", "3", "4", "5", "6", "b7"]
+
+[[scale]]
+id = "bebop-melodic-minor"
+name = "Bebop melodic minor"
+family = "Bebop"
+intervals = ["1", "2", "b3", "4", "5", "#5", "6", "7"]
+
+# --- Symmetric -----------------------------------------------------------------------------
+
+[[scale]]
+id = "whole-tone"
+name = "Whole tone"
+family = "Symmetric"
+intervals = ["1", "2", "3", "#4", "#5", "b7"]
+
+[[scale]]
+id = "diminished-half-whole"
+name = "Diminished (half-whole)"
+aliases = ["Dominant diminished", "Octatonic half-whole"]
+family = "Symmetric"
+intervals = ["1", "b2", "#2", "3", "#4", "5", "6", "b7"]
+
+[[scale]]
+id = "diminished-whole-half"
+name = "Diminished (whole-half)"
+aliases = ["Octatonic whole-half"]
+family = "Symmetric"
+intervals = ["1", "2", "b3", "4", "b5", "b6", "bb7", "7"]
+
+[[scale]]
+id = "augmented"
+name = "Augmented"
+aliases = ["Hexatonic augmented"]
+family = "Symmetric"
+intervals = ["1", "#2", "3", "5", "#5", "7"]
+
+[[scale]]
+id = "chromatic"
+name = "Chromatic"
+family = "Symmetric"
+intervals = ["1", "b2", "2", "b3", "3", "4", "b5", "5", "b6", "6", "b7", "7"]
+
+# --- Exotic --------------------------------------------------------------------------------
+
+[[scale]]
+id = "hungarian-minor"
+name = "Hungarian minor"
+aliases = ["Double harmonic minor", "Gypsy minor"]
+family = "Exotic"
+intervals = ["1", "2", "b3", "#4", "5", "b6", "7"]
+
+[[scale]]
+id = "hungarian-major"
+name = "Hungarian major"
+family = "Exotic"
+intervals = ["1", "#2", "3", "#4", "5", "6", "b7"]
+
+[[scale]]
+id = "double-harmonic-major"
+name = "Double harmonic major"
+aliases = ["Byzantine", "Arabic"]
+family = "Exotic"
+intervals = ["1", "b2", "3", "4", "5", "b6", "7"]
+
+[[scale]]
+id = "neapolitan-minor"
+name = "Neapolitan minor"
+family = "Exotic"
+intervals = ["1", "b2", "b3", "4", "5", "b6", "7"]
+
+[[scale]]
+id = "neapolitan-major"
+name = "Neapolitan major"
+family = "Exotic"
+intervals = ["1", "b2", "b3", "4", "5", "6", "7"]
+
+[[scale]]
+id = "persian"
+name = "Persian"
+family = "Exotic"
+intervals = ["1", "b2", "3", "4", "b5", "b6", "7"]
+
+[[scale]]
+id = "enigmatic"
+name = "Enigmatic"
+family = "Exotic"
+intervals = ["1", "b2", "3", "#4", "#5", "#6", "7"]
+
+[[scale]]
+id = "spanish-eight-tone"
+name = "Spanish eight-tone"
+family = "Exotic"
+intervals = ["1", "b2", "#2", "3", "4", "b5", "b6", "b7"]
+
+[[scale]]
+id = "prometheus"
+name = "Prometheus"
+family = "Exotic"
+intervals = ["1", "2", "3", "#4", "6", "b7"]
+
+[[scale]]
+id = "hirajoshi"
+name = "Hirajoshi"
+family = "Exotic"
+intervals = ["1", "2", "b3", "5", "b6"]
+
+[[scale]]
+id = "in-sen"
+name = "In sen"
+family = "Exotic"
+intervals = ["1", "b2", "4", "5", "b7"]
+
+[[scale]]
+id = "iwato"
+name = "Iwato"
+family = "Exotic"
+intervals = ["1", "b2", "4", "b5", "b7"]
+
+[[scale]]
+id = "kumoi"
+name = "Kumoi"
+family = "Exotic"
+intervals = ["1", "2", "b3", "5", "6"]

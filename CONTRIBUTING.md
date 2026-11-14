@@ -77,6 +77,11 @@ docs/                   roadmap, background
 Edit the TOML in `crates/theory/data/`. Run `cargo test -p theory`: the catalog validation
 tests reject unknown fields, duplicate ids and malformed interval lists.
 
+A scale is one `[[scale]]` table in `scales.toml` with `id`, `name`, optional `aliases`,
+`family` and `intervals` (format in SPEC §4.2). Put it in its family's block; families are
+listed in the order they first appear. Write the interval labels the scale means (`#4`, not
+`b5`, in Lydian). Don't rename existing ids: settings and user files refer to them.
+
 ### Tune mood tags
 
 Weights and thresholds live in the tag rules TOML in `crates/theory/data/` (ADR-9). Say in the

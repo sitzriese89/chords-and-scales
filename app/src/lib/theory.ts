@@ -18,6 +18,17 @@ export {
   spellPitchClass,
 } from './wasm/theory_wasm.js';
 
+// Scale catalog (crates/theory-wasm/src/scales.rs): the built-ins, with the user scales last
+// passed to setUserScales merged over them. Intervals and note names are Unicode.
+export type {
+  ScaleFamily,
+  ScaleFileError,
+  ScaleInfo,
+  ScaleNote,
+  UserScalesReport,
+} from './wasm/theory_wasm.js';
+export { getScale, listScales, scaleNotes, setUserScales } from './wasm/theory_wasm.js';
+
 let ready: Promise<void> | undefined;
 
 /**

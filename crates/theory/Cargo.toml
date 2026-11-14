@@ -8,6 +8,8 @@ repository.workspace = true
 publish = false
 
 [dependencies]
+serde = { version = "1", features = ["derive"] }
+toml = "1"
 
 [dev-dependencies]
 proptest = "1"
