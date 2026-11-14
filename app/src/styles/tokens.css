@@ -1,0 +1,147 @@
+/*
+ * Theme tokens (ADR-11, ADR-19). What each token is for: docs/theme-tokens.md.
+ *
+ * The token names are a contract: export and user themes set them. Values are opaque
+ * #rrggbb, and tokens.test.ts checks their contrast in both themes.
+ *
+ * Light is the default. The OS dark preference selects dark unless data-theme="light" is
+ * set on the root element; data-theme="dark" selects dark regardless of the OS. The dark
+ * block appears twice (OS preference and data-theme); the test keeps the copies identical.
+ */
+
+:root {
+  color-scheme: light;
+
+  --surface: #f7f6f3;
+  --surface-raised: #ffffff;
+  --surface-sunken: #eceae5;
+  --border: #d9d5ce;
+  --border-strong: #858078;
+  --text: #1d1c1a;
+  --text-muted: #5d5952;
+  --text-link: #1f5fae;
+  --text-danger: #b42318;
+  --accent: #1f5fae;
+  --accent-hover: #184c8c;
+  --accent-text: #ffffff;
+  --focus-ring: #1f5fae;
+
+  --fretboard-wood: #ecdcbc;
+  --fretboard-nut: #3b332b;
+  --fretboard-fret: #7d7364;
+  --fretboard-string: #5e554b;
+  --fretboard-inlay: #d6c29b;
+  --fretboard-dot: #2e4057;
+  --fretboard-dot-text: #ffffff;
+  --fretboard-root: #c5365f;
+  --fretboard-root-text: #ffffff;
+  --fretboard-dim: #c4b8a3;
+  --fretboard-dim-text: #3b332b;
+  --fretboard-focus: #1f5fae;
+  --fretboard-capo: #2b2724;
+
+  --degree-0: #c5365f;
+  --degree-1: #832500;
+  --degree-2: #a36400;
+  --degree-3: #6c5d00;
+  --degree-4: #294d18;
+  --degree-5: #1b6c49;
+  --degree-6: #007f8b;
+  --degree-7: #0062b1;
+  --degree-8: #3014ba;
+  --degree-9: #7450d6;
+  --degree-10: #58356b;
+  --degree-11: #8a3b73;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+
+    --surface: #171615;
+    --surface-raised: #211f1d;
+    --surface-sunken: #100f0e;
+    --border: #35322e;
+    --border-strong: #79736a;
+    --text: #eceae6;
+    --text-muted: #aaa49b;
+    --text-link: #8ab4f8;
+    --text-danger: #f28b82;
+    --accent: #8ab4f8;
+    --accent-hover: #a8c7fa;
+    --accent-text: #0b1d36;
+    --focus-ring: #8ab4f8;
+
+    --fretboard-wood: #2b1f18;
+    --fretboard-nut: #e6dccb;
+    --fretboard-fret: #9a9286;
+    --fretboard-string: #c9c1b4;
+    --fretboard-inlay: #4a3a2e;
+    --fretboard-dot: #c3d3e8;
+    --fretboard-dot-text: #15120f;
+    --fretboard-root: #f35f84;
+    --fretboard-root-text: #15120f;
+    --fretboard-dim: #4f453c;
+    --fretboard-dim-text: #e6dccb;
+    --fretboard-focus: #8ab4f8;
+    --fretboard-capo: #b8b2a8;
+
+    --degree-0: #f35f84;
+    --degree-1: #e74c0e;
+    --degree-2: #ffb96b;
+    --degree-3: #bbaa5a;
+    --degree-4: #679a51;
+    --degree-5: #66d6a0;
+    --degree-6: #85eaf7;
+    --degree-7: #3e95ef;
+    --degree-8: #a0affb;
+    --degree-9: #8f6afd;
+    --degree-10: #a47fb9;
+    --degree-11: #dd97c5;
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --surface: #171615;
+  --surface-raised: #211f1d;
+  --surface-sunken: #100f0e;
+  --border: #35322e;
+  --border-strong: #79736a;
+  --text: #eceae6;
+  --text-muted: #aaa49b;
+  --text-link: #8ab4f8;
+  --text-danger: #f28b82;
+  --accent: #8ab4f8;
+  --accent-hover: #a8c7fa;
+  --accent-text: #0b1d36;
+  --focus-ring: #8ab4f8;
+
+  --fretboard-wood: #2b1f18;
+  --fretboard-nut: #e6dccb;
+  --fretboard-fret: #9a9286;
+  --fretboard-string: #c9c1b4;
+  --fretboard-inlay: #4a3a2e;
+  --fretboard-dot: #c3d3e8;
+  --fretboard-dot-text: #15120f;
+  --fretboard-root: #f35f84;
+  --fretboard-root-text: #15120f;
+  --fretboard-dim: #4f453c;
+  --fretboard-dim-text: #e6dccb;
+  --fretboard-focus: #8ab4f8;
+  --fretboard-capo: #b8b2a8;
+
+  --degree-0: #f35f84;
+  --degree-1: #e74c0e;
+  --degree-2: #ffb96b;
+  --degree-3: #bbaa5a;
+  --degree-4: #679a51;
+  --degree-5: #66d6a0;
+  --degree-6: #85eaf7;
+  --degree-7: #3e95ef;
+  --degree-8: #a0affb;
+  --degree-9: #8f6afd;
+  --degree-10: #a47fb9;
+  --degree-11: #dd97c5;
+}

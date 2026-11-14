@@ -264,7 +264,8 @@ Algorithmic (works for any tuning and 4–9 strings; no static shape library).
 ### 5.11 Theming (Q30)
 
 - One shared **CSS theme system** used for both the app UI and exports.
-- Light/dark, following the OS by default.
+- Light/dark, following the OS by default; a setting can force either one.
+- Tokens and their contrast rules: [docs/theme-tokens.md](docs/theme-tokens.md) (ADR-19).
 - An export looks like what is on screen in the chosen theme.
 
 ---
