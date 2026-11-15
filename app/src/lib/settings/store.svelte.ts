@@ -8,9 +8,10 @@ export const SETTINGS_DOCUMENT = 'settings';
 export const SETTINGS_BACKUP_DOCUMENT = 'settings-backup';
 
 /** A change to some settings; nested groups can be changed partly. */
-export type SettingsChange = Partial<Omit<Settings, 'instrument' | 'lastView'>> & {
+export type SettingsChange = Partial<Omit<Settings, 'instrument' | 'lastView' | 'tab'>> & {
   instrument?: Partial<Settings['instrument']>;
   lastView?: Partial<Settings['lastView']>;
+  tab?: Partial<Settings['tab']>;
 };
 
 function message(error: unknown): string {
@@ -77,6 +78,7 @@ export class SettingsStore {
       ...change,
       instrument: { ...this.current.instrument, ...change.instrument },
       lastView: { ...this.current.lastView, ...change.lastView },
+      tab: { ...this.current.tab, ...change.tab },
     };
     const text = serializeSettings(next);
     const check = parseSettings(text);

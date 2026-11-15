@@ -86,7 +86,8 @@ Files are hand-editable and shareable; the UI offers import/export of them.
   browser (development) the same documents live in localStorage (ADR-4, ADR-17).
 - `settings.toml` holds the display preferences (sharps/flats, dot labels, theme,
   left-handed), the last instrument (kind, string count, tuning, fret count, capo) and the
-  last view (root, scale). It is created with the defaults on first start, read once at start
+  last view (root, scale) and the tab view's position (system, 3NPS pattern, fret window,
+  direction, highlight; ADR-25). It is created with the defaults on first start, read once at start
   and saved on every change.
 - The user's own scales and tunings are `scales.toml` and `tunings.toml`, in the format of the
   built-in catalogs (§4.2, §5.1). They are read at start; a broken item is skipped and listed
@@ -284,6 +285,25 @@ How positions are generated (`crates/theory/src/scale_positions.rs`, ADR-22):
   (every common scale) continues into the next octaves, so a pentatonic scale has 5 patterns
   that climb the neck, and a scale of 1 or 2 notes spans so many frets that its patterns
   rarely fit. Duplicate pitch classes count once; an empty scale has no patterns.
+
+How the tab is shown (`app/src/lib/tab/`, ADR-25):
+
+- The tab sits under the neck in the scale explorer. One line per string, string 1 (the
+  highest) on top, each labelled with its open note (spelled by the sharp/flat preference);
+  one column per note, left to right in playing order, with its fret number. Root numbers are
+  bold, in the root colour.
+- Controls: the position system; for 3NPS, a pattern picker listing the patterns that fit
+  ("Pattern 1 (from G)", numbered from the root's pattern); for a fret window, the start fret
+  and the number of frets (1–12); the direction: up (tab order), down (its reverse), or up and
+  back down (the top note once). Patterns that don't fit are named in a note; a stored pattern
+  that doesn't fit shows the first one that does.
+- The position's notes are highlighted on the fretboard: the scale's other notes are dimmed.
+  "Highlight on the neck" turns that off. An empty position (no pattern fits, empty window)
+  dims nothing.
+- Fret numbers are absolute, also with a capo; the tab then says "Capo 3 (fret numbers are
+  absolute)". Tab is notation and is never mirrored; the left-handed setting mirrors only the
+  neck.
+- The choices are settings (`[tab]` in `settings.toml`) and come back after a restart.
 
 ### 5.3 Chords (Q5, Q16, Q19, Q26)
 

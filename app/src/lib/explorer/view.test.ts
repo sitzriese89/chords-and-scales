@@ -41,6 +41,32 @@ describe('explorer view model', () => {
     expect(view.dots.find((d) => d.string === 1 && d.fret === 2)?.label).toBe('♯4');
   });
 
+  it('dims the notes outside the tab position and orders the tab by direction', () => {
+    const settings = defaultSettings();
+    settings.lastView = { root: 'G', scale: 'major' };
+    settings.tab = { ...settings.tab, system: 'window', windowStart: 2, windowSpan: 4 };
+    const view = explorerView(settings);
+    const shown = view.dots.filter((d) => d.role !== 'dim');
+    expect(shown.length).toBe(view.position.positions.length);
+    expect(shown.every((d) => d.fret >= 2 && d.fret <= 5)).toBe(true);
+    expect(view.tabNotes[0]).toEqual({ string: 6, fret: 2, root: false });
+    expect(view.tabNotes[1]).toEqual({ string: 6, fret: 3, root: true });
+
+    settings.tab.direction = 'descending';
+    expect(explorerView(settings).tabNotes.at(-1)).toEqual({ string: 6, fret: 2, root: false });
+
+    settings.tab.highlight = false;
+    expect(explorerView(settings).dots.some((d) => d.role === 'dim')).toBe(false);
+  });
+
+  it('dims nothing when the position is empty', () => {
+    const settings = defaultSettings();
+    settings.tab = { ...settings.tab, system: 'window', windowStart: 26, windowSpan: 2 };
+    const view = explorerView(settings);
+    expect(view.position.positions).toEqual([]);
+    expect(view.dots.some((d) => d.role === 'dim')).toBe(false);
+  });
+
   it('leaves out frets below the capo', () => {
     const settings = defaultSettings();
     settings.instrument.capo = 3;
