@@ -58,7 +58,7 @@ export interface ChordNote {
 "#;
 
 thread_local! {
-    static CATALOG: RefCell<ChordCatalog> = RefCell::new(ChordCatalog::builtin().clone());
+    pub(crate) static CATALOG: RefCell<ChordCatalog> = RefCell::new(ChordCatalog::builtin().clone());
 }
 
 /// Runs `f` with the current catalog (the built-ins and the user chords), for the other

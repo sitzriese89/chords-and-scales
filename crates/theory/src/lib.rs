@@ -8,6 +8,7 @@ pub mod chords;
 pub mod formula;
 pub mod fretboard;
 pub mod harmonize;
+pub mod lookup;
 pub mod notes;
 pub mod scale_positions;
 pub mod scales;
@@ -27,6 +28,7 @@ pub use harmonize::{
     HarmonizedChord, HarmonizedDegree, NumeralMark, NumeralSeventh, RomanNumeral, Stacking,
     harmonize,
 };
+pub use lookup::{ChordMatch, NoteSet, ScaleMatch, ScaleSearch, find_scales, lookup_chords};
 pub use notes::{
     Accidental, Accidentals, Glyphs, Interval, Letter, Note, NoteName, ParseError, PitchClass,
     Spelling,

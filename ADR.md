@@ -901,3 +901,62 @@ whole-tone, bebop, diminished and chromatic scales, where every other tone is no
   Only the numeral, never the chord, depends on this choice.
 - A seven-note scale with a cluster of semitones (Hungarian minor) gets no chord on the
   degrees where no third is in the scale; the view shows them as no chord.
+
+## ADR-31: Reverse lookup and the scale finder: contain every note, inversions are cheap, omissions cost more
+
+**Context.** M2.4 turns clicked notes into chord names and scales (SPEC §5.3, §5.4); the
+fretboard UI (M2.8) will call it. The input is a set of pitch classes with an optional bass
+note. Which readings are listed, and in what order, is a design decision, because a handful of
+notes fits many chords.
+
+**Decision.**
+- **Structured results.** The core (`crates/theory/src/lookup/`) returns, for a chord, the
+  catalog chord, the spelled root, the bass (with its degree in the chord) for a slash chord,
+  the omitted degrees and a score; for a scale, the catalog scale, the spelled root, the input
+  notes that are and aren't in it, and the number of extra scale tones. It builds no strings:
+  `Cmaj7/E` is the symbol formatter's work (M2.2). Roots and bass follow the global sharp/flat
+  preference (ADR-6); the input is pitch classes, so there is no typed spelling to keep. Both
+  searches take the catalog as an argument, and the bindings pass the current ones, so user
+  chords and scales merged in (ADR-20, ADR-27) are searched too.
+- **The bass is one of the notes.** Giving a bass adds it to the set. A bass that is not the
+  chord's root makes a slash chord and must be a chord tone: an inversion (`C/E`, `C/G`) or
+  another tone in the bass. A bass outside the chord (`C/D`) is not produced; it would add a
+  reading for every note and bury the real ones.
+- **A chord fits when it contains every note.** For each catalog chord and each root among the
+  notes (the root is never left out, so it must be one of them), every note must be a tone of
+  the chord, and every chord tone that is *not* a note must be one that players leave out:
+  - the perfect 5th (not `b5` or `#5`);
+  - the natural 9th of a chord that has an 11th or 13th (`#11` and `b13` count);
+  - the natural 11th of a chord that has a 13th.
+
+  Nothing else may be missing: the 3rd, the 7th, altered tones and the root define the chord.
+  Rootless voicings are not recognised. Fewer than two different notes find no chord.
+- **Chord score**, higher is better: 100 for an exact fit, minus 5 for a slash chord, 8 for a
+  left-out 5th, 12 for a left-out 9th or 11th. An inversion costs less than an omission, so
+  `Cm/E♭` (95) outranks `E♭6` without its 5th (92) for C E♭ G. Ties keep catalog order (triads
+  before sevenths: the file's order), then root pitch class. `C E G A` is `C6` and `Am7` with
+  the same score; with a bass, the one rooted on it wins and the other is listed as its slash
+  chord. Symmetric chords (`aug`, `dim7`) are listed on each root.
+- **Scales contain every note** (by default) and are ranked by, in order: notes missing, extra
+  scale tones (fewest first), a root on the bass, a root among the notes, catalog order, root.
+  The catalog's scales are already the modes (Dorian is a scale of its own), so a result is a
+  scale id on a root. `C D E G A` finds the pentatonic family first, five scales with no extra
+  tone (major pentatonic on C, minor on A, Egyptian on D, Man Gong on E, Ritusen on G), then
+  the seven-note scales. A scale that is the same note set on several roots (whole-tone,
+  diminished, augmented, chromatic) is listed once, on its best root. A `maxMissing` option
+  (default 0) lets a search also list scales that lack up to that many of the notes, after
+  those that have them all; each result says which notes are missing.
+- **How many.** The core takes a limit; the bindings default to 12 chords and 24 scales.
+- **WASM.** `lookup.rs` exports `lookupChords(pitchClasses, bass, accidentals, limit?)` and
+  `findScales(pitchClasses, bass, accidentals, limit?, maxMissing?)`, returning plain objects
+  (`ChordLookupMatch`, `ScaleLookupMatch`) with catalog ids, Unicode note names and the
+  numbers the ranking used.
+
+**Consequences.**
+- The weights are constants in one file; changing them changes the order, not what is found.
+- A voicing that leaves out more than the rules allow (a 13th chord without its 3rd, a
+  rootless ninth) is not found as that chord; the user sees the other readings or none.
+- With few notes the list is long and mostly omissions; the UI shows the top of it, and the
+  limit keeps the cost flat (one pass over about 60 chords and 60 scales on up to 12 roots).
+- Naming and display (Standard/Jazz, the `/`) are left to the symbol formatter, which takes
+  the chord id, root and bass from these results.

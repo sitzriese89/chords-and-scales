@@ -6,6 +6,7 @@
 mod chords;
 mod fretboard;
 mod harmonize;
+mod lookup;
 mod meta;
 mod notes;
 mod positions;
@@ -20,6 +21,7 @@ pub use fretboard::{
     write_tunings_toml,
 };
 pub use harmonize::{Stacking, harmonize_scale};
+pub use lookup::{find_scales_js, lookup_chords_js};
 pub use meta::version;
 pub use notes::{
     Accidentals, format_interval, format_note, format_note_name, interval_label,
