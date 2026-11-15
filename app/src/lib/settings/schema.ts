@@ -1,6 +1,10 @@
 /**
  * The settings document `settings.toml` (ADR-17): display preferences and the last view.
  *
+ * Tables: `display`, `instrument`, `last_view` and `tab` (the tab view's position, ADR-25).
+ * Adding a key or table whose absence means its default is not a format change: older files
+ * load with the default, so the version stays.
+ *
  * The file is hand-editable TOML with snake_case keys; in TypeScript it is a `Settings` object.
  * Reading is forgiving: a value that is missing or invalid falls back to its default and is
  * reported, so one typo doesn't reset everything. Only a file that isn't TOML, or has a
@@ -18,16 +22,26 @@ export const ACCIDENTALS = ['sharps', 'flats'] as const;
 export const LABEL_MODES = ['notes', 'intervals', 'none'] as const;
 export const THEMES = ['system', 'light', 'dark'] as const;
 export const INSTRUMENT_KINDS = ['guitar', 'bass'] as const;
+/** Tab positions (ADR-7): a 3-notes-per-string pattern or a fret window. */
+export const POSITION_SYSTEMS = ['3nps', 'window'] as const;
+/** The order the tab plays a position in. */
+export const DIRECTIONS = ['ascending', 'descending', 'both'] as const;
 
 export const MIN_STRINGS = 4;
 export const MAX_STRINGS = 9;
 export const MIN_FRETS = 12;
 export const MAX_FRETS = 27;
+/** The widest fret window: an octave of frets. */
+export const MAX_WINDOW_SPAN = 12;
+/** Highest 3NPS pattern index: a scale has at most 12 degrees. */
+export const MAX_PATTERN = 11;
 
 export type Accidentals = (typeof ACCIDENTALS)[number];
 export type LabelMode = (typeof LABEL_MODES)[number];
 export type Theme = (typeof THEMES)[number];
 export type InstrumentKind = (typeof INSTRUMENT_KINDS)[number];
+export type PositionSystem = (typeof POSITION_SYSTEMS)[number];
+export type Direction = (typeof DIRECTIONS)[number];
 
 export interface Settings {
   /** How non-root notes are spelled (ADR-6). */
@@ -51,6 +65,22 @@ export interface Settings {
     /** Scale id from the scale catalog or the user's scales. */
     scale: string;
   };
+  /** The position shown as tab and highlighted on the neck (ADR-25). */
+  tab: {
+    system: PositionSystem;
+    /**
+     * The 3NPS pattern, as the index of the scale degree it starts on (0 = from the root). If
+     * that pattern doesn't fit the neck the first one that does is shown; this stays as is.
+     */
+    pattern: number;
+    /** First fret of the fret window (absolute, ADR-18). */
+    windowStart: number;
+    /** Frets in the window. */
+    windowSpan: number;
+    direction: Direction;
+    /** Dim the scale notes outside the position on the fretboard. */
+    highlight: boolean;
+  };
 }
 
 export const DEFAULT_SETTINGS: Readonly<Settings> = Object.freeze({
@@ -66,6 +96,14 @@ export const DEFAULT_SETTINGS: Readonly<Settings> = Object.freeze({
     capo: 0,
   }),
   lastView: Object.freeze({ root: 'C', scale: 'major' }),
+  tab: Object.freeze({
+    system: '3nps',
+    pattern: 0,
+    windowStart: 5,
+    windowSpan: 4,
+    direction: 'ascending',
+    highlight: true,
+  }),
 });
 
 export function defaultSettings(): Settings {
@@ -232,6 +270,17 @@ export function parseSettings(text: string): ParsedSettings {
   const scale = view.text('scale', d.lastView.scale);
   view.unknownKeys();
 
+  const tabTable = root.section('tab');
+  const tab: Settings['tab'] = {
+    system: tabTable.oneOf('system', POSITION_SYSTEMS, d.tab.system),
+    pattern: tabTable.integer('pattern', 0, MAX_PATTERN, d.tab.pattern),
+    windowStart: tabTable.integer('window_start', 0, MAX_FRETS, d.tab.windowStart),
+    windowSpan: tabTable.integer('window_span', 1, MAX_WINDOW_SPAN, d.tab.windowSpan),
+    direction: tabTable.oneOf('direction', DIRECTIONS, d.tab.direction),
+    highlight: tabTable.boolean('highlight', d.tab.highlight),
+  };
+  tabTable.unknownKeys();
+
   root.unknownKeys();
 
   return {
@@ -243,6 +292,7 @@ export function parseSettings(text: string): ParsedSettings {
       leftHanded,
       instrument: { kind, strings, tuning, frets, capo },
       lastView: { root: rootNote, scale },
+      tab,
     },
     problems,
   };
@@ -264,6 +314,14 @@ export function serializeSettings(settings: Settings): string {
     },
     instrument: { ...settings.instrument },
     last_view: { ...settings.lastView },
+    tab: {
+      system: settings.tab.system,
+      pattern: settings.tab.pattern,
+      window_start: settings.tab.windowStart,
+      window_span: settings.tab.windowSpan,
+      direction: settings.tab.direction,
+      highlight: settings.tab.highlight,
+    },
   };
   return `${HEADER}\n${stringify(doc).trimEnd()}\n`;
 }
