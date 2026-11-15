@@ -9,7 +9,7 @@
   import { applyTheme } from './styles/theme';
 
   // Tests pass their own storage and audio engine; the app picks Tauri files or localStorage
-  // (ADR-4) and the Web Audio engine (ADR-27).
+  // (ADR-4) and the Web Audio engine (ADR-28).
   const {
     storage = createStorage(),
     audio: injectedAudio,
@@ -27,7 +27,7 @@
   const catalogs = new UserCatalogs(storage);
   setUserCatalogs(catalogs);
 
-  // The sound: no AudioContext exists until the first click or key press (ADR-27). Volume and
+  // The sound: no AudioContext exists until the first click or key press (ADR-28). Volume and
   // mute follow the settings. The engine is closed when the app goes, unless a test owns it.
   // svelte-ignore state_referenced_locally
   const audio = injectedAudio ?? new AudioEngine();
@@ -60,7 +60,7 @@
   - picker:   root and scale picker.
   - board:    the view toggles (labels, sharps/flats) and the fretboard.
   - settings: the instrument panel (strings, tuning and custom tunings, frets, capo,
-              left-handed, theme; ADR-24) and the sound (volume, mute; ADR-27). The view
+              left-handed, theme; ADR-24) and the sound (volume, mute; ADR-28). The view
               toggles stay in board.
   - chords:   the docked chord panel (ADR-10), filled by #18.
   On narrow windows the regions stack in that order.

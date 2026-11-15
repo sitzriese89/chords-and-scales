@@ -1,5 +1,5 @@
 /**
- * The plucked-string synth (ADR-12, ADR-27): Karplus–Strong, rendered to a sample buffer.
+ * The plucked-string synth (ADR-12, ADR-28): Karplus–Strong, rendered to a sample buffer.
  *
  * Signal processing only. Which pitch to play (a MIDI note number) comes from the core; this
  * file turns it into sound and knows no music theory.

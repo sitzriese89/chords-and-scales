@@ -1,6 +1,6 @@
 <!--
   @component
-  Volume and mute (SPEC §5.9, ADR-27). Both are settings, saved on change and kept across
+  Volume and mute (SPEC §5.9, ADR-28). Both are settings, saved on change and kept across
   restarts. Dragging the slider changes the volume at once; the setting is saved when the
   drag ends. Muting keeps the volume.
 -->

@@ -2,7 +2,7 @@
  * The settings document `settings.toml` (ADR-17): display preferences and the last view.
  *
  * Tables: `display`, `instrument`, `last_view`, `tab` (the tab view's position, ADR-25) and
- * `audio` (volume and mute, ADR-27).
+ * `audio` (volume and mute, ADR-28).
  * Adding a key or table whose absence means its default is not a format change: older files
  * load with the default, so the version stays.
  *
@@ -85,7 +85,7 @@ export interface Settings {
     /** Dim the scale notes outside the position on the fretboard. */
     highlight: boolean;
   };
-  /** Sound (ADR-27). */
+  /** Sound (ADR-28). */
   audio: {
     /** Master volume, 0 to 100 percent. */
     volume: number;

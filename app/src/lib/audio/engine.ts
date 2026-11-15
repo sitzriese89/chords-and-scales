@@ -1,5 +1,5 @@
 /**
- * The audio engine (SPEC §5.9, ADR-12, ADR-27): plays notes as plucked strings through Web
+ * The audio engine (SPEC §5.9, ADR-12, ADR-28): plays notes as plucked strings through Web
  * Audio. It is the only place that touches an `AudioContext`.
  *
  * The API is small and takes MIDI note numbers, which the core reports (`NotePosition.midi`,

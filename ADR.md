@@ -734,7 +734,7 @@ ids are generated once, `UserCatalogs` tells the views.
 - Built-in scale names now constrain user names: a future built-in with a user's name makes
   that user's next save fail until it is renamed.
 
-## ADR-27: Audio: a rendered Karplus–Strong buffer, an injectable engine, nothing before a gesture
+## ADR-28: Audio: a rendered Karplus–Strong buffer, an injectable engine, nothing before a gesture
 
 **Context.** ADR-12 chose a Karplus–Strong string synth in Web Audio. M2.10 builds it, and the
 chord panel (M2.5) and voicing browser (M2.12) will call it, so its interface has to be small
