@@ -82,7 +82,12 @@ struct ScaleRecord {
 }
 
 thread_local! {
-    static CATALOG: RefCell<ScaleCatalog> = RefCell::new(ScaleCatalog::builtin().clone());
+    pub(crate) static CATALOG: RefCell<ScaleCatalog> = RefCell::new(ScaleCatalog::builtin().clone());
+}
+
+/// Runs `f` with the current scale catalog (for other bindings that read scales).
+pub(crate) fn with_catalog<R>(f: impl FnOnce(&ScaleCatalog) -> R) -> R {
+    CATALOG.with_borrow(f)
 }
 
 #[derive(Serialize)]

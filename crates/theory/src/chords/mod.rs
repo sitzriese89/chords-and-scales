@@ -4,12 +4,16 @@
 //! symbols the chord is written as (`maj7`, `M7`, `Δ7`). The built-in catalog lives in
 //! `crates/theory/data/chords.toml`, embedded at build time; user chords arrive as a TOML string
 //! in the same format and are merged over it ([`ChordCatalog::with_user_chords`]). The symbol
-//! parser and formatter (M2.2) are built on the symbols stored here.
+//! parser and formatter (`symbols`, ADR-29) are built on the symbols stored here.
 
 mod catalog;
+mod symbols;
 
 pub use catalog::{
     ChordCatalog, ChordFamily, MAX_CHORD_SEMITONES, ParsedChords, parse_user_chords,
+};
+pub use symbols::{
+    ChordSymbol, SymbolError, SymbolErrorKind, SymbolStyle, format_symbol, parse_symbol,
 };
 
 use std::fmt;
@@ -241,6 +245,12 @@ impl Chord {
     /// Every suffix that means this chord, the canonical one first.
     pub fn symbols(&self) -> impl Iterator<Item = &str> {
         std::iter::once(self.symbol.as_str()).chain(self.aliases.iter().map(String::as_str))
+    }
+
+    /// Every suffix the symbol parser reads as this chord: [`Chord::symbols`] and the Jazz
+    /// one (which is usually an alias as well).
+    pub fn suffixes(&self) -> impl Iterator<Item = &str> {
+        self.symbols().chain([self.jazz_symbol()])
     }
 
     /// The suffix in the Jazz display style: `Δ7`, `ø`, `°7`. The canonical suffix when the

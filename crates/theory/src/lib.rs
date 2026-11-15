@@ -7,6 +7,8 @@ mod catalog_file;
 pub mod chords;
 pub mod formula;
 pub mod fretboard;
+pub mod harmonize;
+pub mod lookup;
 pub mod notes;
 pub mod scale_positions;
 pub mod scales;
@@ -17,8 +19,16 @@ pub use chords::{
     Chord, ChordCatalog, ChordError, ChordFamily, ChordNote, ChordSpec, ParsedChords,
     parse_user_chords,
 };
+pub use chords::{
+    ChordSymbol, SymbolError, SymbolErrorKind, SymbolStyle, format_symbol, parse_symbol,
+};
 pub use formula::{Formula, FormulaError};
 pub use fretboard::{FretboardError, Position, positions};
+pub use harmonize::{
+    HarmonizedChord, HarmonizedDegree, NumeralMark, NumeralSeventh, RomanNumeral, Stacking,
+    harmonize,
+};
+pub use lookup::{ChordMatch, NoteSet, ScaleMatch, ScaleSearch, find_scales, lookup_chords};
 pub use notes::{
     Accidental, Accidentals, Glyphs, Interval, Letter, Note, NoteName, ParseError, PitchClass,
     Spelling,

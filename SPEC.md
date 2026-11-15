@@ -207,10 +207,25 @@ intervals = ["1", "b3", "b5", "b7"]
 ### 4.4 Chord symbols (Q25)
 
 - **Parser** accepts all common spellings: `maj7` / `M7` / `Δ7`, `m` / `min` / `-`,
-  `ø` / `m7b5`, `°` / `dim`, slash chords, etc.
+  `ø` / `m7b5`, `°` / `dim`, slash chords, etc. (ADR-29)
+  - A symbol is a root (letter A-G in either case, up to two `#`/`b`/`♯`/`♭`), a suffix and an
+    optional `/bass` note. The suffix is any chord's `symbol`, `aliases` or `jazz_symbol` from
+    the catalog (§4.3), so user chords are typeable and nothing about names is fixed in code.
+  - Typed look-alikes are normalised: `♭ ♯`, `− –` for `-`, `△ ∆` for `Δ`, `Ø ∅` for `ø`,
+    `º ˚` for `°`. If the suffix is not found as typed, spaces, parentheses and commas are
+    ignored (`C7(b9)`, `Cm(add9)`), trailing alterations may come in any order (`C7#9#5` =
+    `C7#5#9`), and letter case is ignored when exactly one chord fits (`CMAJ7`). An exact
+    match always wins, so `CM7` (major seventh) and `Cm7` (minor seventh) stay different.
+  - A slash starts the bass unless the whole suffix is a chord: `C6/9` and `Cm6/9` are chords,
+    `C6/9/E` is `C6/9` over `E`. The bass is any note and keeps its spelling.
+  - A symbol the catalog doesn't know (`C7b9b13` if no chord has it) is an error with the
+    position of the first character it could not read; there is no guessing between chords.
 - **Display style** is a setting:
   - *Standard*: `Cmaj7`, `Cm7♭5`, `Cdim7`
   - *Jazz*: `CΔ7`, `Cø`, `C°7`
+  - The formatter writes the root as given (ADR-6), then the chord's suffix for the style with
+    `♭`/`♯` for a `b`/`#` before a number, then `/bass` for a slash chord. Both styles read
+    back as the same chord.
 
 ---
 
@@ -337,7 +352,7 @@ How the tab is shown (`app/src/lib/tab/`, ADR-25):
   1. Root + quality
   2. From scale/mode + degree (e.g. iv of D Dorian)
   3. **Reverse lookup:** click notes on the fretboard → matching chord names
-     (including slash chords / inversions)
+     (including slash chords / inversions, and chords with the 5th left out; §5.4)
   4. **Typed symbol:** e.g. `F#m7b5`, parsed per §4.4
 - **Chord-over-scale overlay:** when a chord comes from a scale (input mode 2
   or harmonize), the parent scale is shown dimmed with chord tones emphasized.
@@ -365,14 +380,42 @@ How the tab is shown (`app/src/lib/tab/`, ADR-25):
 Clicked notes also produce a list of **scales/modes containing all of them**,
 ranked by fewest extra notes. Shares logic with reverse chord lookup.
 
+The core does both searches (ADR-31). The input is a set of pitch classes with an optional
+**bass note** (the lowest clicked note).
+
+- **Chords:** a catalog chord on a root fits when it contains every note and the only chord
+  tones missing are ones players leave out: the perfect 5th, and in 11th/13th chords the
+  natural 9th (and, with a 13th, the 11th). The root is never left out. A bass that is a chord
+  tone but not the root gives a slash chord (`C/E`). Best first: exact fits, then inversions,
+  then chords with a tone left out; ties keep catalog order. Results carry the chord id, the
+  spelled root, the bass, what was left out and a score; the app writes the name in the
+  chosen symbol style (§4.4). Fewer than two notes find no chord.
+- **Scales:** every catalog scale or mode on every root that contains all the notes, fewest
+  extra scale tones first; among equals, a scale rooted on the bass, then a root among the
+  notes, then catalog order. `C D E G A` lists the major pentatonic family (C major
+  pentatonic, A minor pentatonic, D Egyptian, E Man Gong, G Ritusen) before any seven-note
+  scale. A scale that comes out the same on several roots (whole-tone) is listed once.
+- User chords and scales are searched like the built-in ones. Root and bass are spelled by
+  the sharp/flat toggle (§4.1).
+
 ### 5.5 Harmonize (Q18)
 
 - Select a scale → *Harmonize* → show all chords of that scale.
 - Toggle: **triads** / **7th chords**, built by stacking every other scale tone.
-- **Roman numerals** displayed (I, ii, iii, …).
+- **Roman numerals** displayed (I, ii, iii, …): upper case for a major third, lower
+  case for a minor one, `°` diminished, `+` augmented, `ø` half-diminished, then
+  `7` or `maj7` for sevenths (`V7`, `IVmaj7`, `viiø7`, `III+maj7`). Scales of seven
+  notes number their own degrees (natural minor: i ii° III iv v VI VII); other
+  scales name each degree by its interval from the root, with `♭` or `♯` (minor
+  pentatonic: i, ♭III).
+- Chords are named by their intervals from the chord catalog (user chords included).
 - **Non-heptatonic scales** (pentatonic, whole-tone, bebop, …): stack the
   in-scale thirds where possible; degrees where no valid chord forms are marked
-  *no chord*.
+  *no chord*. Each next chord tone is a scale tone a third above the last (3 or 4
+  semitones), two scale steps up, or one step up if the first is no third.
+  Examples: the minor pentatonic has Cm (and Cm7) on its root and E♭ on the ♭III
+  as triads, and no chord on the other degrees; the whole tone scale has an
+  augmented triad on every degree and no seventh chords (ADR-30).
 
 ### 5.6 Voicing generator (Q28)
 
