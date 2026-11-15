@@ -1,11 +1,11 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fmt;
 use std::sync::OnceLock;
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-use super::{Scale, Source};
-use crate::formula::Formula;
+use super::{Scale, ScaleError, Source};
+use crate::tuning::{cut, slug};
 
 /// The built-in catalog, embedded at build time.
 const BUILTIN_TOML: &str = include_str!("../../data/scales.toml");
@@ -208,48 +208,19 @@ fn parse(toml: &str, source: Source) -> ParsedScales {
 
 /// Checks one item and builds its scale, or says what is wrong.
 fn validate(raw: RawScale, source: Source) -> Result<Scale, String> {
-    if !is_kebab_case(&raw.id) {
-        return Err(format!(
-            "id {:?} must be lowercase kebab-case, e.g. \"my-scale\"",
-            raw.id
-        ));
-    }
-    if raw.name.trim().is_empty() {
-        return Err("name must not be empty".to_owned());
-    }
-    if raw.aliases.iter().any(|alias| alias.trim().is_empty()) {
-        return Err("aliases must not be empty".to_owned());
-    }
-    let family = match raw.family {
-        Some(family) if family.trim().is_empty() => {
-            return Err("family must not be empty".to_owned());
-        }
-        Some(family) => family,
-        None => CUSTOM_FAMILY.to_owned(),
-    };
-    let formula = Formula::parse(&raw.intervals).map_err(|e| e.to_string())?;
-    if let Some(outside) = formula
-        .intervals()
-        .iter()
-        .find(|interval| interval.semitones() >= 12)
-    {
-        return Err(format!(
-            "{:?} is not within the octave (a scale's intervals are 1 to 7)",
-            outside.to_string()
-        ));
-    }
-    Ok(Scale {
-        id: raw.id,
-        name: raw.name,
-        aliases: raw.aliases,
-        family,
-        formula,
+    Scale::build(
+        raw.id,
+        raw.name,
+        raw.aliases,
+        raw.family,
+        &raw.intervals,
         source,
-    })
+    )
+    .map_err(|error| error.to_string())
 }
 
 /// `major`, `dorian-sharp-4`: lowercase ASCII letters and digits in words joined by `-`.
-fn is_kebab_case(id: &str) -> bool {
+pub(super) fn is_kebab_case(id: &str) -> bool {
     !id.is_empty()
         && id.split('-').all(|word| {
             !word.is_empty()
@@ -257,6 +228,111 @@ fn is_kebab_case(id: &str) -> bool {
                     .bytes()
                     .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit())
         })
+}
+
+/// The longest id [`ScaleCatalog::new_id`] makes.
+const MAX_NEW_ID: usize = 64;
+
+impl ScaleCatalog {
+    /// The id for a new user scale called `name`: the kebab-case slug of the name
+    /// (`"My Dorian ♭2"` → `my-dorian-2`), with `-2`, `-3`, … appended if the id is taken by a
+    /// scale in this catalog or a built-in one. So a new scale never replaces another (a user
+    /// scale replaces a built-in only if its id is written into `scales.toml` by hand). A name
+    /// without ASCII letters or digits gives `custom`. At most 64 characters.
+    pub fn new_id(&self, name: &str) -> String {
+        let mut base = slug(name);
+        if base.is_empty() {
+            base.push_str("custom");
+        }
+        let taken = |id: &str| self.get(id).is_some() || ScaleCatalog::builtin().get(id).is_some();
+        let first = cut(&base, MAX_NEW_ID);
+        if !taken(first) {
+            return first.to_owned();
+        }
+        (2..)
+            .map(|n| {
+                let suffix = format!("-{n}");
+                format!("{}{suffix}", cut(&base, MAX_NEW_ID - suffix.len()))
+            })
+            .find(|id| !taken(id))
+            .expect("one of infinitely many suffixes is free")
+    }
+}
+
+/// A name as compared for duplicates: case and runs of white space don't count.
+fn name_key(name: &str) -> String {
+    name.split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
+        .to_lowercase()
+}
+
+/// The header of a scale file written by [`write_scales`].
+const WRITTEN_HEADER: &str = "\
+# Your scales, written by Chords & Scales in the format of the built-in scales.
+# You can edit this file while the app is closed; the app doesn't keep comments when it saves.
+";
+
+/// One `[[scale]]` table as [`write_scales`] writes it.
+#[derive(Serialize)]
+struct WrittenScale<'a> {
+    id: &'a str,
+    name: &'a str,
+    #[serde(skip_serializing_if = "<[String]>::is_empty")]
+    aliases: &'a [String],
+    family: &'a str,
+    intervals: Vec<String>,
+}
+
+#[derive(Serialize)]
+struct WrittenFile<'a> {
+    scale: Vec<WrittenScale<'a>>,
+}
+
+/// Writes `scales` as a user scale file that [`parse_user_scales`] reads back unchanged and
+/// in order (intervals as ASCII labels, kept as they are: `#4` stays `#4`).
+///
+/// Refuses what reading the file back would not keep, or what would make two scales look
+/// alike in the picker: two scales with one id ([`ScaleError::DuplicateId`]), and two scales
+/// with one name in the catalog the file gives, the built-ins merged with these scales
+/// ([`ScaleError::DuplicateName`]; case and extra spaces don't count). A user scale that
+/// replaces a built-in by id may keep the built-in's name.
+pub fn write_scales(scales: &[Scale]) -> Result<String, ScaleError> {
+    let mut ids = HashSet::new();
+    if let Some(scale) = scales.iter().find(|scale| !ids.insert(scale.id())) {
+        return Err(ScaleError::DuplicateId(scale.id().to_owned()));
+    }
+    let merged = ScaleCatalog::builtin().with_user_scales(scales.iter().cloned());
+    let mut names = HashSet::new();
+    if let Some(scale) = merged
+        .scales()
+        .iter()
+        .find(|scale| !names.insert(name_key(scale.name())))
+    {
+        return Err(ScaleError::DuplicateName(scale.name().to_owned()));
+    }
+    if scales.is_empty() {
+        return Ok(WRITTEN_HEADER.to_owned());
+    }
+    let file = WrittenFile {
+        scale: scales
+            .iter()
+            .map(|scale| WrittenScale {
+                id: scale.id(),
+                name: scale.name(),
+                aliases: scale.aliases(),
+                family: scale.family(),
+                intervals: scale
+                    .formula()
+                    .intervals()
+                    .iter()
+                    .map(ToString::to_string)
+                    .collect(),
+            })
+            .collect(),
+    };
+    let body = toml::to_string(&file).expect("a list of scales is valid TOML");
+    Ok(format!("{WRITTEN_HEADER}\n{body}"))
 }
 
 #[cfg(test)]
@@ -545,5 +621,183 @@ mod tests {
         // The built-in catalog itself is untouched.
         assert_eq!(builtin.get("dorian").unwrap().name(), "Dorian");
         assert_eq!(builtin.get("dorian").unwrap().source(), Source::BuiltIn);
+    }
+
+    fn scale(id: &str, name: &str, intervals: &[&str]) -> Scale {
+        Scale::new(id, name, Vec::new(), None, intervals).unwrap()
+    }
+
+    #[test]
+    fn a_scale_of_only_the_root_fails() {
+        assert_eq!(
+            Scale::new("x", "X", Vec::new(), None, &["1"]),
+            Err(ScaleError::RootOnly)
+        );
+        assert_eq!(
+            errors("[[scale]]\nid = \"x\"\nname = \"X\"\nintervals = [\"1\"]\n"),
+            ["scale 1 (\"x\"): a scale needs at least one note besides the root"]
+        );
+        assert!(Scale::new("x", "X", Vec::new(), None, &["1", "5"]).is_ok());
+    }
+
+    #[test]
+    fn new_scales_are_checked_like_file_items() {
+        let new = |id: &str, name: &str, family: Option<&str>, intervals: &[&str]| {
+            Scale::new(id, name, Vec::new(), family.map(str::to_owned), intervals)
+        };
+        assert_eq!(
+            new("My scale", "X", None, &["1", "3"]),
+            Err(ScaleError::Id("My scale".into()))
+        );
+        assert_eq!(
+            new("x", "  ", None, &["1", "3"]),
+            Err(ScaleError::EmptyName)
+        );
+        assert_eq!(
+            new("x", "X", Some(" "), &["1", "3"]),
+            Err(ScaleError::EmptyFamily)
+        );
+        let none: [&str; 0] = [];
+        assert_eq!(
+            new("x", "X", None, &none).unwrap_err().to_string(),
+            "the formula has no intervals"
+        );
+        assert_eq!(
+            new("x", "X", None, &["1", "9"]).unwrap_err().to_string(),
+            "\"9\" is not within the octave (a scale's intervals are 1 to 7)"
+        );
+        let mine = new("x", "X", Some("Mine"), &["1", "#4", "5"]).unwrap();
+        assert_eq!(mine.family(), "Mine");
+        assert_eq!(mine.source(), Source::User);
+        assert_eq!(
+            new("x", "X", None, &["1", "3"]).unwrap().family(),
+            CUSTOM_FAMILY
+        );
+    }
+
+    #[test]
+    fn written_scales_read_back_unchanged() {
+        let scales = vec![
+            Scale::new(
+                "my-lydian",
+                "My \"Lydian\", ♯4\\b5",
+                vec!["Bright".into()],
+                Some("Mine".into()),
+                &["1", "2", "3", "#4", "5", "6", "7"],
+            )
+            .unwrap(),
+            scale("two-notes", "Two notes", &["1", "b5"]),
+            // A user scale that replaces a built-in keeps its name.
+            Scale::new(
+                "dorian",
+                "Dorian",
+                Vec::new(),
+                Some("Diatonic modes".into()),
+                &["1", "2", "b3", "4", "5", "6", "b7"],
+            )
+            .unwrap(),
+        ];
+        let text = write_scales(&scales).unwrap();
+        assert!(text.starts_with("# Your scales"), "{text}");
+        assert!(
+            text.contains(r##"intervals = ["1", "2", "3", "#4", "5", "6", "7"]"##),
+            "{text}"
+        );
+        assert!(text.contains("family = \"Custom\""), "{text}");
+        let parsed = parse_user_scales(&text);
+        assert_eq!(parsed.errors, []);
+        assert_eq!(parsed.scales, scales);
+        assert_eq!(write_scales(&parsed.scales).unwrap(), text);
+    }
+
+    #[test]
+    fn writing_no_scales_gives_an_empty_scale_file() {
+        let text = write_scales(&[]).unwrap();
+        assert_eq!(parse_user_scales(&text), ParsedScales::default());
+    }
+
+    #[test]
+    fn writing_two_scales_with_one_id_fails() {
+        let a = scale("a", "A", &["1", "3"]);
+        let b = scale("a", "B", &["1", "b3"]);
+        assert_eq!(
+            write_scales(&[a, b]),
+            Err(ScaleError::DuplicateId("a".into()))
+        );
+    }
+
+    #[test]
+    fn a_duplicate_name_is_the_same_display_name() {
+        // Against a built-in scale, ignoring case and extra spaces.
+        let error = write_scales(&[scale("my-dorian", "  dorian ", &["1", "b3"])]).unwrap_err();
+        assert_eq!(error, ScaleError::DuplicateName("  dorian ".into()));
+        assert_eq!(
+            error.to_string(),
+            "there is already a scale called \"  dorian \""
+        );
+        assert_eq!(
+            write_scales(&[scale("x", "Major  Pentatonic", &["1", "3"])]),
+            Err(ScaleError::DuplicateName("Major  Pentatonic".into()))
+        );
+        // Between two user scales.
+        assert_eq!(
+            write_scales(&[
+                scale("mine", "Mine", &["1", "3"]),
+                scale("mine-2", "MINE", &["1", "b3"])
+            ]),
+            Err(ScaleError::DuplicateName("MINE".into()))
+        );
+        // A different id with a different name is fine, and so is an alias of a built-in.
+        assert!(write_scales(&[scale("x", "Spanish Phrygian", &["1", "3"])]).is_ok());
+        assert!(write_scales(&[scale("x", "Dorian 2", &["1", "3"])]).is_ok());
+        // Replacing a built-in by id frees its name.
+        assert!(
+            write_scales(&[
+                scale("dorian", "Not Dorian", &["1", "3"]),
+                scale("mine", "Dorian", &["1", "b3"])
+            ])
+            .is_ok()
+        );
+    }
+
+    #[test]
+    fn new_ids_are_slugs_of_the_name() {
+        let catalog = ScaleCatalog::builtin();
+        assert_eq!(catalog.new_id("My Dorian ♭2"), "my-dorian-2");
+        assert_eq!(catalog.new_id("  (Weird)  scale!! "), "weird-scale");
+        assert_eq!(catalog.new_id("♯♭"), "custom");
+        assert_eq!(catalog.new_id(""), "custom");
+        assert_eq!(catalog.new_id(&"x".repeat(100)).len(), 64);
+        for name in ["My Dorian", "♯", "a b c", &"long name ".repeat(20)] {
+            let id = catalog.new_id(name);
+            assert!(
+                Scale::new(id.clone(), "X", Vec::new(), None, &["1", "3"]).is_ok(),
+                "{id}"
+            );
+        }
+    }
+
+    #[test]
+    fn new_ids_never_take_an_existing_id() {
+        let builtin = ScaleCatalog::builtin();
+        assert_eq!(builtin.new_id("Dorian"), "dorian-2");
+        assert_eq!(builtin.new_id("Major"), "major-2");
+        let catalog = builtin.with_user_scales([
+            scale("mine", "Mine", &["1", "3"]),
+            scale("mine-2", "Mine 2", &["1", "3"]),
+        ]);
+        assert_eq!(catalog.new_id("Mine"), "mine-3");
+
+        // A built-in id is never handed out, even when a user scale replaced it.
+        let replaced = builtin.with_user_scales([scale("dorian", "Mine", &["1", "3"])]);
+        assert_eq!(replaced.new_id("Dorian"), "dorian-2");
+
+        // The suffix still fits when the id is as long as it can be.
+        let long = "x".repeat(100);
+        let first = builtin.new_id(&long);
+        let taken = builtin.with_user_scales([scale(&first, "Long", &["1", "3"])]);
+        let second = taken.new_id(&long);
+        assert_eq!(second.len(), 64);
+        assert!(second.ends_with("x-2"), "{second}");
     }
 }

@@ -2,7 +2,24 @@
 //! expected.
 
 use proptest::prelude::*;
-use theory::{Accidentals, Glyphs, NoteName, PitchClass, ScaleCatalog};
+use theory::{
+    Accidentals, Glyphs, Interval, NoteName, PitchClass, Scale, ScaleCatalog, parse_user_scales,
+    write_scales,
+};
+
+/// A user scale from a set of semitones above the root (the root is added), with default
+/// labels, and a name that is no built-in one.
+fn user_scale(index: usize, name: &str, family: Option<String>, semitones: &[u8]) -> Scale {
+    let mut intervals = vec!["1".to_owned()];
+    intervals.extend(
+        semitones
+            .iter()
+            .map(|&n| Interval::from_semitones(n).unwrap().to_string()),
+    );
+    let name = format!("My {name} {index}");
+    let id = ScaleCatalog::builtin().new_id(&name);
+    Scale::new(id, name, Vec::new(), family, &intervals).unwrap()
+}
 
 /// Each family of modes in catalog order, starting with its parent scale.
 const MODE_FAMILIES: [[&str; 7]; 3] = [
@@ -96,6 +113,47 @@ proptest! {
         values.sort_unstable();
         values.dedup();
         prop_assert_eq!(values.len(), scale.formula().len());
+    }
+
+    /// Whatever the editor can make, `write_scales` writes a file that reads back as the same
+    /// scales, in order, and writing them again gives the same text.
+    #[test]
+    fn written_scales_read_back_unchanged(
+        items in prop::collection::vec(
+            (
+                prop::collection::btree_set(1u8..12, 1..12),
+                "[A-Za-z0-9 ♯♭#\"\\\\'-]{0,16}",
+                prop::option::of("[A-Za-z][A-Za-z ]{0,10}"),
+            ),
+            0..6,
+        )
+    ) {
+        let scales: Vec<Scale> = items
+            .iter()
+            .enumerate()
+            .map(|(i, (semitones, name, family))| {
+                let semitones: Vec<u8> = semitones.iter().copied().collect();
+                user_scale(i, name, family.clone(), &semitones)
+            })
+            .collect();
+        let text = write_scales(&scales).unwrap();
+        let parsed = parse_user_scales(&text);
+        prop_assert_eq!(&parsed.errors, &[]);
+        prop_assert_eq!(&parsed.scales, &scales);
+        prop_assert_eq!(write_scales(&parsed.scales).unwrap(), text);
+    }
+
+    /// A new id is a valid id that no scale in the catalog has yet.
+    #[test]
+    fn new_ids_are_free_and_valid(name in "\\PC{0,40}", taken in prop::collection::vec("[a-z]{1,4}", 0..4)) {
+        let user: Vec<Scale> = taken
+            .iter()
+            .map(|id| Scale::new(id.clone(), format!("Taken {id}"), Vec::new(), None, &["1", "5"]).unwrap())
+            .collect();
+        let catalog = ScaleCatalog::builtin().with_user_scales(user);
+        let id = catalog.new_id(&name);
+        prop_assert!(catalog.get(&id).is_none(), "{} is taken", id);
+        prop_assert!(Scale::new(id.clone(), "X", Vec::new(), None, &["1", "5"]).is_ok(), "{}", id);
     }
 }
 

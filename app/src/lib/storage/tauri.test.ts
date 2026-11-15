@@ -1,35 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { storageContract } from './contract';
-import { isDocumentName } from './names';
+import { fakeCommands } from './fake-commands';
 import { StorageError } from './storage';
 import { TauriStorage, type Invoke } from './tauri';
-
-/**
- * An in-memory stand-in for the Rust commands in `app/src-tauri/src/storage.rs`, with the same
- * arguments, results and string errors. The Rust tests cover the real file handling.
- */
-function fakeCommands(folder = new Map<string, string>()): Invoke {
-  return async (command, args = {}) => {
-    const name = args.name as string;
-    if (command !== 'list_documents' && !isDocumentName(name)) {
-      throw `invalid document name ${JSON.stringify(name)}`;
-    }
-    switch (command) {
-      case 'read_document':
-        return folder.get(name) ?? null;
-      case 'write_document':
-        folder.set(name, args.content as string);
-        return null;
-      case 'list_documents':
-        return [...folder.keys()].sort();
-      case 'delete_document':
-        folder.delete(name);
-        return null;
-      default:
-        throw `command ${command} not found`;
-    }
-  };
-}
 
 storageContract('Tauri (fake commands)', () => {
   const folder = new Map<string, string>();

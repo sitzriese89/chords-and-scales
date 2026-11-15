@@ -90,9 +90,10 @@ Files are hand-editable and shareable; the UI offers import/export of them.
   and saved on every change.
 - The user's own scales and tunings are `scales.toml` and `tunings.toml`, in the format of the
   built-in catalogs (§4.2, §5.1). They are read at start; a broken item is skipped and listed
-  in a collapsed note in the window, and the rest load (ADR-23). The tuning editor rewrites
-  `tunings.toml` when it saves (comments are not kept); if the file had items that didn't
-  load, the old file is first kept as `tunings-backup.toml` (ADR-24).
+  in a collapsed note in the window, and the rest load (ADR-23). The tuning and scale editors
+  rewrite `tunings.toml` and `scales.toml` when they save (comments are not kept); if the file
+  had items that didn't load, the old file is first kept as `tunings-backup.toml` or
+  `scales-backup.toml` (ADR-24, ADR-26).
 - A value the app doesn't understand falls back to its default and the app shows a warning
   naming it. A file that can't be used at all (not TOML, missing or unsupported version) is
   kept as `settings-backup.toml`, the defaults are used, and the app says so. It never
@@ -109,6 +110,15 @@ Files are hand-editable and shareable; the UI offers import/export of them.
   - then name and save.
 - Custom items are stored in the user data files (§3.2) and treated identically
   to built-in items everywhere (filters, harmonize, random, export…).
+- Scales (ADR-26): **New scale** under the scale list opens the editor; a user scale that is
+  selected can be edited or deleted there. The editor has a 12-semitone picker (the root is
+  always in) and its own neck with the current instrument and root: clicking a position adds
+  or removes that note's interval. Name and family (blank = *Custom*). The core checks the
+  scale when it is saved, and the message is shown in the editor: a scale needs a note
+  besides the root, and no two scales (built-in or the user's) may have the same name, case
+  and extra spaces ignored. A new scale's id is made from its name (`my-scale`, then
+  `my-scale-2`, …) and kept when it is renamed; deleting the selected scale shows the
+  built-in it replaced, or the default scale.
 
 ---
 
@@ -151,7 +161,8 @@ intervals = ["1", "b2", "3", "4", "5", "b6", "b7"]
 ```
 
 - Intervals are degree labels (ASCII or Unicode) starting at `1`, strictly ascending, all
-  within the octave. Labels are kept as written: write `#4` for Lydian, `b5` for Locrian.
+  within the octave, at least two of them. Labels are kept as written: write `#4` for Lydian,
+  `b5` for Locrian.
 - Unknown fields, duplicate ids and broken interval lists are errors. In a user file each bad
   item is reported (which item, why) and skipped; the others load.
 - A user scale with a built-in id replaces the built-in one; other user scales are listed

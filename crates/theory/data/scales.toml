@@ -5,7 +5,8 @@
 #   name       display name
 #   aliases    other names (optional)
 #   family     the group the scale is listed under; families appear in file order
-#   intervals  degree labels from the root: start at "1", strictly ascending, within the octave.
+#   intervals  degree labels from the root: start at "1", strictly ascending, within the octave,
+#              at least two.
 #              Write the label the scale means: "#4" in Lydian, "b5" in Locrian.
 #
 # `cargo test -p theory` checks every entry (builtin_scales_are_valid).

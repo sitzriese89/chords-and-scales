@@ -380,7 +380,7 @@ pub fn write_tunings(tunings: &[Tuning]) -> Result<String, TuningError> {
 
 /// The lowercase kebab-case form of `name`: ASCII letters and digits are kept, every run of
 /// anything else becomes one hyphen (`"E♭ standard (low)"` → `e-standard-low`).
-fn slug(name: &str) -> String {
+pub(crate) fn slug(name: &str) -> String {
     let mut slug = String::new();
     for c in name.chars() {
         if c.is_ascii_alphanumeric() {
@@ -393,7 +393,7 @@ fn slug(name: &str) -> String {
 }
 
 /// The ASCII `text` cut to at most `max` characters, without a trailing hyphen.
-fn cut(text: &str, max: usize) -> &str {
+pub(crate) fn cut(text: &str, max: usize) -> &str {
     text[..text.len().min(max)].trim_end_matches('-')
 }
 
