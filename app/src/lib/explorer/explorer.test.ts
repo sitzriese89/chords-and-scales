@@ -46,6 +46,17 @@ function dots(): Dot[] {
   }));
 }
 
+/** The tab's notes, left to right: `string:fret` with the fret as drawn. */
+function tabNotes(): string[] {
+  return [...document.querySelectorAll<SVGGElement>('svg.tab-drawing g.note')]
+    .sort((a, b) => Number(a.dataset.column) - Number(b.dataset.column))
+    .map((g) => `${g.dataset.string}:${g.querySelector('text')?.textContent ?? ''}`);
+}
+
+/** G major 3NPS pattern 1 on six-string standard tuning, by hand: three notes a string. */
+const G_MAJOR_PATTERN_1 =
+  '6:3 6:5 6:7 5:3 5:5 5:7 4:4 4:5 4:7 3:4 3:5 3:7 2:5 2:7 2:8 1:5 1:7 1:8'.split(' ');
+
 /** The expected dots from a per-string table; the root is the dot labelled `rootLabel`. */
 function expected(table: Record<number, string>, rootLabel: string): Dot[] {
   return Object.entries(table).flatMap(([string, cells]) =>
@@ -66,8 +77,10 @@ const sorted = (list: Dot[]) => [...list].sort((a, b) => a.string - b.string || 
 /** Pairs `string:fret` → label, for comparing labels only. */
 const labels = (list: Dot[]) => new Map(list.map((d) => [`${d.string}:${d.fret}`, d.label]));
 
+/** Settings with `change` applied; the tab's highlight is off, so every dot keeps its role. */
 function settingsWith(change: (s: Settings) => void): string {
   const settings = defaultSettings();
+  settings.tab.highlight = false;
   change(settings);
   return serializeSettings(settings);
 }
@@ -244,6 +257,86 @@ notes = ["E1", "A1", "D2"]
     expect(screen.getByRole('combobox', { name: 'Tuning' })).toHaveValue('guitar-4-high');
     expect(screen.getByText('One item in your files could not be loaded')).toBeInTheDocument();
     expect(screen.getByText(/^tunings\.toml: tuning 2 \("bass-3"\)/)).toBeInTheDocument();
+  });
+
+  it('shows G major 3NPS pattern 1 as tab and highlights it on the neck', async () => {
+    await storage.write(
+      SETTINGS_DOCUMENT,
+      settingsWith((s) => {
+        s.lastView = { root: 'G', scale: 'major' };
+        s.tab.highlight = true;
+      }),
+    );
+    await startApp(storage);
+    expect(screen.getByRole('heading', { name: 'Tab: Pattern 1 (from G)' })).toBeInTheDocument();
+    expect(tabNotes()).toEqual(G_MAJOR_PATTERN_1);
+
+    // The pattern's 18 notes keep their roles on the neck; every other note is dimmed.
+    const inPattern = new Set(G_MAJOR_PATTERN_1);
+    for (const dot of dots()) {
+      const key = `${dot.string}:${dot.fret}`;
+      if (inPattern.has(key)) expect(dot.role, key).not.toBe('dim');
+      else expect(dot.role, key).toBe('dim');
+    }
+    expect(dots().filter((d) => d.role !== 'dim')).toHaveLength(18);
+    expect(dots().find((d) => d.string === 6 && d.fret === 3)?.role).toBe('root');
+
+    // Without highlighting the whole scale is back.
+    await fireEvent.click(screen.getByRole('checkbox', { name: 'Highlight on the neck' }));
+    expect(dots().some((d) => d.role === 'dim')).toBe(false);
+  });
+
+  it('switches pattern, system and direction, and keeps them after a restart', async () => {
+    await storage.write(
+      SETTINGS_DOCUMENT,
+      settingsWith((s) => {
+        s.lastView = { root: 'G', scale: 'major' };
+      }),
+    );
+    const first = await startApp(storage);
+
+    await fireEvent.change(screen.getByRole('combobox', { name: 'Pattern' }), {
+      target: { value: '1' },
+    });
+    expect(screen.getByRole('heading', { name: 'Tab: Pattern 2 (from A)' })).toBeInTheDocument();
+    expect(tabNotes().slice(0, 3)).toEqual(['6:5', '6:7', '6:8']);
+
+    await fireEvent.click(screen.getByRole('radio', { name: 'Fret window' }));
+    await fireEvent.change(screen.getByRole('spinbutton', { name: 'Start fret' }), {
+      target: { value: '2' },
+    });
+    expect(screen.getByRole('heading', { name: 'Tab: Frets 2–5' })).toBeInTheDocument();
+    expect(tabNotes().slice(0, 4)).toEqual(['6:2', '6:3', '6:5', '5:2']);
+
+    await fireEvent.click(screen.getByRole('radio', { name: 'Down' }));
+    expect(tabNotes()[0]).toBe('1:5');
+    await expect.poll(() => storage.read(SETTINGS_DOCUMENT)).toMatch(/direction = "descending"/);
+    first.unmount();
+
+    await startApp(new BrowserStorage(window.localStorage));
+    expect(screen.getByRole('radio', { name: 'Fret window' })).toBeChecked();
+    expect(screen.getByRole('spinbutton', { name: 'Start fret' })).toHaveValue(2);
+    expect(screen.getByRole('radio', { name: 'Down' })).toBeChecked();
+    expect(screen.getByRole('heading', { name: 'Tab: Frets 2–5' })).toBeInTheDocument();
+  });
+
+  it('keeps the tab unmirrored when left-handed and absolute above a capo', async () => {
+    await storage.write(
+      SETTINGS_DOCUMENT,
+      settingsWith((s) => {
+        s.lastView = { root: 'G', scale: 'major' };
+        s.leftHanded = true;
+      }),
+    );
+    await startApp(storage);
+    expect(tabNotes()).toEqual(G_MAJOR_PATTERN_1);
+
+    await fireEvent.change(screen.getByRole('spinbutton', { name: 'Capo fret' }), {
+      target: { value: '5' },
+    });
+    expect(screen.getByText('Capo 5 (fret numbers are absolute)')).toBeInTheDocument();
+    // Pattern 1 moves up an octave: the capo's own frets are never renumbered.
+    expect(tabNotes().slice(0, 3)).toEqual(['6:15', '6:17', '6:19']);
   });
 
   it('shows the defaults for a stored scale or root that is not usable', async () => {

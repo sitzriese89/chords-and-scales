@@ -35,6 +35,7 @@ ADR-1 to ADR-13 come from the design interview behind [SPEC.md](SPEC.md) (decisi
 | 22 | [Scale positions filter the fretboard mapping; 3NPS patterns take the lowest octave that fits](#adr-22-scale-positions-filter-the-fretboard-mapping-3nps-patterns-take-the-lowest-octave-that-fits) | Accepted |
 | 23 | [The scale explorer: one layout, user catalogs loaded alike, labels looked up from the core](#adr-23-the-scale-explorer-one-layout-user-catalogs-loaded-alike-labels-looked-up-from-the-core) | Accepted |
 | 24 | [Instrument settings: custom tunings saved by the core, stable generated ids, a catalog revision](#adr-24-instrument-settings-custom-tunings-saved-by-the-core-stable-generated-ids-a-catalog-revision) | Accepted |
+| 25 | [The tab view: core positions in playing order, absolute frets, never mirrored, stored without a version bump](#adr-25-the-tab-view-core-positions-in-playing-order-absolute-frets-never-mirrored-stored-without-a-version-bump) | Accepted |
 
 ---
 
@@ -629,3 +630,51 @@ neck can't see a change by themselves (ADR-23 asked for a revision value).
 - Ids are stable but can drift from the name and kind after an edit; nothing depends on that.
 - The editor's string count is the selected tuning's: to make a 7-string tuning, switch to 7
   strings first.
+
+## ADR-25: The tab view: core positions in playing order, absolute frets, never mirrored, stored without a version bump
+
+**Context.** M1.10 shows a scale as tab in one position (SPEC §5.2) and highlights that
+position on the neck. The positions exist in the core (ADR-22) in tab order. Still open: who
+orders them for a direction, how a capo and the left-handed setting show in tab, how the
+neck shows the position, what happens when a stored 3NPS pattern doesn't fit the current
+neck, and whether storing the choice is a settings format change (ADR-17).
+
+**Decision.**
+- **The core picks the notes; the UI only selects and orders.** `app/src/lib/tab/position.ts`
+  calls `fretWindow` or `threeNotesPerString` and picks one result. Directions are list
+  operations on the core's tab order, which is ascending: *up* is tab order, *down* its
+  reverse, *both* up and back down with the top note played once. No pitch is compared in
+  TypeScript, so no new core function is needed; if a direction ever needs pitch (say,
+  re-sorting a window whose strings overlap), it goes into `scale_positions.rs`.
+- **Patterns are numbered from 1 by the degree they start on** ("Pattern 1 (from G)" is
+  degree 0) and only the patterns that fit are offered; the missing numbers are named in a
+  note. The setting keeps the degree; when that pattern doesn't fit (a shorter neck, a capo)
+  the first that does is shown and the setting is left alone, so it comes back when the neck
+  allows. A fret window that holds no note says so.
+- **The tab component** (`TabView.svelte`) is presentational like the fretboard (ADR-18): it
+  takes the lines (string 1 on top, labelled with the open note spelled by the core by the
+  sharp/flat preference) and the notes in playing order, one column each. Root numbers are
+  bold in `--fretboard-root`; no new token. Screen readers get a list of the notes.
+- **Capo: fret numbers stay absolute** (ADR-18), as on the neck, and a caption says
+  "Capo 3 (fret numbers are absolute)". A capo-relative tab would disagree with the neck and
+  with the core's positions.
+- **Left-handed doesn't mirror the tab.** Tab is notation read left to right by every
+  player; only the neck is mirrored.
+- **Highlighting dims the rest.** The neck still shows the whole scale, with the dots outside
+  the position drawn `dim` (an existing role), so the position stands out without a new prop
+  or token. "Highlight on the neck" turns it off; an empty position dims nothing.
+- **Stored in `[tab]` of `settings.toml`, version 1 kept**: `system` (`"3nps"` | `"window"`),
+  `pattern` (0–11), `window_start` (0–27), `window_span` (1–12), `direction` and `highlight`.
+  Defaults: pattern 1, frets 5–8, ascending, highlight on. Adding keys whose absence means the
+  default is not a format change in ADR-17's sense: every version 1 file still reads the same.
+  Bumping the version would only make an older app back up and reset the whole file instead
+  of warning about one unknown table.
+
+**Consequences.**
+- The tab follows the explorer's view: changing root, scale, tuning, frets, capo or spelling
+  updates it at once, for 4–9 strings.
+- A window wider than the gap between two strings lists a pitch twice, in tab order; that is
+  what the window holds, and the tab shows it as it is.
+- Export of the tab (M4) can reuse `TabView` and `tabPosition` as they are.
+- Later additive settings can follow the same rule; a renamed or reinterpreted key still needs
+  a version bump and a migration.

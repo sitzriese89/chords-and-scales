@@ -2,11 +2,14 @@
   @component
   The neck for the current last view: the scale's notes on the root across the whole neck of
   the current instrument (tuning, fret count, capo, left-handed from the settings), with a
-  summary of the scale above it. Everything shown comes from the core (`explorerView`).
+  summary of the scale above it, and under it the tab of one position with its controls
+  (ADR-25); the position's notes are highlighted on the neck. Everything shown comes from the
+  core (`explorerView`).
 -->
 <script lang="ts">
   import { Fretboard } from '../fretboard';
   import { getSettings } from '../settings';
+  import { PositionControls, TabView } from '../tab';
   import { getUserCatalogs } from '../user-catalogs.svelte';
   import { explorerView } from './view';
 
@@ -47,6 +50,19 @@
       ariaLabel="Fretboard: {title}, {view.tuning.name} tuning"
     />
   </div>
+
+  <section class="tab-section" aria-labelledby="tab-title">
+    <h3 id="tab-title">Tab: {view.position.description}</h3>
+    <PositionControls position={view.position} />
+    {#if view.tabNotes.length > 0}
+      <TabView
+        strings={view.tabStrings}
+        notes={view.tabNotes}
+        capo={view.capo}
+        ariaLabel="Tab: {title}, {view.position.description}"
+      />
+    {/if}
+  </section>
 </section>
 
 <style>
@@ -110,5 +126,17 @@
 
   .neck {
     overflow-x: auto;
+  }
+
+  .tab-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+
+  h3 {
+    margin: 0;
+    font-size: 1rem;
   }
 </style>

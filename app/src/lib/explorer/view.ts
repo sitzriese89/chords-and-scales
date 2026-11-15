@@ -6,6 +6,13 @@
 import type { FretboardDot } from '../fretboard';
 import { DEFAULT_SETTINGS, type Settings } from '../settings';
 import {
+  playingOrder,
+  tabPosition,
+  tabStrings,
+  type TabPosition,
+  type TabString,
+} from '../tab/position';
+import {
   fretboardPositions,
   formatNoteName,
   getScale,
@@ -26,7 +33,17 @@ export interface ExplorerView {
   tuning: Tuning;
   frets: number;
   capo: number;
+  /**
+   * The scale's notes on the whole neck. With highlighting on, the ones outside the tab's
+   * position are dimmed (ADR-25).
+   */
   dots: FretboardDot[];
+  /** The position the tab shows, from the core. */
+  position: TabPosition;
+  /** The tab's lines, string 1 first. */
+  tabStrings: TabString[];
+  /** The position's notes in playing order, for the tab. */
+  tabNotes: { string: number; fret: number; root: boolean }[];
   /**
    * Stored values that couldn't be used, each replaced by its default for display (the
    * settings themselves are left alone, so a user file added later can still provide them).
@@ -56,7 +73,7 @@ export function rootChoices(): string[] {
   return [...names];
 }
 
-type ViewSettings = Pick<Settings, 'accidentals' | 'labels' | 'instrument' | 'lastView'>;
+type ViewSettings = Pick<Settings, 'accidentals' | 'labels' | 'instrument' | 'lastView' | 'tab'>;
 
 /** What to show for `settings`. Unusable stored values fall back to the defaults. */
 export function explorerView(settings: ViewSettings): ExplorerView {
@@ -110,13 +127,37 @@ export function explorerView(settings: ViewSettings): ExplorerView {
     }
   };
 
+  const position = tabPosition({ tuning, frets, capo, notes, tab: settings.tab });
+  const key = (p: { string: number; fret: number }) => `${p.string}:${p.fret}`;
+  const inPosition = new Set(position.positions.map(key));
+  // An empty position (nothing fits) dims nothing, so the neck never goes all grey.
+  const dim = settings.tab.highlight && inPosition.size > 0;
+
   const dots: FretboardDot[] = positions.map((p) => ({
     string: p.string,
     fret: p.fret,
     label: label(p.pitchClass),
-    role: p.degree === 0 ? 'root' : 'tone',
+    role: dim && !inPosition.has(key(p)) ? 'dim' : p.degree === 0 ? 'root' : 'tone',
     degree: p.degree,
   }));
 
-  return { root, scale, notes, tuning, frets, capo, dots, fallbacks };
+  const tabNotes = playingOrder(position.positions, settings.tab.direction).map((p) => ({
+    string: p.string,
+    fret: p.fret,
+    root: p.degree === 0,
+  }));
+
+  return {
+    root,
+    scale,
+    notes,
+    tuning,
+    frets,
+    capo,
+    dots,
+    position,
+    tabStrings: tabStrings(tuning, settings.accidentals),
+    tabNotes,
+    fallbacks,
+  };
 }

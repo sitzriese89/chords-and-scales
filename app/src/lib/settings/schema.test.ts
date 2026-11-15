@@ -16,6 +16,14 @@ const custom: Settings = {
   leftHanded: true,
   instrument: { kind: 'bass', strings: 5, tuning: 'bass-5-standard', frets: 21, capo: 3 },
   lastView: { root: 'Db', scale: 'dorian' },
+  tab: {
+    system: 'window',
+    pattern: 2,
+    windowStart: 7,
+    windowSpan: 5,
+    direction: 'both',
+    highlight: false,
+  },
 };
 
 function parsed(text: string) {
@@ -50,6 +58,14 @@ describe('serializeSettings', () => {
       display: { accidentals: 'flats', labels: 'intervals', theme: 'dark', left_handed: true },
       instrument: { kind: 'bass', strings: 5, tuning: 'bass-5-standard', frets: 21, capo: 3 },
       last_view: { root: 'Db', scale: 'dorian' },
+      tab: {
+        system: 'window',
+        pattern: 2,
+        window_start: 7,
+        window_span: 5,
+        direction: 'both',
+        highlight: false,
+      },
     });
   });
 
@@ -96,6 +112,33 @@ scale = "lydian"
       'instrument.capo should be a whole number from 0 to 21, not 22',
       'last_view.root should be a text of 1 to 64 characters, not 5',
     ]);
+  });
+
+  it('reads the tab position and falls back per value', () => {
+    const result = parsed(`version = 1
+[tab]
+system = "caged"
+pattern = 3
+window_start = 30
+window_span = 0
+direction = "both"
+`);
+    expect(result.settings.tab).toEqual({
+      ...DEFAULT_SETTINGS.tab,
+      pattern: 3,
+      direction: 'both',
+    });
+    expect(result.problems).toEqual([
+      'tab.system should be "3nps" or "window", not "caged"',
+      'tab.window_start should be a whole number from 0 to 27, not 30',
+      'tab.window_span should be a whole number from 1 to 12, not 0',
+    ]);
+  });
+
+  it('reads a version 1 file written before the tab table existed', () => {
+    const result = parsed('version = 1\n[last_view]\nroot = "G"\n');
+    expect(result.problems).toEqual([]);
+    expect(result.settings.tab).toEqual(DEFAULT_SETTINGS.tab);
   });
 
   it('reports unknown keys and tables that are not tables', () => {
