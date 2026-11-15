@@ -3,6 +3,8 @@
  * current settings (ADR-23). It only looks things up in the core's answers; every note name,
  * interval label and position comes from WASM (AGENTS.md: no theory in TypeScript).
  */
+import { chordSymbol } from '../chords/display';
+import { chordOverlay, type ChordOnNeck } from '../chords/overlay';
 import type { FretboardDot } from '../fretboard';
 import { DEFAULT_SETTINGS, type Settings } from '../settings';
 import {
@@ -13,8 +15,10 @@ import {
   type TabString,
 } from '../tab/position';
 import {
+  chordNotes,
   fretboardPositions,
   formatNoteName,
+  getChord,
   getScale,
   getTuning,
   scaleNotes,
@@ -38,6 +42,11 @@ export interface ExplorerView {
    * position are dimmed (ADR-25).
    */
   dots: FretboardDot[];
+  /**
+   * The chord shown on the neck, if one is chosen in the chord panel (SPEC §5.3): its name,
+   * and whether the scale is drawn dimmed behind it.
+   */
+  chord: { name: string; overScale: boolean } | null;
   /** The position the tab shows, from the core. */
   position: TabPosition;
   /** The tab's lines, string 1 first. */
@@ -81,10 +90,15 @@ export function rootChoices(): string[] {
   return [...names];
 }
 
-type ViewSettings = Pick<Settings, 'accidentals' | 'labels' | 'instrument' | 'lastView' | 'tab'>;
-
-/** What to show for `settings`. Unusable stored values fall back to the defaults. */
-export function explorerView(settings: ViewSettings): ExplorerView {
+/**
+ * The root and scale the settings name, as displayed. A value that isn't usable is replaced
+ * by the default and reported in `fallbacks`.
+ */
+export function resolveScale(settings: Pick<Settings, 'lastView'>): {
+  root: string;
+  scale: ScaleInfo;
+  fallbacks: string[];
+} {
   const fallbacks: string[] = [];
   const defaults = DEFAULT_SETTINGS;
 
@@ -101,6 +115,19 @@ export function explorerView(settings: ViewSettings): ExplorerView {
     scale = getScale(defaults.lastView.scale)!;
     fallbacks.push(`There is no scale “${settings.lastView.scale}”; showing ${scale.name}.`);
   }
+  return { root, scale, fallbacks };
+}
+
+type ViewSettings = Pick<Settings, 'accidentals' | 'labels' | 'instrument' | 'lastView' | 'tab'>;
+
+/**
+ * What to show for `settings`. Unusable stored values fall back to the defaults. With a
+ * `chord` the neck shows its tones instead of the scale: over the scale, dimmed, when the
+ * chord comes from it, alone otherwise. The tab below the neck stays the scale's.
+ */
+export function explorerView(settings: ViewSettings, chord?: ChordOnNeck | null): ExplorerView {
+  const defaults = DEFAULT_SETTINGS;
+  const { root, scale, fallbacks } = resolveScale(settings);
 
   let tuning = getTuning(settings.instrument.tuning);
   if (!tuning) {
@@ -141,13 +168,29 @@ export function explorerView(settings: ViewSettings): ExplorerView {
   // An empty position (nothing fits) dims nothing, so the neck never goes all grey.
   const dim = settings.tab.highlight && inPosition.size > 0;
 
-  const dots: FretboardDot[] = positions.map((p) => ({
+  let dots: FretboardDot[] = positions.map((p) => ({
     string: p.string,
     fret: p.fret,
     label: label(p.pitchClass),
     role: dim && !inPosition.has(key(p)) ? 'dim' : p.degree === 0 ? 'root' : 'tone',
     degree: p.degree,
   }));
+  let pitched = positions;
+  let chordInfo: ExplorerView['chord'] = null;
+  const definition = chord ? getChord(chord.chordId) : undefined;
+  if (chord && definition) {
+    const overlay = chordOverlay({
+      tuning,
+      frets,
+      capo,
+      labels: settings.labels,
+      chord: chordNotes(chord.chordId, chord.root, settings.accidentals),
+      scale: chord.fromScale ? notes : null,
+    });
+    dots = overlay.dots;
+    pitched = overlay.positions;
+    chordInfo = { name: chordSymbol(chord.root, definition), overScale: chord.fromScale };
+  }
 
   const tabNotes = playingOrder(position.positions, settings.tab.direction).map((p) => ({
     string: p.string,
@@ -155,7 +198,7 @@ export function explorerView(settings: ViewSettings): ExplorerView {
     root: p.degree === 0,
     midi: p.midi,
   }));
-  const pitches = new Map(positions.map((p) => [key(p), p.midi]));
+  const pitches = new Map(pitched.map((p) => [key(p), p.midi]));
 
   return {
     root,
@@ -165,6 +208,7 @@ export function explorerView(settings: ViewSettings): ExplorerView {
     frets,
     capo,
     dots,
+    chord: chordInfo,
     position,
     tabStrings: tabStrings(tuning, settings.accidentals),
     tabNotes,

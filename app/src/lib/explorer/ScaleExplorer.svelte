@@ -8,6 +8,7 @@
 -->
 <script lang="ts">
   import { getAudio } from '../audio';
+  import { getChordState } from '../chords';
   import { Fretboard, type FretPosition } from '../fretboard';
   import { getSettings } from '../settings';
   import { PositionControls, TabView } from '../tab';
@@ -17,12 +18,21 @@
   const settings = getSettings();
   const catalogs = getUserCatalogs();
   const audio = getAudio();
+  const chords = getChordState();
   const view = $derived.by(() => {
     // Re-read the catalogs when a user scale or tuning was saved or deleted (ADR-24).
     void catalogs.revision;
-    return explorerView(settings.current);
+    return explorerView(settings.current, chords.onNeck);
   });
   const title = $derived(`${view.root} ${view.scale.name}`);
+  /** What the neck shows: the scale, or a chord (over the scale when it comes from it). */
+  const neckTitle = $derived(
+    view.chord
+      ? view.chord.overScale
+        ? `${view.chord.name} over ${title}`
+        : `${view.chord.name} chord`
+      : title,
+  );
 
   /** A click on a dot sounds it at its real pitch (tuning and fret, from the core). */
   function playDot(position: FretPosition) {
@@ -60,7 +70,7 @@
       capo={view.capo}
       dots={view.dots}
       leftHanded={settings.current.leftHanded}
-      ariaLabel="Fretboard: {title}, {view.tuning.name} tuning"
+      ariaLabel="Fretboard: {neckTitle}, {view.tuning.name} tuning"
       onactivate={playDot}
     />
   </div>

@@ -960,3 +960,46 @@ notes fits many chords.
   limit keeps the cost flat (one pass over about 60 chords and 60 scales on up to 12 roots).
 - Naming and display (Standard/Jazz, the `/`) are left to the symbol formatter, which takes
   the chord id, root and bass from these results.
+
+## ADR-32: The chord panel: one chosen chord drawn on the explorer neck, degrees behind a seam
+
+**Context.** M2.5 adds the docked chord panel (ADR-10) with two input modes (root and quality,
+degree of the current scale) and the chord-over-scale overlay (SPEC §5.3). The explorer owns
+the neck, the tab and the layout region (ADR-23); chords on a degree come from harmonize
+(M2.3), which is built in parallel; the voicing generator (M2.11) does not exist yet.
+
+**Decision.**
+- **One neck.** The panel does not draw a second fretboard. It writes the chosen chord to a
+  `ChordState` (`app/src/lib/chords/`, a context like the settings) and the scale explorer
+  draws it on its own neck: the chord's tones emphasized (root a square, the others circles)
+  and, for a chord from a degree, the scale's other notes `dim`; for root and quality the
+  chord alone, since it has no parent scale. `explorerView(settings, chord)` builds the dots
+  with `chordOverlay`, from `fretboardPositions` over the chord's and the scale's pitch classes;
+  chord tones are labelled with the chord's own names or intervals (`♭7` of G7), dimmed notes
+  with their name only. The tab below the neck stays the scale's and its position highlight
+  does not touch the overlay. Nothing is chosen at first, so the neck shows the scale as
+  before; **Clear chord** returns to that.
+- **Degrees through a seam.** A `Harmonizer` interface (`chords/harmonize.ts`:
+  `chordOnDegree({scaleId, root, degree, size, accidentals})` giving a root and a chord id,
+  or `undefined` for "no chord") is all the panel knows about stacking thirds, which is
+  theory and not for TypeScript. `harmonizer` there is `null` until the harmonize binding
+  exists; the degree input is then disabled with a note. Wiring M2.3 is replacing that
+  constant; tests use a hand-written C major fixture. `App` takes it as a prop.
+- **One place for the chord's name.** `chordSymbol(root, chord)` writes root + catalog suffix
+  as stored; the symbol formatter and display style (M2.2, M2.6) replace it there.
+- **Strum.** The Strum button plays `getAudio().strum(midis)` with pitches picked from the
+  core's positions: from the lowest root on the neck each next chord tone is the nearest
+  higher pitch on a higher string, one note per string, tones with no string left out. It is
+  a stand-in, not a voicing: M2.11 replaces `strumPitches`.
+- **Panel state.** `settings.toml` gets a `[chord_panel]` table, `collapsed` (default false)
+  and `height` in pixels (96 to 640, default 220). Absent means the default, so the format
+  version stays 1 (ADR-25). The panel resizes by its top edge (drag, or the arrow keys,
+  Home and End on the focused separator) and saves the height when the drag ends. The chosen
+  chord itself is not stored.
+
+**Consequences.**
+- The neck and the panel cannot disagree, and the explorer needs no second fretboard, but a
+  chord on the neck hides the scale's own emphasis until it is cleared.
+- M2.7 (harmonize view) and M2.8 (reverse lookup) can set the same `ChordState`, and M2.6
+  adds typed symbols as a third input.
+- Until M2.3 is wired in, the degree input is unavailable in the real app.

@@ -20,7 +20,11 @@ set with a start fret and a width, played up, down or up and back down; the posi
 are highlighted on the neck. **New tuning** makes your own tuning, a note and octave per
 string; your tunings can be edited and deleted there too. Click a dot to hear the note, or
 press **Play** next to the tab to hear the position; volume and mute are under **Sound** on
-the right. Everything is saved and comes back
+the right. The **Chords** panel under the neck shows a chord on the neck: pick a root and a
+chord quality, or (once harmonize is available) a degree of the current scale as a triad or
+7th chord, which shows the chord emphasized over the dimmed scale. **Strum** plays it;
+**Collapse** and the panel's top edge (drag, or the arrow keys) fold and resize the panel.
+Everything is saved and comes back
 at the next start. Your own scales and tunings go in `scales.toml` and `tunings.toml` next to
 `settings.toml` in the app-data folder, in the format described in [SPEC.md](SPEC.md).
 

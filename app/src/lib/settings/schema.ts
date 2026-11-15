@@ -1,8 +1,8 @@
 /**
  * The settings document `settings.toml` (ADR-17): display preferences and the last view.
  *
- * Tables: `display`, `instrument`, `last_view`, `tab` (the tab view's position, ADR-25) and
- * `audio` (volume and mute, ADR-28).
+ * Tables: `display`, `instrument`, `last_view`, `tab` (the tab view's position, ADR-25),
+ * `audio` (volume and mute, ADR-28) and `chord_panel` (collapsed and height, ADR-32).
  * Adding a key or table whose absence means its default is not a format change: older files
  * load with the default, so the version stays.
  *
@@ -30,6 +30,11 @@ export const DIRECTIONS = ['ascending', 'descending', 'both'] as const;
 
 /** Volume is a whole percent. */
 export const MAX_VOLUME = 100;
+
+/** The chord panel's height in pixels (ADR-32). */
+export const MIN_PANEL_HEIGHT = 96;
+export const MAX_PANEL_HEIGHT = 640;
+export const DEFAULT_PANEL_HEIGHT = 220;
 
 export const MIN_STRINGS = 4;
 export const MAX_STRINGS = 9;
@@ -92,6 +97,13 @@ export interface Settings {
     /** No sound at all; the volume is kept. */
     muted: boolean;
   };
+  /** The docked chord panel (ADR-32). */
+  chordPanel: {
+    /** Only the panel's title bar is shown. */
+    collapsed: boolean;
+    /** Height of the open panel in pixels. */
+    height: number;
+  };
 }
 
 export const DEFAULT_SETTINGS: Readonly<Settings> = Object.freeze({
@@ -116,6 +128,7 @@ export const DEFAULT_SETTINGS: Readonly<Settings> = Object.freeze({
     highlight: true,
   }),
   audio: Object.freeze({ volume: 70, muted: false }),
+  chordPanel: Object.freeze({ collapsed: false, height: DEFAULT_PANEL_HEIGHT }),
 });
 
 export function defaultSettings(): Settings {
@@ -300,6 +313,13 @@ export function parseSettings(text: string): ParsedSettings {
   };
   audioTable.unknownKeys();
 
+  const panelTable = root.section('chord_panel');
+  const chordPanel: Settings['chordPanel'] = {
+    collapsed: panelTable.boolean('collapsed', d.chordPanel.collapsed),
+    height: panelTable.integer('height', MIN_PANEL_HEIGHT, MAX_PANEL_HEIGHT, d.chordPanel.height),
+  };
+  panelTable.unknownKeys();
+
   root.unknownKeys();
 
   return {
@@ -313,6 +333,7 @@ export function parseSettings(text: string): ParsedSettings {
       lastView: { root: rootNote, scale },
       tab,
       audio,
+      chordPanel,
     },
     problems,
   };
@@ -343,6 +364,10 @@ export function serializeSettings(settings: Settings): string {
       highlight: settings.tab.highlight,
     },
     audio: { volume: settings.audio.volume, muted: settings.audio.muted },
+    chord_panel: {
+      collapsed: settings.chordPanel.collapsed,
+      height: settings.chordPanel.height,
+    },
   };
   return `${HEADER}\n${stringify(doc).trimEnd()}\n`;
 }
