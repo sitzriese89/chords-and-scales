@@ -2,13 +2,12 @@
  * The seam for "the chord on degree n of the current scale" (SPEC §5.3, input mode 2).
  *
  * Which chord stands on a degree is theory (stacking every other scale tone, then naming the
- * result), so it comes from the core's harmonize (M2.3, SPEC §5.5) and never from TypeScript.
- * The panel only asks through this interface. Until the harmonize binding exists
- * `harmonizer` is `null`, and the panel offers the degree input disabled; tests pass a
- * fixture. Wiring the real one is one line here: `harmonizer = { chordOnDegree: … }` calling
- * the binding.
+ * result), so it comes from the core's harmonize (SPEC §5.5, ADR-30) and never from
+ * TypeScript. The panel only asks through this interface. `harmonizer` is the real one, a
+ * lookup in `harmonizeScale`'s table; `App` takes another as a prop, and tests pass a fixture
+ * or `null` (no degree input).
  */
-import type { Accidentals } from '../theory';
+import { harmonizeScale, type Accidentals } from '../theory';
 
 /** Triads or seventh chords, as in the harmonize view (SPEC §5.5). */
 export type ChordSize = 'triads' | 'sevenths';
@@ -39,5 +38,15 @@ export interface Harmonizer {
   chordOnDegree(request: DegreeChordRequest): DegreeChord | undefined;
 }
 
-/** The harmonize core's chords, or `null` while it isn't wired in (M2.3). */
-export const harmonizer: Harmonizer | null = null;
+/**
+ * The harmonize core's chords: the binding's table for the scale, the entry at the degree.
+ * No chord there, or none the catalog names, is `undefined`.
+ */
+export const harmonizer: Harmonizer | null = {
+  chordOnDegree({ scaleId, root, degree, size, accidentals }) {
+    const entry = harmonizeScale(scaleId, root, accidentals, size)[degree];
+    const chord = entry?.chord;
+    if (!chord?.chordId) return undefined;
+    return { root: entry.root.name, chordId: chord.chordId, numeral: chord.numeral.text };
+  },
+};

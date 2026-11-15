@@ -41,7 +41,7 @@ export class ChordState {
 
   constructor(
     private readonly settings: SettingsStore,
-    /** The harmonize core's chords; `null` while it isn't wired in (`harmonize.ts`). */
+    /** Where chords on a degree come from (`harmonize.ts`); `null` turns the degree input off. */
     readonly harmonizer: Harmonizer | null,
     private readonly catalogs: UserCatalogs,
   ) {}

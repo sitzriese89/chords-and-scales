@@ -1,5 +1,6 @@
-// The chord panel in the real app: the real WASM core, settings and storage, a fixture for
-// the harmonize seam (M2.3 isn't wired in yet) and a fake AudioContext.
+// The chord panel in the real app: the real WASM core, settings and storage and a fake
+// AudioContext. Most tests pass a C major fixture for the harmonize seam; the last block uses
+// the app's own default, the core's harmonize.
 import { cleanup, fireEvent, render, screen } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import App from '../../App.svelte';
@@ -25,7 +26,8 @@ function audioSetup() {
 }
 
 async function startApp(options: {
-  harmonizer?: Harmonizer | null;
+  /** Omitted: the C major fixture. 'core': the app's own default, the real harmonize core. */
+  harmonizer?: Harmonizer | null | 'core';
   change?: (s: Settings) => void;
   audio?: AudioEngine;
   storage?: BrowserStorage;
@@ -40,7 +42,9 @@ async function startApp(options: {
   }
   render(App, {
     storage,
-    harmonizer: options.harmonizer === undefined ? cMajorHarmonizer : options.harmonizer,
+    ...(options.harmonizer === 'core'
+      ? {}
+      : { harmonizer: options.harmonizer === undefined ? cMajorHarmonizer : options.harmonizer }),
     ...(options.audio ? { audio: options.audio } : {}),
   });
   await screen.findByRole('grid', { name: /^Fretboard/ });
@@ -272,6 +276,83 @@ describe('chord panel', () => {
       expect(edge).toHaveAttribute('aria-valuenow', '96');
       move('pointerup', 900);
       await expect.poll(() => storage.read(SETTINGS_DOCUMENT)).toMatch(/height = 96/);
+    });
+  });
+});
+
+describe('chord panel with the real harmonize core', () => {
+  beforeEach(() => window.localStorage.clear());
+  afterEach(cleanup);
+
+  it('is enabled in the app without any harmonizer passed in', async () => {
+    await startApp({ harmonizer: 'core' });
+    expect(screen.getByRole('radio', { name: 'Degree of the scale' })).toBeEnabled();
+    expect(screen.queryByText('Choosing by degree is not available yet.')).toBeNull();
+  });
+
+  it('shows degree V of C major as 7th chords: G7 over the dimmed scale', async () => {
+    await startApp({ harmonizer: 'core' });
+    await pickMode('Degree of the scale');
+    await fireEvent.click(screen.getByRole('radio', { name: '7th chords' }));
+    await pick('Degree of C Major', '4');
+
+    expect(screen.getByRole('heading', { name: 'G7' })).toBeInTheDocument();
+    expect(screen.getByText(/Dominant seventh \(V7\) on degree 5 of C Major/)).toBeInTheDocument();
+    expect(neck()).toEqual({
+      root: new Set(['G']),
+      tone: new Set(['B', 'D', 'F']),
+      dim: new Set(['C', 'E', 'A']),
+    });
+    expect(screen.getByRole('grid', { name: /^Fretboard: G7 over C Major/ })).toBeInTheDocument();
+  });
+
+  it('shows the triad on degree V of C major', async () => {
+    await startApp({ harmonizer: 'core' });
+    await pickMode('Degree of the scale');
+    await pick('Degree of C Major', '4');
+    expect(screen.getByRole('heading', { name: 'G' })).toBeInTheDocument();
+    expect(neck().root).toEqual(new Set(['G']));
+    expect(neck().tone).toEqual(new Set(['B', 'D']));
+    expect(neck().dim).toEqual(new Set(['C', 'E', 'F', 'A']));
+  });
+
+  it('shows a chord where the pentatonic has one and says so where it has none', async () => {
+    await startApp({
+      harmonizer: 'core',
+      change: (s) => {
+        s.lastView.scale = 'minor-pentatonic';
+        s.accidentals = 'flats';
+      },
+    });
+    await pickMode('Degree of the scale');
+    await pick('Degree of C Minor pentatonic', '1');
+    expect(screen.getByRole('heading', { name: 'E♭' })).toBeInTheDocument();
+    expect(screen.getByText(/\(♭III\) on degree 2 of C Minor pentatonic/)).toBeInTheDocument();
+
+    await pick('Degree of C Minor pentatonic', '2');
+    expect(
+      screen.getByText('No chord forms on degree 3 of C Minor pentatonic.'),
+    ).toBeInTheDocument();
+    expect(neck().dim.size).toBe(0);
+    expect(neck().tone).toEqual(new Set(['E♭', 'F', 'G', 'B♭']));
+  });
+
+  it('keeps the root as picked and spells the chord by the sharp/flat setting', async () => {
+    await startApp({
+      harmonizer: 'core',
+      change: (s) => {
+        s.lastView.root = 'D♭';
+        s.accidentals = 'flats';
+      },
+    });
+    await pickMode('Degree of the scale');
+    await fireEvent.click(screen.getByRole('radio', { name: '7th chords' }));
+    await pick('Degree of D♭ Major', '4');
+    expect(screen.getByRole('heading', { name: 'A♭7' })).toBeInTheDocument();
+    expect(neck()).toEqual({
+      root: new Set(['A♭']),
+      tone: new Set(['C', 'E♭', 'G♭']),
+      dim: new Set(['D♭', 'F', 'B♭']),
     });
   });
 });
