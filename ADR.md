@@ -37,6 +37,7 @@ ADR-1 to ADR-13 come from the design interview behind [SPEC.md](SPEC.md) (decisi
 | 24 | [Instrument settings: custom tunings saved by the core, stable generated ids, a catalog revision](#adr-24-instrument-settings-custom-tunings-saved-by-the-core-stable-generated-ids-a-catalog-revision) | Accepted |
 | 25 | [The tab view: core positions in playing order, absolute frets, never mirrored, stored without a version bump](#adr-25-the-tab-view-core-positions-in-playing-order-absolute-frets-never-mirrored-stored-without-a-version-bump) | Accepted |
 | 26 | [Custom scales: a generic interval-set editor, names unique in the catalog, checks in the core](#adr-26-custom-scales-a-generic-interval-set-editor-names-unique-in-the-catalog-checks-in-the-core) | Accepted |
+| 27 | [The chord catalog: suffix symbols in the data, a full stack per chord, shared file reader](#adr-27-the-chord-catalog-suffix-symbols-in-the-data-a-full-stack-per-chord-shared-file-reader) | Accepted |
 
 ---
 
@@ -733,3 +734,59 @@ ids are generated once, `UserCatalogs` tells the views.
   it to compound intervals (`9`, `#11`, `13`).
 - Built-in scale names now constrain user names: a future built-in with a user's name makes
   that user's next save fail until it is renamed.
+
+## ADR-27: The chord catalog: suffix symbols in the data, a full stack per chord, shared file reader
+
+**Context.** M2.1 adds the chord catalog (ADR-5, ADR-20). The symbol parser and formatter
+(M2.2), harmonize (M2.3), reverse lookup (M2.4), the chord panel, the custom chord editor
+(M2.9) and the voicing generator (M2.11) all build on it. Chords use the scale formula format
+but reach past the octave (`9`, `#11`, `13`), and each needs the names it is written with.
+
+**Decision.**
+- **Same format, own rules.** `crates/theory/data/chords.toml` holds `[[chord]]` tables with
+  `id` (kebab-case, unique), `name`, `symbol`, optional `aliases`, `jazz_symbol` and `family`,
+  and `intervals`; unknown fields are errors. A user chord with no `family` goes under
+  `Custom`. The intervals are a `Formula` (ADR-20) with these extra rules: at least two
+  (a power chord is the smallest), every interval below two octaves (`MAX_CHORD_SEMITONES`,
+  24), and no two on one pitch class (`b5` with `#11` is an error), so a chord's tones are
+  always distinct notes.
+- **Symbols are data.** `symbol` is the chord's suffix, the part after the root, in ASCII
+  (`maj7`, `m7b5`, `7#9`; empty for the major triad only). `aliases` are the other suffixes
+  the parser accepts (`M7`, `Δ7`, `-7`, `ø`); `jazz_symbol` is the suffix for the Jazz display
+  style where it differs (`Δ7`, `ø`, `°7`). Suffixes are matched case-sensitively, since `M7`
+  and `m7` differ, and no suffix may mean two chords in the built-in catalog (a test checks
+  it). The parser still normalises what it reads (flat and sharp signs, parentheses) and the
+  formatter turns `b` and `#` into `♭` and `♯`; neither belongs in the core's data. When a
+  merged catalog has one suffix twice, `find_by_symbol` picks the later chord, so a user
+  chord wins over a built-in one.
+- **A chord is its full stack.** `13` is `1 3 5 b7 9 13` and `m13` is `1 b3 5 b7 9 11 13`: the
+  natural 11 is left out where it clashes with a major third and kept where it doesn't. The
+  catalog doesn't say which tones may be dropped; the voicing generator (M2.11) decides that
+  and may leave out the 5th, the root or the 9th.
+- **Ids are readable, not clever.** `maj7`, `dom7`, `min7b5`, `dom7sharp9`, `minadd9`: a
+  quality word (`maj`, `dom`, `min`, `dim`, `aug`), the number, then `sharp`/`flat` words,
+  because `-` and `#` can't be part of an id's words. Like scale ids they are a contract
+  with settings and user files.
+- **One file reader.** `catalog_file` is the code that scales and chords share: the TOML
+  list-of-tables layout, per-item errors (`CatalogError`, now saying `chord 2 (…)` or
+  `scale 2 (…)`), the first id wins, and the kebab-case rule. `ChordCatalog` mirrors
+  `ScaleCatalog`: `builtin`, `get`, `families`, `with_user_chords` (replace in place by id,
+  others at the end), `parse_user_chords`. Writing the user chord file and generating ids
+  come with the editor (M2.9).
+- **Spelling is the scale rule.** `Chord::notes(root, accidentals)` spells every tone by the
+  sharp/flat preference and keeps the root as given (ADR-6); labels such as `#9` stay as
+  written in the data and in the result.
+- **WASM.** `chords.rs` exports `listChords`, `getChord`, `chordNotes` and `setUserChords`,
+  holding one current catalog like `scales.rs`; `setUserChords` returns the shared
+  `UserFileReport` (ADR-23).
+
+**Consequences.**
+- Adding a chord is a data change; the catalog test rejects a repeated suffix, name or
+  interval set.
+- M2.2 reads suffixes from the catalog instead of a table of its own, so a user chord with a
+  symbol becomes typeable without parser changes.
+- A user chord can take a suffix from a built-in chord (`m7`); the parser then reads it as the
+  user's chord. That is the same shadowing as for ids, and the user can undo it by deleting
+  their item.
+- Chord names are not checked for duplicates when a user file is read, only (by M2.9) when
+  it is saved, as for scales (ADR-26).

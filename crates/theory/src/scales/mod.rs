@@ -11,8 +11,7 @@
 mod catalog;
 
 pub use catalog::{
-    CUSTOM_FAMILY, CatalogError, ParsedScales, ScaleCatalog, ScaleFamily, parse_user_scales,
-    write_scales,
+    CUSTOM_FAMILY, ParsedScales, ScaleCatalog, ScaleFamily, parse_user_scales, write_scales,
 };
 
 use std::fmt;
@@ -137,7 +136,7 @@ impl Scale {
         intervals: &[S],
         source: Source,
     ) -> Result<Self, ScaleError> {
-        if !catalog::is_kebab_case(&id) {
+        if !crate::catalog_file::is_kebab_case(&id) {
             return Err(ScaleError::Id(id));
         }
         if name.trim().is_empty() {
