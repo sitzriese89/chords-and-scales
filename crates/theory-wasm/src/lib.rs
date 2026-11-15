@@ -21,4 +21,6 @@ pub use notes::{
     interval_semitones, note_from_parts, note_parts, parse_note, pitch_class_of, spell_pitch_class,
 };
 pub use positions::{fret_window_positions, three_nps_patterns};
-pub use scales::{get_scale, list_scales, scale_notes, set_user_scales};
+pub use scales::{
+    get_scale, list_scales, new_scale_id, scale_notes, set_user_scales, write_scales_toml,
+};

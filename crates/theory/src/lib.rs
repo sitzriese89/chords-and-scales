@@ -18,8 +18,8 @@ pub use notes::{
 };
 pub use scale_positions::{ThreeNpsPattern, fret_window, three_notes_per_string};
 pub use scales::{
-    CatalogError, ParsedScales, Scale, ScaleCatalog, ScaleFamily, ScaleNote, Source,
-    parse_user_scales,
+    CUSTOM_FAMILY, CatalogError, ParsedScales, Scale, ScaleCatalog, ScaleError, ScaleFamily,
+    ScaleNote, Source, parse_user_scales, write_scales,
 };
 pub use tuning::{
     InstrumentKind, ParsedTunings, Tuning, TuningCatalog, TuningError, TuningFileError,

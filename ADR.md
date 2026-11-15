@@ -36,6 +36,7 @@ ADR-1 to ADR-13 come from the design interview behind [SPEC.md](SPEC.md) (decisi
 | 23 | [The scale explorer: one layout, user catalogs loaded alike, labels looked up from the core](#adr-23-the-scale-explorer-one-layout-user-catalogs-loaded-alike-labels-looked-up-from-the-core) | Accepted |
 | 24 | [Instrument settings: custom tunings saved by the core, stable generated ids, a catalog revision](#adr-24-instrument-settings-custom-tunings-saved-by-the-core-stable-generated-ids-a-catalog-revision) | Accepted |
 | 25 | [The tab view: core positions in playing order, absolute frets, never mirrored, stored without a version bump](#adr-25-the-tab-view-core-positions-in-playing-order-absolute-frets-never-mirrored-stored-without-a-version-bump) | Accepted |
+| 26 | [Custom scales: a generic interval-set editor, names unique in the catalog, checks in the core](#adr-26-custom-scales-a-generic-interval-set-editor-names-unique-in-the-catalog-checks-in-the-core) | Accepted |
 
 ---
 
@@ -678,3 +679,57 @@ neck, and whether storing the choice is a settings format change (ADR-17).
 - Export of the tab (M4) can reuse `TabView` and `tabPosition` as they are.
 - Later additive settings can follow the same rule; a renamed or reinterpreted key still needs
   a version bump and a migration.
+
+## ADR-26: Custom scales: a generic interval-set editor, names unique in the catalog, checks in the core
+
+**Context.** M1.11 lets users make, edit and delete their own scales, by a 12-semitone picker
+or by clicking notes on the neck, saved to `scales.toml` and listed like the built-ins. The
+chord editor (M2.9) needs the same kind of form. Until now only the user wrote `scales.toml`,
+and a user file could hold a "scale" of one note or two scales of one name, both of which look
+broken in the picker. ADR-24 set the pattern for tunings: the core writes and checks the file,
+ids are generated once, `UserCatalogs` tells the views.
+
+**Decision.**
+- **The core checks and writes.** `Scale::new` checks a scale as an item of a file is checked;
+  `theory::write_scales(&[Scale])` writes the `[[scale]]` format that `parse_user_scales`
+  reads back unchanged (intervals as ASCII labels, kept as written; `family` always written;
+  `aliases` only when there are some; a round-trip property test checks it). The binding
+  exports `writeScales(scales)`, which throws `“<name>”: <reason>`, and `newScaleId(name)`.
+  `UserCatalogs.saveUserScales` writes the text and reloads the catalog, as
+  `saveUserTunings` does, and keeps a file with broken items as `scales-backup.toml` before
+  its first rewrite. The editor checks nothing itself; it shows the core's message.
+- **A scale needs two notes.** The root is always in (the editor can't take it out), so "no
+  notes" means only the root: every scale, in any file, needs at least one interval besides
+  `1`. A user file with a one-note scale now reports that item and skips it.
+- **A duplicate name is the same display name**, not the same id: ids are generated and
+  never collide (below), while the name is what the picker shows. `write_scales` refuses two
+  scales with one name in the catalog the file gives (the built-ins merged with the user's
+  scales), ignoring case and runs of white space. A user scale that replaces a built-in by id
+  may keep its name, since only one of them is listed. Aliases don't count. Reading a
+  hand-edited file doesn't check names; only saving does.
+- **Ids are generated once and then stable**, as for tunings: `ScaleCatalog::new_id(name)` is
+  the kebab-case slug of the name (`custom` if it has no ASCII letters or digits), at most 64
+  characters, with `-2`, `-3`, … when a scale in the catalog or a built-in has it. Renaming
+  keeps the id, so the settings keep pointing at the scale.
+- **One editor for interval sets.** `app/src/lib/editor/IntervalSetEditor.svelte` edits a
+  name, a family and a set of intervals; what it edits (`noun`, the initial draft, the family
+  suggestions) is passed in, so the chord editor can reuse it. Labels are looked up, never
+  computed: a semitone the edited item had keeps its label (`♯4` stays `♯4`), a new one gets
+  the core's default (`intervalLabel`). It has its own `Fretboard` with the current tuning,
+  frets, capo, left-handed setting and root; a click toggles the interval of that position,
+  taken from `fretboardPositions` over all twelve pitch classes.
+- **Where it lives.** The scale picker has **New scale**, and **Edit scale** / **Delete
+  scale** (with a confirmation) when the selected scale is the user's. The editor opens in a
+  modal dialog from the picker, so `App.svelte` is unchanged; Escape or Cancel closes it.
+  Saving a new scale selects it. Deleting the selected scale shows the built-in it replaced,
+  or else the default scale.
+
+**Consequences.**
+- No TOML and no scale rule in TypeScript; a hand-edited file and the editor are checked by
+  the same code.
+- A hand-edited file with two scales of one name still loads, but every save is refused until
+  one is renamed (the message names the scale).
+- The picker offers only intervals within the octave; the chord editor will need to extend
+  it to compound intervals (`9`, `#11`, `13`).
+- Built-in scale names now constrain user names: a future built-in with a user's name makes
+  that user's next save fail until it is renamed.

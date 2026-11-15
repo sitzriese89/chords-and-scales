@@ -28,8 +28,17 @@ export type { UserFileError, UserFileReport } from './wasm/theory_wasm.js';
 
 // Scale catalog (crates/theory-wasm/src/scales.rs): the built-ins, with the user scales last
 // passed to setUserScales merged over them. Intervals and note names are Unicode.
-export type { ScaleFamily, ScaleInfo, ScaleNote } from './wasm/theory_wasm.js';
-export { getScale, listScales, scaleNotes, setUserScales } from './wasm/theory_wasm.js';
+// `writeScales` turns user scales into the text of `scales.toml` (checked by the core, which
+// also refuses a duplicate id or name) and `newScaleId` makes the id of a new one (ADR-26).
+export type { ScaleFamily, ScaleInfo, ScaleInput, ScaleNote } from './wasm/theory_wasm.js';
+export {
+  getScale,
+  listScales,
+  newScaleId,
+  scaleNotes,
+  setUserScales,
+  writeScales,
+} from './wasm/theory_wasm.js';
 
 // Tunings and the fretboard mapping (crates/theory-wasm/src/fretboard.rs): the built-ins,
 // with the user tunings last passed to setUserTunings on top. Tunings list MIDI notes lowest

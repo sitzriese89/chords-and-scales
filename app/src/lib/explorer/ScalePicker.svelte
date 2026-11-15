@@ -4,10 +4,21 @@
   which saves it (ADR-17). The root can be picked from the list or typed (`Db`, `f#`, `E♭`);
   it is checked by the core and keeps its spelling (ADR-6). Scales are grouped by family and
   can be searched by name, alias or id.
+
+  The user's own scales are made, edited and deleted here (ADR-26): the editor opens in a
+  dialog with its own neck, and saves to `scales.toml` through `UserCatalogs`.
 -->
 <script lang="ts">
-  import { getSettings } from '../settings';
-  import { listScales } from '../theory';
+  import { IntervalSetEditor, type IntervalSetDraft, type Neck } from '../editor';
+  import { DEFAULT_SETTINGS, getSettings } from '../settings';
+  import {
+    getScale,
+    getTuning,
+    listScales,
+    newScaleId,
+    type ScaleInfo,
+    type ScaleInput,
+  } from '../theory';
   import { getUserCatalogs } from '../user-catalogs.svelte';
   import { displayRoot, rootChoices } from './view';
 
@@ -19,6 +30,96 @@
     void catalogs.revision;
     return listScales();
   });
+  const current = $derived.by(() => {
+    void catalogs.revision;
+    return getScale(settings.current.lastView.scale);
+  });
+  const isMine = $derived(current !== undefined && !current.builtIn);
+
+  type Editing = { mode: 'new' } | { mode: 'edit'; scale: ScaleInfo };
+  let editing = $state<Editing | null>(null);
+  let confirmingDelete = $state(false);
+  let editProblem = $state<string | null>(null);
+
+  /** The neck the editor shows: the current instrument, on the current root. */
+  const neck = $derived.by((): Neck => {
+    void catalogs.revision;
+    const { instrument, leftHanded } = settings.current;
+    const tuning = getTuning(instrument.tuning) ?? getTuning(DEFAULT_SETTINGS.instrument.tuning)!;
+    return { tuning, frets: instrument.frets, capo: instrument.capo, leftHanded };
+  });
+  const editorRoot = $derived(
+    displayRoot(settings.current.lastView.root) ?? displayRoot(DEFAULT_SETTINGS.lastView.root)!,
+  );
+  const initial = $derived.by((): IntervalSetDraft => {
+    if (editing?.mode !== 'edit') return { name: '', family: '', intervals: ['1'] };
+    const { name, family, intervals } = editing.scale;
+    return { name, family, intervals };
+  });
+
+  function startNew() {
+    editing = { mode: 'new' };
+    confirmingDelete = false;
+    editProblem = null;
+  }
+
+  function startEdit() {
+    if (current && isMine) editing = { mode: 'edit', scale: current };
+    confirmingDelete = false;
+    editProblem = null;
+  }
+
+  function input(id: string, draft: IntervalSetDraft, aliases: string[] = []): ScaleInput {
+    return {
+      id,
+      name: draft.name,
+      aliases,
+      family: draft.family === '' ? undefined : draft.family,
+      intervals: draft.intervals,
+    };
+  }
+
+  /** Saves the editor's scale (checked by the core) and shows it. */
+  async function save(draft: IntervalSetDraft) {
+    if (editing?.mode === 'edit') {
+      const old = editing.scale;
+      const scale = input(old.id, draft, old.aliases);
+      await catalogs.saveUserScales(catalogs.userScales.map((s) => (s.id === old.id ? scale : s)));
+    } else {
+      const scale = input(newScaleId(draft.name), draft);
+      await catalogs.saveUserScales([...catalogs.userScales, scale]);
+      await settings.update({ lastView: { scale: scale.id } }).catch(reportEdit);
+    }
+    editing = null;
+  }
+
+  /** Deletes the current user scale; the view falls back to the built-in it replaced or the default. */
+  async function deleteCurrent() {
+    const gone = current;
+    if (!gone || !isMine) return;
+    try {
+      await catalogs.saveUserScales(catalogs.userScales.filter((s) => s.id !== gone.id));
+    } catch (error) {
+      reportEdit(error);
+      return;
+    }
+    confirmingDelete = false;
+    editProblem = null;
+    const next = getScale(gone.id)?.id ?? DEFAULT_SETTINGS.lastView.scale;
+    if (next !== gone.id) await settings.update({ lastView: { scale: next } }).catch(reportEdit);
+  }
+
+  function reportEdit(error: unknown) {
+    editProblem = error instanceof Error ? error.message : String(error);
+  }
+
+  /** Escape closes the editor without saving. */
+  function onWindowKey(event: KeyboardEvent) {
+    if (editing && event.key === 'Escape') {
+      event.preventDefault();
+      editing = null;
+    }
+  }
 
   let rootError = $state<string | null>(null);
   let query = $state('');
@@ -115,7 +216,54 @@
       <p class="hint" role="status">No scale matches “{query}”.</p>
     {/if}
   </div>
+
+  <div class="own">
+    <div class="buttons">
+      <button type="button" onclick={startNew}>New scale</button>
+      {#if isMine}
+        <button type="button" onclick={startEdit}>Edit scale</button>
+        <button type="button" onclick={() => (confirmingDelete = true)}>Delete scale</button>
+      {/if}
+    </div>
+    {#if confirmingDelete && isMine && current}
+      <div class="confirm" role="group" aria-label="Delete {current.name}?">
+        <p>Delete “{current.name}” from your scales?</p>
+        <div class="buttons">
+          <button type="button" class="danger" onclick={deleteCurrent}>Delete</button>
+          <button type="button" onclick={() => (confirmingDelete = false)}>Keep</button>
+        </div>
+      </div>
+    {/if}
+    {#if editProblem}
+      <p class="error" role="alert">{editProblem}</p>
+    {/if}
+  </div>
 </div>
+
+<svelte:window onkeydown={onWindowKey} />
+
+{#if editing}
+  <div class="backdrop">
+    <div
+      class="dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-label={editing.mode === 'new' ? 'New scale' : 'Edit scale'}
+    >
+      <IntervalSetEditor
+        title={editing.mode === 'new' ? 'New scale' : `Edit “${editing.scale.name}”`}
+        noun="scale"
+        {initial}
+        families={families.map((family) => family.name)}
+        defaultFamily="Custom"
+        root={editorRoot}
+        {neck}
+        onsave={save}
+        oncancel={() => (editing = null)}
+      />
+    </div>
+  </div>
+{/if}
 
 <style>
   .picker {
@@ -174,5 +322,68 @@
 
   .error {
     color: var(--text-danger);
+  }
+
+  .own {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+  }
+
+  button {
+    font: inherit;
+    font-size: 0.875rem;
+    color: var(--text);
+    background: var(--surface-raised);
+    border: 1px solid var(--border-strong);
+    border-radius: 0.375rem;
+    padding: 0.25rem 0.75rem;
+    cursor: pointer;
+  }
+
+  button:hover {
+    border-color: var(--accent);
+  }
+
+  button:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+
+  button.danger {
+    color: var(--text-danger);
+    border-color: var(--text-danger);
+  }
+
+  .confirm p {
+    margin: 0 0 0.375rem;
+    font-size: 0.875rem;
+  }
+
+  .backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 2rem 1rem;
+    overflow-y: auto;
+    background: rgb(0 0 0 / 0.45);
+  }
+
+  .dialog {
+    width: min(60rem, 100%);
+    padding: 1rem;
+    border: 1px solid var(--border-strong);
+    border-radius: 0.5rem;
+    background: var(--surface);
+    color: var(--text);
   }
 </style>

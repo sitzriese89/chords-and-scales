@@ -4,11 +4,13 @@
 //! `setUserScales` merged over them. Results are plain objects (types below); intervals and
 //! note names are Unicode, for display. A bad root or unknown id throws a JS `Error`. User
 //! files load the same way as user tunings, with the same report (`user_files`, ADR-23).
+//! `writeScales` and `newScaleId` are for the scale editor, which saves the user's file
+//! (ADR-26).
 
 use std::cell::RefCell;
 
-use serde::Serialize;
-use theory::{Glyphs, NoteName, Scale, ScaleCatalog, Source, parse_user_scales};
+use serde::{Deserialize, Serialize};
+use theory::{Glyphs, NoteName, Scale, ScaleCatalog, Source, parse_user_scales, write_scales};
 use wasm_bindgen::prelude::*;
 
 use crate::notes::Accidentals;
@@ -46,7 +48,38 @@ export interface ScaleNote {
   /** Spelled name, Unicode: `E♭`. */
   name: string;
 }
+
+/**
+ * A user scale to write with `writeScales`. A `ScaleInfo` is one too (its other fields are
+ * ignored). Interval labels may be ASCII or Unicode; a missing `family` lists the scale under
+ * "Custom".
+ */
+export interface ScaleInput {
+  id: string;
+  name: string;
+  aliases?: string[];
+  family?: string;
+  intervals: string[];
+}
 "#;
+
+#[wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen(typescript_type = "readonly ScaleInput[]")]
+    pub type ScaleInputList;
+}
+
+/// A `ScaleInput` object.
+#[derive(Deserialize)]
+struct ScaleRecord {
+    id: String,
+    name: String,
+    #[serde(default)]
+    aliases: Vec<String>,
+    #[serde(default)]
+    family: Option<String>,
+    intervals: Vec<String>,
+}
 
 thread_local! {
     static CATALOG: RefCell<ScaleCatalog> = RefCell::new(ScaleCatalog::builtin().clone());
@@ -175,9 +208,83 @@ fn load_user_scales(toml: &str) -> (ScaleCatalog, UserFileReport) {
     )
 }
 
+/// The text of a user scale file holding `scales`, in order, which `setUserScales` reads back
+/// unchanged. Each scale is checked as one from a file is; the first invalid one throws with
+/// its name and the reason (`“Mine”: a scale needs at least one note besides the root`). Two
+/// scales with one id, or two scales with one name among the built-ins and these, throw too.
+/// Doesn't change the catalog: save the text, then pass it to `setUserScales`.
+#[wasm_bindgen(js_name = writeScales)]
+pub fn write_scales_toml(scales: ScaleInputList) -> Result<String, JsError> {
+    let records: Vec<ScaleRecord> = serde_wasm_bindgen::from_value(scales.into())
+        .map_err(|err| JsError::new(&format!("not a list of scales: {err}")))?;
+    write_scales_text(records).map_err(|err| JsError::new(&err))
+}
+
+/// `writeScales` without the JS conversion.
+fn write_scales_text(records: Vec<ScaleRecord>) -> Result<String, String> {
+    let scales = records
+        .into_iter()
+        .map(|record| {
+            let name = record.name.trim().to_owned();
+            Scale::new(
+                record.id,
+                record.name,
+                record.aliases,
+                record.family,
+                &record.intervals,
+            )
+            .map_err(|err| match name.as_str() {
+                "" => err.to_string(),
+                name => format!("“{name}”: {err}"),
+            })
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    write_scales(&scales).map_err(|err| err.to_string())
+}
+
+/// The id for a new user scale called `name`: the kebab-case slug of the name
+/// (`my-dorian-2`), with `-2`, `-3`, … if the current catalog or the built-ins already have
+/// it. A new scale saved under it never replaces another.
+#[wasm_bindgen(js_name = newScaleId)]
+pub fn new_scale_id(name: &str) -> String {
+    CATALOG.with_borrow(|catalog| catalog.new_id(name))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn record(id: &str, name: &str, intervals: &[&str]) -> ScaleRecord {
+        ScaleRecord {
+            id: id.to_owned(),
+            name: name.to_owned(),
+            aliases: Vec::new(),
+            family: None,
+            intervals: intervals.iter().map(|&s| s.to_owned()).collect(),
+        }
+    }
+
+    #[test]
+    fn written_scales_load_and_errors_name_the_scale() {
+        let text = write_scales_text(vec![record("mine", "Mine", &["1", "♭3", "5"])]).unwrap();
+        let (catalog, report) = load_user_scales(&text);
+        assert_eq!(report.loaded, ["mine"]);
+        assert_eq!(report.errors, []);
+        assert_eq!(catalog.get("mine").unwrap().formula().to_string(), "1 b3 5");
+
+        assert_eq!(
+            write_scales_text(vec![record("mine", " Mine ", &["1"])]),
+            Err("“Mine”: a scale needs at least one note besides the root".to_owned())
+        );
+        assert_eq!(
+            write_scales_text(vec![record("mine", "", &["1", "3"])]),
+            Err("name must not be empty".to_owned())
+        );
+        assert_eq!(
+            write_scales_text(vec![record("mine", "Dorian", &["1", "3"])]),
+            Err("there is already a scale called \"Dorian\"".to_owned())
+        );
+    }
 
     #[test]
     fn user_scale_errors_use_the_shared_shape_with_items_from_zero() {
