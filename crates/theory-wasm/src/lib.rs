@@ -5,12 +5,14 @@
 
 mod chords;
 mod fretboard;
+mod harmonize;
 mod lookup;
 mod meta;
 mod notes;
 mod positions;
 mod records;
 mod scales;
+mod symbols;
 mod user_files;
 
 pub use chords::{chord_notes, get_chord, list_chords, set_user_chords};
@@ -18,6 +20,7 @@ pub use fretboard::{
     fretboard_positions, get_tuning, list_tunings, new_tuning_id, set_user_tunings,
     write_tunings_toml,
 };
+pub use harmonize::{Stacking, harmonize_scale};
 pub use lookup::{find_scales_js, lookup_chords_js};
 pub use meta::version;
 pub use notes::{
@@ -28,3 +31,4 @@ pub use positions::{fret_window_positions, three_nps_patterns};
 pub use scales::{
     get_scale, list_scales, new_scale_id, scale_notes, set_user_scales, write_scales_toml,
 };
+pub use symbols::{SymbolStyle, format_chord_symbol, parse_chord_symbol};

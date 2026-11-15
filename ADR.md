@@ -848,6 +848,60 @@ and testable without a sound card. Browsers refuse to start audio before a user 
 - The chord panel calls `getAudio().strum(midis)` with the notes of a voicing, lowest string
   first.
 
+## ADR-29: Chord symbols: the parser reads the catalog, fallbacks never guess, errors carry a position
+
+**Context.** Typed chord input (M2.6), reverse lookup (M2.4), harmonize (M2.3) and the chord panel (M2.5) all need chord symbols in and out, in the Standard and Jazz styles (SPEC §4.4). ADR-27 put the suffixes in the catalog data.
+
+**Decision.**
+- **The catalog is the grammar.** `parse_symbol` splits a root off, then looks the rest up as a `symbol`, alias or `jazz_symbol` of a catalog chord (`Chord::suffixes`; `find_by_symbol` matches the same set). No chord name is written in Rust, so a user chord with a symbol is typeable and a user suffix shadows a built-in one as ADR-27 says. Alterations such as `7b9b5` are not composed from parts: a chord must exist in the catalog to be read.
+- **Normalise, then fall back, never guess.** Look-alike characters are mapped one-to-one (`♭ ♯`, dashes, `△ ∆`, `Ø ∅`, `º ˚`), so error positions stay valid. Lookup order: the suffix as typed, without spaces, parentheses and commas, with up to four trailing `b`/`#` + number groups in another order, and last ignoring case if exactly one chord fits. An exact match always wins, which keeps `M7`/`m7` apart; a fallback that fits two chords is an error.
+- **Slash chords.** The whole suffix is tried first, so `6/9`, `m6/9` and a user symbol with a slash win over a bass. Otherwise the text after the last slash must be a note name (either case, any accidental) and the rest a chord. `C6/9/E` is `6/9` over `E`.
+- **Result and errors.** `ChordSymbol { root, chord_id, bass }` keeps the typed spelling of root and bass (ADR-6). `SymbolError` has a character position: the first character no known suffix continues with (`Cmaj7x` at 5), the start of a bad bass, or the first non-blank character for an empty or rootless text. The WASM `parseChordSymbol` returns `{ ok: false, position, message }` instead of throwing, since mistyped text is the normal case for an input field.
+- **Formatter.** `format_symbol(root, chord, bass, style)` writes the root as given, the Standard or Jazz suffix with `b`/`#` before a digit shown as `♭`/`♯`, and `/bass`. The bass is printed as given: callers that compute a bass spell it with the sharp/flat preference (`Spelling`), a parsed one keeps its typed spelling. Both styles read back as the same chord (tested for every catalog chord on every root).
+
+**Consequences.**
+- Adding a chord or an alias is a data change that the parser and formatter pick up; the round-trip test covers it.
+- A suffix is a chord only if the catalog lists it. `C7b9b13`, if no chord has it, is an error, not a `7b9` with an extra tone.
+- The jazz style is a display choice only: both styles are always accepted as input.
+
+## ADR-30: Harmonize: stack thirds in the scale, number by the scale's own degrees
+
+**Context.** Harmonize (M2.3, SPEC §5.5) names the chord on every degree of a scale. For the
+seven-note scales "every other tone" is the whole rule, but the catalog also has pentatonic,
+whole-tone, bebop, diminished and chromatic scales, where every other tone is not a third.
+
+**Decision.**
+- **Stacking.** Starting on a degree, each next chord tone is a scale tone a third above the
+  previous one (3 or 4 semitones): the tone two scale steps up if that is a third, else the
+  tone one step up. A stack must stay below the root's octave. A triad needs two such steps,
+  a seventh chord three; if one fails the degree has no chord. For the seven-note scales
+  this is the usual every-other-tone stacking (the one-step fallback never fires there).
+- **Results where thirds are scarce.** Minor pentatonic (C E♭ F G B♭): triads on C (Cm) and
+  E♭ (E♭), sevenths on C only (Cm7); F, G and B♭ have no chord. Whole tone: an augmented
+  triad on every degree, no seventh chords (a fourth third would land on the root's octave;
+  C E G♯ B♭ is not a stack of thirds). Chromatic: no chords. Eight-note scales
+  (diminished, bebop) get the chords their thirds allow.
+- **Names from the catalog, not from the stacker.** The stacked semitones are looked up in
+  the chord catalog passed in (user chords included; the last match wins, so a user chord
+  beats a built-in one). A stack the catalog lacks (a user chord replaced the built-in
+  one) still returns its tones and numeral, with no chord id. Chord symbol text is the
+  formatter's job (M2.2): the result carries the id.
+- **Roman numerals** are structured (`RomanNumeral`): accidental, number 1–7, lower case for
+  a minor third, mark `°` / `+` / `ø`, seventh `7` / `maj7`. `ø` and `°` for sevenths keep
+  the `7` (`viiø7`, `vii°7`). In a seven-note scale the number is the place in the scale and
+  there is no accidental, so natural minor reads i ii° III iv v VI VII and a mode is numbered
+  in its own terms (D Dorian: i ii III IV v vi° VII). In other scales the number and
+  accidental come from the degree's interval label (`♭III`, `♯IV`), since a place in the
+  scale doesn't say where it is.
+- **Spelling is ADR-6.** The chord tones are the scale's notes as `Scale::notes` spells them,
+  so the root keeps its spelling and the rest follow the sharp/flat preference.
+
+**Consequences.**
+- Roman numerals in modes differ from the borrowed-chord habit of writing ♭III in a minor key.
+  Only the numeral, never the chord, depends on this choice.
+- A seven-note scale with a cluster of semitones (Hungarian minor) gets no chord on the
+  degrees where no third is in the scale; the view shows them as no chord.
+
 ## ADR-31: Reverse lookup and the scale finder: contain every note, inversions are cheap, omissions cost more
 
 **Context.** M2.4 turns clicked notes into chord names and scales (SPEC §5.3, §5.4); the
