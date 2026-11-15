@@ -207,10 +207,25 @@ intervals = ["1", "b3", "b5", "b7"]
 ### 4.4 Chord symbols (Q25)
 
 - **Parser** accepts all common spellings: `maj7` / `M7` / `Δ7`, `m` / `min` / `-`,
-  `ø` / `m7b5`, `°` / `dim`, slash chords, etc.
+  `ø` / `m7b5`, `°` / `dim`, slash chords, etc. (ADR-29)
+  - A symbol is a root (letter A-G in either case, up to two `#`/`b`/`♯`/`♭`), a suffix and an
+    optional `/bass` note. The suffix is any chord's `symbol`, `aliases` or `jazz_symbol` from
+    the catalog (§4.3), so user chords are typeable and nothing about names is fixed in code.
+  - Typed look-alikes are normalised: `♭ ♯`, `− –` for `-`, `△ ∆` for `Δ`, `Ø ∅` for `ø`,
+    `º ˚` for `°`. If the suffix is not found as typed, spaces, parentheses and commas are
+    ignored (`C7(b9)`, `Cm(add9)`), trailing alterations may come in any order (`C7#9#5` =
+    `C7#5#9`), and letter case is ignored when exactly one chord fits (`CMAJ7`). An exact
+    match always wins, so `CM7` (major seventh) and `Cm7` (minor seventh) stay different.
+  - A slash starts the bass unless the whole suffix is a chord: `C6/9` and `Cm6/9` are chords,
+    `C6/9/E` is `C6/9` over `E`. The bass is any note and keeps its spelling.
+  - A symbol the catalog doesn't know (`C7b9b13` if no chord has it) is an error with the
+    position of the first character it could not read; there is no guessing between chords.
 - **Display style** is a setting:
   - *Standard*: `Cmaj7`, `Cm7♭5`, `Cdim7`
   - *Jazz*: `CΔ7`, `Cø`, `C°7`
+  - The formatter writes the root as given (ADR-6), then the chord's suffix for the style with
+    `♭`/`♯` for a `b`/`#` before a number, then `/bass` for a slash chord. Both styles read
+    back as the same chord.
 
 ---
 

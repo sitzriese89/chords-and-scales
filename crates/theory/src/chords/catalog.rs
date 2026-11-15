@@ -55,15 +55,15 @@ impl ChordCatalog {
         self.chords.iter().find(|chord| chord.id == id)
     }
 
-    /// The chord that `suffix` (`m7b5`, `M7`, `""`) is a symbol or alias of: an exact,
-    /// case-sensitive match. If several chords have it, the last wins, so a user chord takes a
-    /// suffix over a built-in one. The symbol parser (M2.2) normalises what the user typed
-    /// (flat and sharp signs, parentheses) before it asks.
+    /// The chord that `suffix` (`m7b5`, `M7`, `""`) is a symbol, alias or Jazz symbol of: an
+    /// exact, case-sensitive match. If several chords have it, the last wins, so a user chord
+    /// takes a suffix over a built-in one. The symbol parser ([`super::parse_symbol`])
+    /// normalises what the user typed (flat and sharp signs, parentheses) before it asks.
     pub fn find_by_symbol(&self, suffix: &str) -> Option<&Chord> {
         self.chords
             .iter()
             .rev()
-            .find(|chord| chord.symbols().any(|symbol| symbol == suffix))
+            .find(|chord| chord.suffixes().any(|symbol| symbol == suffix))
     }
 
     /// The chords grouped by family; families in the order they first appear.

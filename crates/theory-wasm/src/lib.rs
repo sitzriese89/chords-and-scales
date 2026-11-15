@@ -10,6 +10,7 @@ mod notes;
 mod positions;
 mod records;
 mod scales;
+mod symbols;
 mod user_files;
 
 pub use chords::{chord_notes, get_chord, list_chords, set_user_chords};
@@ -26,3 +27,4 @@ pub use positions::{fret_window_positions, three_nps_patterns};
 pub use scales::{
     get_scale, list_scales, new_scale_id, scale_notes, set_user_scales, write_scales_toml,
 };
+pub use symbols::{SymbolStyle, format_chord_symbol, parse_chord_symbol};
