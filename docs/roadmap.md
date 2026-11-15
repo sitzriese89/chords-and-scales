@@ -66,7 +66,7 @@ Chords from every input mode, harmonize, reverse lookup, audio, then generated v
 
 | Item | Issue | Depends on | Status |
 |---|---|---|---|
-| M2.1 Chord catalog in TOML | [#14][14] | M1.2 | Open |
+| M2.1 Chord catalog in TOML | [#14][14] | M1.2 | Done (#50) |
 | M2.2 Chord symbol parser and formatter | [#15][15] | M2.1 | Open |
 | M2.3 Harmonize | [#16][16] | M2.1 | Open |
 | M2.4 Reverse lookup and scale finder | [#17][17] | M2.1, M1.2 | Open |

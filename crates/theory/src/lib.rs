@@ -3,6 +3,8 @@
 //! No IO, no UI, no `wasm-bindgen`: everything here is testable with `cargo test` (ADR-2).
 //! The frontend reaches it through the `theory-wasm` crate.
 
+mod catalog_file;
+pub mod chords;
 pub mod formula;
 pub mod fretboard;
 pub mod notes;
@@ -10,6 +12,11 @@ pub mod scale_positions;
 pub mod scales;
 pub mod tuning;
 
+pub use catalog_file::CatalogError;
+pub use chords::{
+    Chord, ChordCatalog, ChordError, ChordFamily, ChordNote, ChordSpec, ParsedChords,
+    parse_user_chords,
+};
 pub use formula::{Formula, FormulaError};
 pub use fretboard::{FretboardError, Position, positions};
 pub use notes::{
@@ -18,8 +25,8 @@ pub use notes::{
 };
 pub use scale_positions::{ThreeNpsPattern, fret_window, three_notes_per_string};
 pub use scales::{
-    CUSTOM_FAMILY, CatalogError, ParsedScales, Scale, ScaleCatalog, ScaleError, ScaleFamily,
-    ScaleNote, Source, parse_user_scales, write_scales,
+    CUSTOM_FAMILY, ParsedScales, Scale, ScaleCatalog, ScaleError, ScaleFamily, ScaleNote, Source,
+    parse_user_scales, write_scales,
 };
 pub use tuning::{
     InstrumentKind, ParsedTunings, Tuning, TuningCatalog, TuningError, TuningFileError,

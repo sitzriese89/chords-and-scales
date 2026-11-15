@@ -181,6 +181,29 @@ Built-in, defined as interval formulas in the same format as scales:
 
 Plus user-defined chords (§3.3).
 
+The catalog is `crates/theory/data/chords.toml`; user chord files use the same format
+(ADR-27). One table per chord:
+
+```toml
+[[chord]]
+id = "min7b5"                      # lowercase kebab-case, unique; settings refer to it
+name = "Half-diminished seventh"
+symbol = "m7b5"                    # the suffix after the root, ASCII; "" only for major
+aliases = ["-7b5", "ø"]            # other suffixes the symbol parser reads (case matters)
+jazz_symbol = "ø"                  # suffix in the Jazz style; optional
+family = "Sevenths"                # listing group; optional for user chords ("Custom")
+intervals = ["1", "b3", "b5", "b7"]
+```
+
+- Intervals are degree labels (ASCII or Unicode) starting at `1`, strictly ascending, at least
+  two, below two octaves (`9`, `♯11` and `13` are fine), and no two on one pitch class. A chord
+  is its full stack: `13` is `1 3 5 ♭7 9 13`, and voicings may leave tones out (§5.6).
+- Unknown fields, duplicate ids and broken interval lists are errors; in a user file each bad
+  item is reported and skipped, as for scales. A user chord with a built-in id replaces the
+  built-in one; others are listed after the built-ins.
+- Chord tones on a root are spelled like scale notes (§4.1): the root as given, the others by
+  the sharp/flat toggle.
+
 ### 4.4 Chord symbols (Q25)
 
 - **Parser** accepts all common spellings: `maj7` / `M7` / `Δ7`, `m` / `min` / `-`,

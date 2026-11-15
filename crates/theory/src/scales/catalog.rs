@@ -1,10 +1,10 @@
-use std::collections::{HashMap, HashSet};
-use std::fmt;
+use std::collections::HashSet;
 use std::sync::OnceLock;
 
 use serde::{Deserialize, Serialize};
 
 use super::{Scale, ScaleError, Source};
+use crate::catalog_file::{CatalogError, parse_items};
 use crate::tuning::{cut, slug};
 
 /// The built-in catalog, embedded at build time.
@@ -32,30 +32,6 @@ pub struct ParsedScales {
     pub scales: Vec<Scale>,
     pub errors: Vec<CatalogError>,
 }
-
-/// Why an item of a scale file, or the file as a whole, was not loaded.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CatalogError {
-    /// The index (0-based) of the `[[scale]]` item, or `None` for the file as a whole.
-    pub item: Option<usize>,
-    /// The item's `id`, if it has a string one.
-    pub id: Option<String>,
-    /// What is wrong, in plain English.
-    pub message: String,
-}
-
-impl fmt::Display for CatalogError {
-    /// `scale 3 ("my-scale"): …`, numbered from 1 as in the file.
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match (self.item, &self.id) {
-            (Some(item), Some(id)) => write!(f, "scale {} ({id:?}): {}", item + 1, self.message),
-            (Some(item), None) => write!(f, "scale {}: {}", item + 1, self.message),
-            (None, _) => f.write_str(&self.message),
-        }
-    }
-}
-
-impl std::error::Error for CatalogError {}
 
 impl ScaleCatalog {
     /// The built-in catalog. Its validity is checked by the `builtin_scales_are_valid` test.
@@ -134,76 +110,16 @@ struct RawScale {
 }
 
 fn parse(toml: &str, source: Source) -> ParsedScales {
-    let mut parsed = ParsedScales::default();
-    let document_error = |message: String| CatalogError {
-        item: None,
-        id: None,
-        message,
-    };
-
-    let table = match toml.parse::<toml::Table>() {
-        Ok(table) => table,
-        Err(error) => {
-            let line = error
-                .span()
-                .map(|span| toml[..span.start].matches('\n').count() + 1);
-            let message = match line {
-                Some(line) => format!("not valid TOML (line {line}): {}", error.message()),
-                None => format!("not valid TOML: {}", error.message()),
-            };
-            parsed.errors.push(document_error(message));
-            return parsed;
-        }
-    };
-
-    for key in table.keys().filter(|key| *key != "scale") {
-        parsed.errors.push(document_error(format!(
-            "unknown key {key:?} (a scale file holds only [[scale]] tables)"
-        )));
-    }
-
-    let items = match table.get("scale") {
-        None => return parsed,
-        Some(toml::Value::Array(items)) => items,
-        Some(_) => {
-            parsed.errors.push(document_error(
-                "\"scale\" must be a list of [[scale]] tables".to_owned(),
-            ));
-            return parsed;
-        }
-    };
-
-    let mut seen: HashMap<String, usize> = HashMap::new();
-    for (index, item) in items.iter().enumerate() {
-        let id = item
-            .get("id")
-            .and_then(toml::Value::as_str)
-            .map(str::to_owned);
-        let error = |message: String| CatalogError {
-            item: Some(index),
-            id: id.clone(),
-            message,
-        };
-        let scale = match item.clone().try_into::<RawScale>() {
+    let (scales, errors) = parse_items(
+        toml,
+        "scale",
+        |item| match item.try_into::<RawScale>() {
             Ok(raw) => validate(raw, source),
             Err(e) => Err(e.message().trim().to_owned()),
-        };
-        match scale {
-            Ok(scale) => {
-                if let Some(first) = seen.get(&scale.id) {
-                    parsed.errors.push(error(format!(
-                        "duplicate id, already used by scale {}",
-                        first + 1
-                    )));
-                } else {
-                    seen.insert(scale.id.clone(), index);
-                    parsed.scales.push(scale);
-                }
-            }
-            Err(message) => parsed.errors.push(error(message)),
-        }
-    }
-    parsed
+        },
+        Scale::id,
+    );
+    ParsedScales { scales, errors }
 }
 
 /// Checks one item and builds its scale, or says what is wrong.
@@ -217,17 +133,6 @@ fn validate(raw: RawScale, source: Source) -> Result<Scale, String> {
         source,
     )
     .map_err(|error| error.to_string())
-}
-
-/// `major`, `dorian-sharp-4`: lowercase ASCII letters and digits in words joined by `-`.
-pub(super) fn is_kebab_case(id: &str) -> bool {
-    !id.is_empty()
-        && id.split('-').all(|word| {
-            !word.is_empty()
-                && word
-                    .bytes()
-                    .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit())
-        })
 }
 
 /// The longest id [`ScaleCatalog::new_id`] makes.
