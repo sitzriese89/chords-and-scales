@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { BrowserStorage, StorageError, type Storage } from '../storage';
+import { BrowserStorage, StorageError, TauriStorage, type Storage } from '../storage';
+import { fakeCommands } from '../storage/fake-commands';
 import { defaultSettings, parseSettings, serializeSettings } from './schema';
 import { SETTINGS_BACKUP_DOCUMENT, SETTINGS_DOCUMENT, SettingsStore } from './store.svelte';
 
@@ -95,5 +96,46 @@ describe('SettingsStore', () => {
     await store.update({ theme: 'light' });
     expect(store.current.theme).toBe('light');
     expect(store.warning).toMatch(/could not be saved.*disk on fire/);
+  });
+});
+
+describe('audio settings in both Storage implementations (ADR-4)', () => {
+  const implementations: [string, () => () => Storage][] = [
+    [
+      'browser',
+      () => {
+        window.localStorage.clear();
+        return () => new BrowserStorage(window.localStorage);
+      },
+    ],
+    [
+      'Tauri (fake commands)',
+      () => {
+        const folder = new Map<string, string>();
+        return () => new TauriStorage(fakeCommands(folder));
+      },
+    ],
+  ];
+
+  it.each(implementations)('keeps mute and volume across a restart: %s', async (_, make) => {
+    const open = make();
+    const first = new SettingsStore(open());
+    await first.load();
+    expect(first.current.audio).toEqual({ volume: 70, muted: false });
+    await first.update({ audio: { muted: true } });
+    await first.update({ audio: { volume: 35 } });
+
+    const second = new SettingsStore(open());
+    await second.load();
+    expect(second.warning).toBeNull();
+    expect(second.current.audio).toEqual({ volume: 35, muted: true });
+    expect(await open().read(SETTINGS_DOCUMENT)).toMatch(/\[audio\]\nvolume = 35\nmuted = true/);
+  });
+
+  it('refuses a volume the file could not hold', async () => {
+    window.localStorage.clear();
+    const store = await startApp();
+    await expect(store.update({ audio: { volume: 140 } })).rejects.toThrow(/audio\.volume/);
+    expect(store.current.audio.volume).toBe(70);
   });
 });

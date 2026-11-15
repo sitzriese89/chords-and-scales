@@ -1,7 +1,8 @@
 /**
  * The settings document `settings.toml` (ADR-17): display preferences and the last view.
  *
- * Tables: `display`, `instrument`, `last_view` and `tab` (the tab view's position, ADR-25).
+ * Tables: `display`, `instrument`, `last_view`, `tab` (the tab view's position, ADR-25) and
+ * `audio` (volume and mute, ADR-28).
  * Adding a key or table whose absence means its default is not a format change: older files
  * load with the default, so the version stays.
  *
@@ -26,6 +27,9 @@ export const INSTRUMENT_KINDS = ['guitar', 'bass'] as const;
 export const POSITION_SYSTEMS = ['3nps', 'window'] as const;
 /** The order the tab plays a position in. */
 export const DIRECTIONS = ['ascending', 'descending', 'both'] as const;
+
+/** Volume is a whole percent. */
+export const MAX_VOLUME = 100;
 
 export const MIN_STRINGS = 4;
 export const MAX_STRINGS = 9;
@@ -81,6 +85,13 @@ export interface Settings {
     /** Dim the scale notes outside the position on the fretboard. */
     highlight: boolean;
   };
+  /** Sound (ADR-28). */
+  audio: {
+    /** Master volume, 0 to 100 percent. */
+    volume: number;
+    /** No sound at all; the volume is kept. */
+    muted: boolean;
+  };
 }
 
 export const DEFAULT_SETTINGS: Readonly<Settings> = Object.freeze({
@@ -104,6 +115,7 @@ export const DEFAULT_SETTINGS: Readonly<Settings> = Object.freeze({
     direction: 'ascending',
     highlight: true,
   }),
+  audio: Object.freeze({ volume: 70, muted: false }),
 });
 
 export function defaultSettings(): Settings {
@@ -281,6 +293,13 @@ export function parseSettings(text: string): ParsedSettings {
   };
   tabTable.unknownKeys();
 
+  const audioTable = root.section('audio');
+  const audio: Settings['audio'] = {
+    volume: audioTable.integer('volume', 0, MAX_VOLUME, d.audio.volume),
+    muted: audioTable.boolean('muted', d.audio.muted),
+  };
+  audioTable.unknownKeys();
+
   root.unknownKeys();
 
   return {
@@ -293,6 +312,7 @@ export function parseSettings(text: string): ParsedSettings {
       instrument: { kind, strings, tuning, frets, capo },
       lastView: { root: rootNote, scale },
       tab,
+      audio,
     },
     problems,
   };
@@ -322,6 +342,7 @@ export function serializeSettings(settings: Settings): string {
       direction: settings.tab.direction,
       highlight: settings.tab.highlight,
     },
+    audio: { volume: settings.audio.volume, muted: settings.audio.muted },
   };
   return `${HEADER}\n${stringify(doc).trimEnd()}\n`;
 }

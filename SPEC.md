@@ -87,8 +87,8 @@ Files are hand-editable and shareable; the UI offers import/export of them.
 - `settings.toml` holds the display preferences (sharps/flats, dot labels, theme,
   left-handed), the last instrument (kind, string count, tuning, fret count, capo) and the
   last view (root, scale) and the tab view's position (system, 3NPS pattern, fret window,
-  direction, highlight; ADR-25). It is created with the defaults on first start, read once at start
-  and saved on every change.
+  direction, highlight; ADR-25) and the sound (volume 0–100, mute; ADR-28). It is created with
+  the defaults on first start, read once at start and saved on every change.
 - The user's own scales and tunings are `scales.toml` and `tunings.toml`, in the format of the
   built-in catalogs (§4.2, §5.1). They are read at start; a broken item is skipped and listed
   in a collapsed note in the window, and the rest load (ADR-23). The tuning and scale editors
@@ -392,7 +392,14 @@ Algorithmic (works for any tuning and 4–9 strings; no static shape library).
 
 - **Synthesized plucked-string sound** via Web Audio (e.g. Karplus-Strong). No
   sample files.
-- Click a dot to hear the note; play-buttons for scales and chords.
+- Click a dot (or press Enter or Space on it) to hear the note at its real pitch, from the
+  tuning and fret. **Play**, next to the tab, plays the position the tab shows, in its
+  direction (up, down, or up and back down). Chords get a strum from the chord panel (§5.3)
+  through the same engine; it takes the notes lowest string first.
+- **Sound** in the settings region: a volume slider (0–100) and **Mute**. Both are saved in
+  `settings.toml` (`[audio]`) and come back at the next start. Muted, nothing plays.
+- Nothing is made audible, and no audio is set up, until the first click, touch or key press
+  in the window (browsers require it); a play call before then does nothing (ADR-28).
 
 ### 5.10 Export (Q23)
 

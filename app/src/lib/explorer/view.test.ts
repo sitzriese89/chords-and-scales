@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { defaultSettings } from '../settings';
-import { displayRoot, explorerView, rootChoices } from './view';
+import { displayRoot, explorerView, positionKey, rootChoices } from './view';
 
 describe('explorer view model', () => {
   it('offers every root with sharps and with flats, from the core', () => {
@@ -49,11 +49,19 @@ describe('explorer view model', () => {
     const shown = view.dots.filter((d) => d.role !== 'dim');
     expect(shown.length).toBe(view.position.positions.length);
     expect(shown.every((d) => d.fret >= 2 && d.fret <= 5)).toBe(true);
-    expect(view.tabNotes[0]).toEqual({ string: 6, fret: 2, root: false });
-    expect(view.tabNotes[1]).toEqual({ string: 6, fret: 3, root: true });
+    // The pitches are MIDI numbers: F♯2 (42) and G2 (43) on the low E string.
+    expect(view.tabNotes[0]).toEqual({ string: 6, fret: 2, root: false, midi: 42 });
+    expect(view.tabNotes[1]).toEqual({ string: 6, fret: 3, root: true, midi: 43 });
+    expect(view.pitches.get(positionKey({ string: 6, fret: 3 }))).toBe(43);
+    expect(view.pitches.get(positionKey({ string: 1, fret: 5 }))).toBe(69);
 
     settings.tab.direction = 'descending';
-    expect(explorerView(settings).tabNotes.at(-1)).toEqual({ string: 6, fret: 2, root: false });
+    expect(explorerView(settings).tabNotes.at(-1)).toEqual({
+      string: 6,
+      fret: 2,
+      root: false,
+      midi: 42,
+    });
 
     settings.tab.highlight = false;
     expect(explorerView(settings).dots.some((d) => d.role === 'dim')).toBe(false);

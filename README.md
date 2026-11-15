@@ -18,7 +18,9 @@ playing and choose a light, dark or system theme. Under the neck, the scale is s
 in one position: a 3-notes-per-string pattern (those that fit the neck) or a fret window you
 set with a start fret and a width, played up, down or up and back down; the position's notes
 are highlighted on the neck. **New tuning** makes your own tuning, a note and octave per
-string; your tunings can be edited and deleted there too. Everything is saved and comes back
+string; your tunings can be edited and deleted there too. Click a dot to hear the note, or
+press **Play** next to the tab to hear the position; volume and mute are under **Sound** on
+the right. Everything is saved and comes back
 at the next start. Your own scales and tunings go in `scales.toml` and `tunings.toml` next to
 `settings.toml` in the app-data folder, in the format described in [SPEC.md](SPEC.md).
 

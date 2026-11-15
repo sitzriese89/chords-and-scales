@@ -43,13 +43,21 @@ export interface ExplorerView {
   /** The tab's lines, string 1 first. */
   tabStrings: TabString[];
   /** The position's notes in playing order, for the tab. */
-  tabNotes: { string: number; fret: number; root: boolean }[];
+  tabNotes: { string: number; fret: number; root: boolean; midi: number }[];
+  /**
+   * The sounding pitch of every dot, as the core reports it (a MIDI number), by `string:fret`
+   * (see `positionKey`). For playing a clicked dot.
+   */
+  pitches: Map<string, number>;
   /**
    * Stored values that couldn't be used, each replaced by its default for display (the
    * settings themselves are left alone, so a user file added later can still provide them).
    */
   fallbacks: string[];
 }
+
+/** The key of a neck position in `ExplorerView.pitches`. */
+export const positionKey = (p: { string: number; fret: number }): string => `${p.string}:${p.fret}`;
 
 /** Reads a note name through the core; `undefined` if it isn't one. */
 export function displayRoot(text: string): string | undefined {
@@ -128,7 +136,7 @@ export function explorerView(settings: ViewSettings): ExplorerView {
   };
 
   const position = tabPosition({ tuning, frets, capo, notes, tab: settings.tab });
-  const key = (p: { string: number; fret: number }) => `${p.string}:${p.fret}`;
+  const key = positionKey;
   const inPosition = new Set(position.positions.map(key));
   // An empty position (nothing fits) dims nothing, so the neck never goes all grey.
   const dim = settings.tab.highlight && inPosition.size > 0;
@@ -145,7 +153,9 @@ export function explorerView(settings: ViewSettings): ExplorerView {
     string: p.string,
     fret: p.fret,
     root: p.degree === 0,
+    midi: p.midi,
   }));
+  const pitches = new Map(positions.map((p) => [key(p), p.midi]));
 
   return {
     root,
@@ -158,6 +168,7 @@ export function explorerView(settings: ViewSettings): ExplorerView {
     position,
     tabStrings: tabStrings(tuning, settings.accidentals),
     tabNotes,
+    pitches,
     fallbacks,
   };
 }

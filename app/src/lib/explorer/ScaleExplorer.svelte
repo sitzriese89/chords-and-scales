@@ -7,20 +7,33 @@
   core (`explorerView`).
 -->
 <script lang="ts">
-  import { Fretboard } from '../fretboard';
+  import { getAudio } from '../audio';
+  import { Fretboard, type FretPosition } from '../fretboard';
   import { getSettings } from '../settings';
   import { PositionControls, TabView } from '../tab';
   import { getUserCatalogs } from '../user-catalogs.svelte';
-  import { explorerView } from './view';
+  import { explorerView, positionKey } from './view';
 
   const settings = getSettings();
   const catalogs = getUserCatalogs();
+  const audio = getAudio();
   const view = $derived.by(() => {
     // Re-read the catalogs when a user scale or tuning was saved or deleted (ADR-24).
     void catalogs.revision;
     return explorerView(settings.current);
   });
   const title = $derived(`${view.root} ${view.scale.name}`);
+
+  /** A click on a dot sounds it at its real pitch (tuning and fret, from the core). */
+  function playDot(position: FretPosition) {
+    const midi = view.pitches.get(positionKey(position));
+    if (midi !== undefined) audio.playNote(midi);
+  }
+
+  /** The tab's position in its direction (up, down, or both), as shown in the tab. */
+  function playPosition() {
+    audio.playSequence(view.tabNotes.map((note) => note.midi));
+  }
 </script>
 
 <section class="explorer" aria-labelledby="explorer-title">
@@ -48,11 +61,26 @@
       dots={view.dots}
       leftHanded={settings.current.leftHanded}
       ariaLabel="Fretboard: {title}, {view.tuning.name} tuning"
+      onactivate={playDot}
     />
   </div>
 
   <section class="tab-section" aria-labelledby="tab-title">
-    <h3 id="tab-title">Tab: {view.position.description}</h3>
+    <div class="tab-heading">
+      <h3 id="tab-title">Tab: {view.position.description}</h3>
+      <button
+        type="button"
+        class="play"
+        disabled={view.tabNotes.length === 0}
+        aria-label="Play {view.position.description}"
+        onclick={playPosition}
+      >
+        <span aria-hidden="true">▶</span> Play
+      </button>
+      {#if settings.current.audio.muted}
+        <span class="muted-note">Sound is muted.</span>
+      {/if}
+    </div>
     <PositionControls position={view.position} />
     {#if view.tabNotes.length > 0}
       <TabView
@@ -138,5 +166,37 @@
   h3 {
     margin: 0;
     font-size: 1rem;
+  }
+
+  .tab-heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1rem;
+  }
+
+  .play {
+    font: inherit;
+    font-size: 0.875rem;
+    color: var(--accent-text);
+    background: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: 0.375rem;
+    padding: 0.25rem 0.75rem;
+    cursor: pointer;
+  }
+
+  .play:hover:not(:disabled) {
+    background: var(--accent-hover);
+  }
+
+  .play:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+
+  .muted-note {
+    color: var(--text-muted);
+    font-size: 0.875rem;
   }
 </style>

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { AudioControls, AudioEngine, setAudio } from './lib/audio';
   import { ScaleExplorer, ScalePicker, ViewControls } from './lib/explorer';
   import { InstrumentPanel } from './lib/instrument';
   import { SettingsStore, setSettings } from './lib/settings';
@@ -7,8 +8,12 @@
   import { setUserCatalogs, UserCatalogs } from './lib/user-catalogs.svelte';
   import { applyTheme } from './styles/theme';
 
-  // Tests pass their own storage; the app picks Tauri files or localStorage (ADR-4).
-  const { storage = createStorage() }: { storage?: Storage } = $props();
+  // Tests pass their own storage and audio engine; the app picks Tauri files or localStorage
+  // (ADR-4) and the Web Audio engine (ADR-28).
+  const {
+    storage = createStorage(),
+    audio: injectedAudio,
+  }: { storage?: Storage; audio?: AudioEngine } = $props();
 
   const coreVersion = version();
 
@@ -21,6 +26,16 @@
   // svelte-ignore state_referenced_locally
   const catalogs = new UserCatalogs(storage);
   setUserCatalogs(catalogs);
+
+  // The sound: no AudioContext exists until the first click or key press (ADR-28). Volume and
+  // mute follow the settings. The engine is closed when the app goes, unless a test owns it.
+  // svelte-ignore state_referenced_locally
+  const audio = injectedAudio ?? new AudioEngine();
+  setAudio(audio);
+  $effect(() => audio.configure(settings.current.audio));
+  $effect(() => () => {
+    if (!injectedAudio) audio.dispose();
+  });
 
   // The views wait for the settings and the user's scales and tunings, so the last view
   // appears at once instead of after a flash of the defaults.
@@ -45,7 +60,8 @@
   - picker:   root and scale picker.
   - board:    the view toggles (labels, sharps/flats) and the fretboard.
   - settings: the instrument panel (strings, tuning and custom tunings, frets, capo,
-              left-handed, theme; ADR-24). The view toggles stay in board.
+              left-handed, theme; ADR-24) and the sound (volume, mute; ADR-28). The view
+              toggles stay in board.
   - chords:   the docked chord panel (ADR-10), filled by #18.
   On narrow windows the regions stack in that order.
 -->
@@ -80,6 +96,8 @@
     <aside class="region settings" aria-label="Instrument settings">
       <h2>Instrument</h2>
       <InstrumentPanel />
+      <h2 class="sound">Sound</h2>
+      <AudioControls />
     </aside>
 
     <aside class="region chords" aria-label="Chords">
@@ -158,6 +176,10 @@
   h2 {
     margin: 0 0 0.5rem;
     font-size: 1rem;
+  }
+
+  h2.sound {
+    margin-top: 1rem;
   }
 
   .region {
