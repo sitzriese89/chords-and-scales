@@ -61,6 +61,11 @@ thread_local! {
     static CATALOG: RefCell<ChordCatalog> = RefCell::new(ChordCatalog::builtin().clone());
 }
 
+/// Runs `f` with the current chord catalog (for other bindings that name chords).
+pub(crate) fn with_catalog<R>(f: impl FnOnce(&ChordCatalog) -> R) -> R {
+    CATALOG.with_borrow(f)
+}
+
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 struct ChordInfo<'a> {

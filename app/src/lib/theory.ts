@@ -46,6 +46,18 @@ export {
 export type { ChordFamily, ChordInfo, ChordNote } from './wasm/theory_wasm.js';
 export { chordNotes, getChord, listChords, setUserChords } from './wasm/theory_wasm.js';
 
+// Harmonize (crates/theory-wasm/src/harmonize.rs): the chord on every degree of a scale, from
+// the current scale and chord catalogs. Returns the spelled root, the catalog chord id (null
+// where no chord forms), the stacked tones and the Roman numeral in parts. Chord symbols are
+// written from the chord id (M2.2), not here.
+export type {
+  HarmonizedChord,
+  HarmonizedDegree,
+  RomanNumeralParts,
+  Stacking,
+} from './wasm/theory_wasm.js';
+export { harmonizeScale } from './wasm/theory_wasm.js';
+
 // Tunings and the fretboard mapping (crates/theory-wasm/src/fretboard.rs): the built-ins,
 // with the user tunings last passed to setUserTunings on top. Tunings list MIDI notes lowest
 // string first; positions use the fretboard's coordinates (string 1 = highest, absolute

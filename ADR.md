@@ -847,3 +847,41 @@ and testable without a sound card. Browsers refuse to start audio before a user 
   without errors.
 - The chord panel calls `getAudio().strum(midis)` with the notes of a voicing, lowest string
   first.
+
+## ADR-30: Harmonize: stack thirds in the scale, number by the scale's own degrees
+
+**Context.** Harmonize (M2.3, SPEC §5.5) names the chord on every degree of a scale. For the
+seven-note scales "every other tone" is the whole rule, but the catalog also has pentatonic,
+whole-tone, bebop, diminished and chromatic scales, where every other tone is not a third.
+
+**Decision.**
+- **Stacking.** Starting on a degree, each next chord tone is a scale tone a third above the
+  previous one (3 or 4 semitones): the tone two scale steps up if that is a third, else the
+  tone one step up. A stack must stay below the root's octave. A triad needs two such steps,
+  a seventh chord three; if one fails the degree has no chord. For the seven-note scales
+  this is the usual every-other-tone stacking (the one-step fallback never fires there).
+- **Results where thirds are scarce.** Minor pentatonic (C E♭ F G B♭): triads on C (Cm) and
+  E♭ (E♭), sevenths on C only (Cm7); F, G and B♭ have no chord. Whole tone: an augmented
+  triad on every degree, no seventh chords (a fourth third would land on the root's octave;
+  C E G♯ B♭ is not a stack of thirds). Chromatic: no chords. Eight-note scales
+  (diminished, bebop) get the chords their thirds allow.
+- **Names from the catalog, not from the stacker.** The stacked semitones are looked up in
+  the chord catalog passed in (user chords included; the last match wins, so a user chord
+  beats a built-in one). A stack the catalog lacks (a user chord replaced the built-in
+  one) still returns its tones and numeral, with no chord id. Chord symbol text is the
+  formatter's job (M2.2): the result carries the id.
+- **Roman numerals** are structured (`RomanNumeral`): accidental, number 1–7, lower case for
+  a minor third, mark `°` / `+` / `ø`, seventh `7` / `maj7`. `ø` and `°` for sevenths keep
+  the `7` (`viiø7`, `vii°7`). In a seven-note scale the number is the place in the scale and
+  there is no accidental, so natural minor reads i ii° III iv v VI VII and a mode is numbered
+  in its own terms (D Dorian: i ii III IV v vi° VII). In other scales the number and
+  accidental come from the degree's interval label (`♭III`, `♯IV`), since a place in the
+  scale doesn't say where it is.
+- **Spelling is ADR-6.** The chord tones are the scale's notes as `Scale::notes` spells them,
+  so the root keeps its spelling and the rest follow the sharp/flat preference.
+
+**Consequences.**
+- Roman numerals in modes differ from the borrowed-chord habit of writing ♭III in a minor key.
+  Only the numeral, never the chord, depends on this choice.
+- A seven-note scale with a cluster of semitones (Hungarian minor) gets no chord on the
+  degrees where no third is in the scale; the view shows them as no chord.
