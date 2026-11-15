@@ -7,6 +7,7 @@ mod catalog_file;
 pub mod chords;
 pub mod formula;
 pub mod fretboard;
+pub mod lookup;
 pub mod notes;
 pub mod scale_positions;
 pub mod scales;
@@ -19,6 +20,7 @@ pub use chords::{
 };
 pub use formula::{Formula, FormulaError};
 pub use fretboard::{FretboardError, Position, positions};
+pub use lookup::{ChordMatch, NoteSet, ScaleMatch, ScaleSearch, find_scales, lookup_chords};
 pub use notes::{
     Accidental, Accidentals, Glyphs, Interval, Letter, Note, NoteName, ParseError, PitchClass,
     Spelling,

@@ -46,6 +46,14 @@ export {
 export type { ChordFamily, ChordInfo, ChordNote } from './wasm/theory_wasm.js';
 export { chordNotes, getChord, listChords, setUserChords } from './wasm/theory_wasm.js';
 
+// Reverse lookup and the scale finder (crates/theory-wasm/src/lookup.rs, ADR-31): clicked
+// pitch classes (0 … 11) plus an optional bass note give ranked chords (slash chords and
+// omitted 5ths included) and the scales/modes that contain them. They search the current
+// chord and scale catalogs, user items included. Results hold ids, spelled names and the
+// numbers the ranking used, not display strings: chord symbols come from the symbol formatter.
+export type { ChordLookupMatch, ScaleLookupMatch } from './wasm/theory_wasm.js';
+export { findScales, lookupChords } from './wasm/theory_wasm.js';
+
 // Tunings and the fretboard mapping (crates/theory-wasm/src/fretboard.rs): the built-ins,
 // with the user tunings last passed to setUserTunings on top. Tunings list MIDI notes lowest
 // string first; positions use the fretboard's coordinates (string 1 = highest, absolute

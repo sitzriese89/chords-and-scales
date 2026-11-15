@@ -337,7 +337,7 @@ How the tab is shown (`app/src/lib/tab/`, ADR-25):
   1. Root + quality
   2. From scale/mode + degree (e.g. iv of D Dorian)
   3. **Reverse lookup:** click notes on the fretboard → matching chord names
-     (including slash chords / inversions)
+     (including slash chords / inversions, and chords with the 5th left out; §5.4)
   4. **Typed symbol:** e.g. `F#m7b5`, parsed per §4.4
 - **Chord-over-scale overlay:** when a chord comes from a scale (input mode 2
   or harmonize), the parent scale is shown dimmed with chord tones emphasized.
@@ -347,6 +347,24 @@ How the tab is shown (`app/src/lib/tab/`, ADR-25):
 
 Clicked notes also produce a list of **scales/modes containing all of them**,
 ranked by fewest extra notes. Shares logic with reverse chord lookup.
+
+The core does both searches (ADR-31). The input is a set of pitch classes with an optional
+**bass note** (the lowest clicked note).
+
+- **Chords:** a catalog chord on a root fits when it contains every note and the only chord
+  tones missing are ones players leave out: the perfect 5th, and in 11th/13th chords the
+  natural 9th (and, with a 13th, the 11th). The root is never left out. A bass that is a chord
+  tone but not the root gives a slash chord (`C/E`). Best first: exact fits, then inversions,
+  then chords with a tone left out; ties keep catalog order. Results carry the chord id, the
+  spelled root, the bass, what was left out and a score; the app writes the name in the
+  chosen symbol style (§4.4). Fewer than two notes find no chord.
+- **Scales:** every catalog scale or mode on every root that contains all the notes, fewest
+  extra scale tones first; among equals, a scale rooted on the bass, then a root among the
+  notes, then catalog order. `C D E G A` lists the major pentatonic family (C major
+  pentatonic, A minor pentatonic, D Egyptian, E Man Gong, G Ritusen) before any seven-note
+  scale. A scale that comes out the same on several roots (whole-tone) is listed once.
+- User chords and scales are searched like the built-in ones. Root and bass are spelled by
+  the sharp/flat toggle (§4.1).
 
 ### 5.5 Harmonize (Q18)
 

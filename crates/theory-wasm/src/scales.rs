@@ -82,7 +82,7 @@ struct ScaleRecord {
 }
 
 thread_local! {
-    static CATALOG: RefCell<ScaleCatalog> = RefCell::new(ScaleCatalog::builtin().clone());
+    pub(crate) static CATALOG: RefCell<ScaleCatalog> = RefCell::new(ScaleCatalog::builtin().clone());
 }
 
 #[derive(Serialize)]

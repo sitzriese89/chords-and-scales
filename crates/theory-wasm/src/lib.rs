@@ -5,6 +5,7 @@
 
 mod chords;
 mod fretboard;
+mod lookup;
 mod meta;
 mod notes;
 mod positions;
@@ -17,6 +18,7 @@ pub use fretboard::{
     fretboard_positions, get_tuning, list_tunings, new_tuning_id, set_user_tunings,
     write_tunings_toml,
 };
+pub use lookup::{find_scales_js, lookup_chords_js};
 pub use meta::version;
 pub use notes::{
     Accidentals, format_interval, format_note, format_note_name, interval_label,
