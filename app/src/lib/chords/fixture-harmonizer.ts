@@ -1,5 +1,5 @@
 /**
- * A stand-in for the harmonize core (M2.3) in tests: the chords of C major, written out by
+ * A stand-in for the harmonize core in tests that need no WASM: the chords of C major, written out by
  * hand. It answers only for C major; any other scale or root has no chord.
  */
 import type { DegreeChord, Harmonizer } from './harmonize';

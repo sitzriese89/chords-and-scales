@@ -38,6 +38,11 @@ ADR-1 to ADR-13 come from the design interview behind [SPEC.md](SPEC.md) (decisi
 | 25 | [The tab view: core positions in playing order, absolute frets, never mirrored, stored without a version bump](#adr-25-the-tab-view-core-positions-in-playing-order-absolute-frets-never-mirrored-stored-without-a-version-bump) | Accepted |
 | 26 | [Custom scales: a generic interval-set editor, names unique in the catalog, checks in the core](#adr-26-custom-scales-a-generic-interval-set-editor-names-unique-in-the-catalog-checks-in-the-core) | Accepted |
 | 27 | [The chord catalog: suffix symbols in the data, a full stack per chord, shared file reader](#adr-27-the-chord-catalog-suffix-symbols-in-the-data-a-full-stack-per-chord-shared-file-reader) | Accepted |
+| 28 | [Audio: a rendered Karplus–Strong buffer, an injectable engine, nothing before a gesture](#adr-28-audio-a-rendered-karplusstrong-buffer-an-injectable-engine-nothing-before-a-gesture) | Accepted |
+| 29 | [Chord symbols: the parser reads the catalog, fallbacks never guess, errors carry a position](#adr-29-chord-symbols-the-parser-reads-the-catalog-fallbacks-never-guess-errors-carry-a-position) | Accepted |
+| 30 | [Harmonize: stack thirds in the scale, number by the scale's own degrees](#adr-30-harmonize-stack-thirds-in-the-scale-number-by-the-scales-own-degrees) | Accepted |
+| 31 | [Reverse lookup and the scale finder: contain every note, inversions are cheap, omissions cost more](#adr-31-reverse-lookup-and-the-scale-finder-contain-every-note-inversions-are-cheap-omissions-cost-more) | Accepted |
+| 32 | [The chord panel: one chosen chord drawn on the explorer neck, degrees behind a seam](#adr-32-the-chord-panel-one-chosen-chord-drawn-on-the-explorer-neck-degrees-behind-a-seam) | Accepted |
 
 ---
 
@@ -982,9 +987,10 @@ the neck, the tab and the layout region (ADR-23); chords on a degree come from h
 - **Degrees through a seam.** A `Harmonizer` interface (`chords/harmonize.ts`:
   `chordOnDegree({scaleId, root, degree, size, accidentals})` giving a root and a chord id,
   or `undefined` for "no chord") is all the panel knows about stacking thirds, which is
-  theory and not for TypeScript. `harmonizer` there is `null` until the harmonize binding
-  exists; the degree input is then disabled with a note. Wiring M2.3 is replacing that
-  constant; tests use a hand-written C major fixture. `App` takes it as a prop.
+  theory and not for TypeScript. `harmonizer` there is the real implementation, which picks the
+  degree's entry out of `harmonizeScale` (M2.3, ADR-30); `null` turns the degree input off
+  with a note. Tests use a hand-written C major fixture or the real one. `App` takes it as a
+  prop.
 - **One place for the chord's name.** `chordSymbol(root, chord)` writes root + catalog suffix
   as stored; the symbol formatter and display style (M2.2, M2.6) replace it there.
 - **Strum.** The Strum button plays `getAudio().strum(midis)` with pitches picked from the
@@ -1002,4 +1008,5 @@ the neck, the tab and the layout region (ADR-23); chords on a degree come from h
   chord on the neck hides the scale's own emphasis until it is cleared.
 - M2.7 (harmonize view) and M2.8 (reverse lookup) can set the same `ChordState`, and M2.6
   adds typed symbols as a third input.
-- Until M2.3 is wired in, the degree input is unavailable in the real app.
+- Each degree asks the core for the whole table of the scale and takes one entry; the table is
+  small, so there is no cache.

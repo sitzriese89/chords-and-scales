@@ -366,8 +366,8 @@ How the tab is shown (`app/src/lib/tab/`, ADR-25):
   - **Degree of the scale:** pick a degree of the scale in the explorer and triads or 7th
     chords; the chord on that degree comes from harmonize (§5.5). The neck shows the scale
     dimmed with the chord's tones emphasized (degree V of C major as 7th chords: G7 over
-    C major). The chord follows the explorer's scale. Until harmonize is available this input
-    is disabled.
+    C major). The chord follows the explorer's scale. Where no chord forms on a degree (some
+    pentatonic degrees), the panel says so and the neck shows the scale alone.
   - The panel lists the chord's notes (spelled by the sharp/flat setting; the root keeps its
     spelling) and has **Strum**, which plays the chord through the audio engine (§5.9) as one
     note per string, lowest string first, stacked upward from the lowest root on the neck.
