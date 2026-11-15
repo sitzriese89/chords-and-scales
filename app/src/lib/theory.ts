@@ -46,6 +46,13 @@ export {
 export type { ChordFamily, ChordInfo, ChordNote } from './wasm/theory_wasm.js';
 export { chordNotes, getChord, listChords, setUserChords } from './wasm/theory_wasm.js';
 
+// Chord symbols (crates/theory-wasm/src/symbols.rs, SPEC §4.4): `parseChordSymbol` reads typed
+// text against the current chord catalog and never throws (`ok: false` carries the position of
+// the first unreadable character); `formatChordSymbol` is the one place symbols become display
+// text, in the 'standard' or 'jazz' style. Bass notes are printed as given.
+export type { ChordSymbolResult, SymbolStyle } from './wasm/theory_wasm.js';
+export { formatChordSymbol, parseChordSymbol } from './wasm/theory_wasm.js';
+
 // Harmonize (crates/theory-wasm/src/harmonize.rs): the chord on every degree of a scale, from
 // the current scale and chord catalogs. Returns the spelled root, the catalog chord id (null
 // where no chord forms), the stacked tones and the Roman numeral in parts. Chord symbols are

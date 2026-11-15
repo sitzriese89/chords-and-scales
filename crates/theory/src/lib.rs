@@ -18,6 +18,9 @@ pub use chords::{
     Chord, ChordCatalog, ChordError, ChordFamily, ChordNote, ChordSpec, ParsedChords,
     parse_user_chords,
 };
+pub use chords::{
+    ChordSymbol, SymbolError, SymbolErrorKind, SymbolStyle, format_symbol, parse_symbol,
+};
 pub use formula::{Formula, FormulaError};
 pub use fretboard::{FretboardError, Position, positions};
 pub use harmonize::{
