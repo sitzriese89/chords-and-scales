@@ -204,6 +204,20 @@ fn the_root_keeps_to_the_preference_for_spelling() {
 }
 
 #[test]
+fn the_bass_is_spelled_by_the_preference_too() {
+    // The formatter prints the bass as given, so the core spells it (ADR-6).
+    let notes = set("C Eb G", Some("Eb"));
+    for (accidentals, expected) in [(Accidentals::Sharps, "D#"), (Accidentals::Flats, "Eb")] {
+        let found = lookup_chords(ChordCatalog::builtin(), &notes, accidentals, 12);
+        let slash = found
+            .iter()
+            .find(|m| m.chord.id() == "minor" && m.root.pitch_class() == pc("C"))
+            .unwrap();
+        assert_eq!(slash.bass.unwrap().format(Glyphs::Ascii), expected);
+    }
+}
+
+#[test]
 fn user_chords_are_searched() {
     let parsed = parse_user_chords(
         r##"
