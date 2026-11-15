@@ -22,8 +22,8 @@ each PR names its issue with `Fixes #n`.
 ## Order of work
 
 1. **M0** (alone: every other item builds on the scaffold).
-2. **M1**, then release **v0.1.0**. **Now**
-3. **M2**, voicings (M2.11, M2.12) last, then release **v0.2.0**.
+2. **M1**, then release **v0.1.0** (released 2026-11-15).
+3. **M2**, voicings (M2.11, M2.12) last, then release **v0.2.0**. **Now**
 4. **M3**, then release **v0.3.0**.
 5. **M4**, then release **v0.4.0**.
 
