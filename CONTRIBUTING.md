@@ -84,6 +84,12 @@ A scale is one `[[scale]]` table in `scales.toml` with `id`, `name`, optional `a
 listed in the order they first appear. Write the interval labels the scale means (`#4`, not
 `b5`, in Lydian). Don't rename existing ids: settings and user files refer to them.
 
+A chord is one `[[chord]]` table in `chords.toml` with `id`, `name`, `symbol` (the suffix after
+the root, ASCII: `m7b5`), optional `aliases`, `jazz_symbol` and `family`, and `intervals`
+(format in SPEC §4.3: up to two octaves, so `9`, `#11`, `13` are fine). Aliases and symbols are
+matched case-sensitively and no suffix may mean two chords; the test checks that. Write the
+full stack and let voicings leave tones out.
+
 ### Tune mood tags
 
 Weights and thresholds live in the tag rules TOML in `crates/theory/data/` (ADR-9). Say in the

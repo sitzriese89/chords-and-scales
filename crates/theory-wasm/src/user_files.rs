@@ -1,8 +1,8 @@
 //! The report shape shared by the user catalog files (ADR-23).
 //!
-//! User scales and user tunings load the same way: `setUserScales(toml)` and
-//! `setUserTunings(toml)` replace the user items in the binding's current catalog and return a
-//! `UserFileReport`. Errors use one shape for both: a 0-based item index (`null` for the file
+//! User scales, chords and tunings load the same way: `setUserScales(toml)`, `setUserChords(toml)`
+//! and `setUserTunings(toml)` replace the user items in the binding's current catalog and return a
+//! `UserFileReport`. Errors use one shape for all: a 0-based item index (`null` for the file
 //! as a whole), the item's id if it has one, and the full message. A file-level error never
 //! throws; it is reported and leaves only the built-ins.
 
@@ -13,14 +13,14 @@ use wasm_bindgen::prelude::*;
 const TYPES: &'static str = r#"
 /** Why an item of a user file (or the whole file, `item` null) was not loaded. */
 export interface UserFileError {
-  /** 0-based index of the `[[scale]]` / `[[tuning]]` item, or null for the file as a whole. */
+  /** 0-based index of the `[[scale]]` / `[[chord]]` / `[[tuning]]` item, or null for the file as a whole. */
   item: number | null;
   id: string | null;
   /** The full message, e.g. `tuning 2 ("bass-3"): …` (items numbered from 1, as in the file). */
   message: string;
 }
 
-/** What `setUserScales` or `setUserTunings` loaded. */
+/** What `setUserScales`, `setUserChords` or `setUserTunings` loaded. */
 export interface UserFileReport {
   /** Ids of the user items now in the catalog, in file order. */
   loaded: string[];

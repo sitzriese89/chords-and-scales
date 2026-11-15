@@ -3,6 +3,7 @@
 //! A thin layer: one module per core area, no theory logic here (ADR-2). The app builds it
 //! with `wasm-pack` (`pnpm --dir app wasm`, ADR-14).
 
+mod chords;
 mod fretboard;
 mod meta;
 mod notes;
@@ -11,6 +12,7 @@ mod records;
 mod scales;
 mod user_files;
 
+pub use chords::{chord_notes, get_chord, list_chords, set_user_chords};
 pub use fretboard::{
     fretboard_positions, get_tuning, list_tunings, new_tuning_id, set_user_tunings,
     write_tunings_toml,
