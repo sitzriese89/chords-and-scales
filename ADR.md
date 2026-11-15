@@ -847,3 +847,19 @@ and testable without a sound card. Browsers refuse to start audio before a user 
   without errors.
 - The chord panel calls `getAudio().strum(midis)` with the notes of a voicing, lowest string
   first.
+
+## ADR-29: Chord symbols: the parser reads the catalog, fallbacks never guess, errors carry a position
+
+**Context.** Typed chord input (M2.6), reverse lookup (M2.4), harmonize (M2.3) and the chord panel (M2.5) all need chord symbols in and out, in the Standard and Jazz styles (SPEC §4.4). ADR-27 put the suffixes in the catalog data.
+
+**Decision.**
+- **The catalog is the grammar.** `parse_symbol` splits a root off, then looks the rest up as a `symbol`, alias or `jazz_symbol` of a catalog chord (`Chord::suffixes`; `find_by_symbol` matches the same set). No chord name is written in Rust, so a user chord with a symbol is typeable and a user suffix shadows a built-in one as ADR-27 says. Alterations such as `7b9b5` are not composed from parts: a chord must exist in the catalog to be read.
+- **Normalise, then fall back, never guess.** Look-alike characters are mapped one-to-one (`♭ ♯`, dashes, `△ ∆`, `Ø ∅`, `º ˚`), so error positions stay valid. Lookup order: the suffix as typed, without spaces, parentheses and commas, with up to four trailing `b`/`#` + number groups in another order, and last ignoring case if exactly one chord fits. An exact match always wins, which keeps `M7`/`m7` apart; a fallback that fits two chords is an error.
+- **Slash chords.** The whole suffix is tried first, so `6/9`, `m6/9` and a user symbol with a slash win over a bass. Otherwise the text after the last slash must be a note name (either case, any accidental) and the rest a chord. `C6/9/E` is `6/9` over `E`.
+- **Result and errors.** `ChordSymbol { root, chord_id, bass }` keeps the typed spelling of root and bass (ADR-6). `SymbolError` has a character position: the first character no known suffix continues with (`Cmaj7x` at 5), the start of a bad bass, or the first non-blank character for an empty or rootless text. The WASM `parseChordSymbol` returns `{ ok: false, position, message }` instead of throwing, since mistyped text is the normal case for an input field.
+- **Formatter.** `format_symbol(root, chord, bass, style)` writes the root as given, the Standard or Jazz suffix with `b`/`#` before a digit shown as `♭`/`♯`, and `/bass`. The bass is printed as given: callers that compute a bass spell it with the sharp/flat preference (`Spelling`), a parsed one keeps its typed spelling. Both styles read back as the same chord (tested for every catalog chord on every root).
+
+**Consequences.**
+- Adding a chord or an alias is a data change that the parser and formatter pick up; the round-trip test covers it.
+- A suffix is a chord only if the catalog lists it. `C7b9b13`, if no chord has it, is an error, not a `7b9` with an extra tone.
+- The jazz style is a display choice only: both styles are always accepted as input.

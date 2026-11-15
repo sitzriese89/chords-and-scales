@@ -46,6 +46,13 @@ export {
 export type { ChordFamily, ChordInfo, ChordNote } from './wasm/theory_wasm.js';
 export { chordNotes, getChord, listChords, setUserChords } from './wasm/theory_wasm.js';
 
+// Chord symbols (crates/theory-wasm/src/symbols.rs, SPEC §4.4): `parseChordSymbol` reads typed
+// text against the current chord catalog and never throws (`ok: false` carries the position of
+// the first unreadable character); `formatChordSymbol` is the one place symbols become display
+// text, in the 'standard' or 'jazz' style. Bass notes are printed as given.
+export type { ChordSymbolResult, SymbolStyle } from './wasm/theory_wasm.js';
+export { formatChordSymbol, parseChordSymbol } from './wasm/theory_wasm.js';
+
 // Tunings and the fretboard mapping (crates/theory-wasm/src/fretboard.rs): the built-ins,
 // with the user tunings last passed to setUserTunings on top. Tunings list MIDI notes lowest
 // string first; positions use the fretboard's coordinates (string 1 = highest, absolute

@@ -5,7 +5,7 @@
 //! objects (types below); intervals and note names are Unicode, for display. A bad root or
 //! unknown id throws a JS `Error`. User files load with the same report as scales and tunings
 //! (`user_files`, ADR-23). Chord suffixes (`symbol`, `aliases`, `jazzSymbol`) are ASCII as
-//! stored; the symbol parser and formatter (M2.2) turn them into what is shown.
+//! stored; the symbol parser and formatter (`symbols.rs`) turn them into what is shown.
 
 use std::cell::RefCell;
 
@@ -59,6 +59,12 @@ export interface ChordNote {
 
 thread_local! {
     static CATALOG: RefCell<ChordCatalog> = RefCell::new(ChordCatalog::builtin().clone());
+}
+
+/// Runs `f` with the current catalog (the built-ins and the user chords), for the other
+/// bindings that read chords (`symbols.rs`).
+pub(crate) fn with_catalog<R>(f: impl FnOnce(&ChordCatalog) -> R) -> R {
+    CATALOG.with_borrow(f)
 }
 
 #[derive(Serialize)]
