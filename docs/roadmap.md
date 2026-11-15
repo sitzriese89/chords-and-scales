@@ -75,7 +75,7 @@ Chords from every input mode, harmonize, reverse lookup, audio, then generated v
 | M2.7 Harmonize view | [#20][20] | M2.3, M2.5 | Open |
 | M2.8 Reverse lookup on the fretboard | [#21][21] | M2.4, M2.5 | Open |
 | M2.9 Custom chord editor | [#22][22] | M2.1, M1.11 | Open |
-| M2.10 Audio playback | [#23][23] | M1.8 | Open |
+| M2.10 Audio playback | [#23][23] | M1.8 | Done (#51) |
 | M2.11 Voicing generator | [#24][24] | M2.1, M1.3 | Open |
 | M2.12 Chord diagrams and voicing browser | [#25][25] | M2.11, M2.5 | Open |
 
