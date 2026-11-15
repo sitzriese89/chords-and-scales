@@ -367,10 +367,20 @@ ranked by fewest extra notes. Shares logic with reverse chord lookup.
 
 - Select a scale → *Harmonize* → show all chords of that scale.
 - Toggle: **triads** / **7th chords**, built by stacking every other scale tone.
-- **Roman numerals** displayed (I, ii, iii, …).
+- **Roman numerals** displayed (I, ii, iii, …): upper case for a major third, lower
+  case for a minor one, `°` diminished, `+` augmented, `ø` half-diminished, then
+  `7` or `maj7` for sevenths (`V7`, `IVmaj7`, `viiø7`, `III+maj7`). Scales of seven
+  notes number their own degrees (natural minor: i ii° III iv v VI VII); other
+  scales name each degree by its interval from the root, with `♭` or `♯` (minor
+  pentatonic: i, ♭III).
+- Chords are named by their intervals from the chord catalog (user chords included).
 - **Non-heptatonic scales** (pentatonic, whole-tone, bebop, …): stack the
   in-scale thirds where possible; degrees where no valid chord forms are marked
-  *no chord*.
+  *no chord*. Each next chord tone is a scale tone a third above the last (3 or 4
+  semitones), two scale steps up, or one step up if the first is no third.
+  Examples: the minor pentatonic has Cm (and Cm7) on its root and E♭ on the ♭III
+  as triads, and no chord on the other degrees; the whole tone scale has an
+  augmented triad on every degree and no seventh chords (ADR-30).
 
 ### 5.6 Voicing generator (Q28)
 

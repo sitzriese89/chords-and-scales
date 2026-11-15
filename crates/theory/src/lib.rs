@@ -7,6 +7,7 @@ mod catalog_file;
 pub mod chords;
 pub mod formula;
 pub mod fretboard;
+pub mod harmonize;
 pub mod notes;
 pub mod scale_positions;
 pub mod scales;
@@ -22,6 +23,10 @@ pub use chords::{
 };
 pub use formula::{Formula, FormulaError};
 pub use fretboard::{FretboardError, Position, positions};
+pub use harmonize::{
+    HarmonizedChord, HarmonizedDegree, NumeralMark, NumeralSeventh, RomanNumeral, Stacking,
+    harmonize,
+};
 pub use notes::{
     Accidental, Accidentals, Glyphs, Interval, Letter, Note, NoteName, ParseError, PitchClass,
     Spelling,
