@@ -733,3 +733,60 @@ ids are generated once, `UserCatalogs` tells the views.
   it to compound intervals (`9`, `#11`, `13`).
 - Built-in scale names now constrain user names: a future built-in with a user's name makes
   that user's next save fail until it is renamed.
+
+## ADR-27: Audio: a rendered Karplus–Strong buffer, an injectable engine, nothing before a gesture
+
+**Context.** ADR-12 chose a Karplus–Strong string synth in Web Audio. M2.10 builds it, and the
+chord panel (M2.5) and voicing browser (M2.12) will call it, so its interface has to be small
+and testable without a sound card. Browsers refuse to start audio before a user gesture.
+
+**Decision.**
+- **The string is rendered to a buffer.** `renderPluck(frequency, sampleRate)` runs the
+  Karplus–Strong loop (noise burst, averaging low-pass, a loss factor that gives about the
+  same decay at every pitch, a first-order all-pass for the fractional delay) into a mono
+  `Float32Array`, played by an `AudioBufferSourceNode`. A loop of Web Audio nodes can't be
+  shorter than one 128-sample render quantum, which would put every note above about 340 Hz
+  out of tune; an `AudioWorklet` needs a separate module file and is harder to test. The
+  noise is seeded from the pitch, so a note always sounds the same and tests are exact. A
+  buffer costs about a millisecond to render, so notes are rendered when played, not cached.
+- **The frontend does no theory.** The engine takes MIDI note numbers the core already gives
+  (`NotePosition.midi`, `Tuning.notes`). Converting one to hertz (`440·2^((n−69)/12)`, A4 =
+  440 Hz) is signal processing for the synth, not theory, and stays in `audio/synth.ts`.
+  The explorer looks a clicked dot's pitch up in a map built from `fretboardPositions`; it
+  never adds a fret to an open string itself.
+- **One small engine, `AudioEngine`** (`app/src/lib/audio/`), reached with `getAudio()`:
+  `playNote(midi)` adds a note on top of what rings; `playSequence(midis, {interval})` plays
+  notes one after another (a scale up, down, or both, in the order the caller gives, which
+  for the tab is `playingOrder`); `strum(midis, {direction, spread})` plays a chord's notes
+  a few milliseconds apart, lowest string first for a downstrum (the order of `Tuning.notes`,
+  muted strings left out), each quieter by 1/√n so a chord doesn't clip; `stop()` fades
+  everything out. A sequence or strum replaces what was playing. Timing and velocities are
+  built by pure functions (`sequenceEvents`, `strumEvents`) the engine only plays.
+- **Everything the engine needs from the platform is injected**: the `AudioContext` factory,
+  the renderer and the user-gesture tracker. Tests run it with a fake context that records
+  start times and connections.
+- **No context before a user gesture.** The engine creates its `AudioContext` lazily inside
+  the first play call, and only after a click, touch or key press was seen in the document
+  (capture listeners, removed after the first). A play call before then, or while muted, or
+  at volume 0, returns `false` and creates nothing. This also covers a later automatic
+  playback: it stays silent until the user has interacted.
+- **Volume and mute are settings.** `settings.toml` gets an `[audio]` table: `volume` (whole
+  percent, default 70) and `muted` (default false). Absent means the default, so the format
+  version stays 1 (ADR-25). They are saved through `Storage`, so both implementations keep
+  them (ADR-4). A master gain node applies them; the volume slider changes the sound while
+  it is dragged and is saved when released. The gain is the volume squared, so the slider
+  feels even.
+- **What "Play" plays.** The explorer's Play button plays the tab's position (the 3NPS
+  pattern or fret window) in the tab's direction setting, so what sounds is what the tab
+  shows.
+
+**Consequences.**
+- The synth sounds like a synth, as ADR-12 says; the string is fixed (no pick position,
+  body or palm mute). More voices would need their own renderer behind the same `render`
+  option.
+- A sound cut off while ringing fades over a few milliseconds; a note stays in memory (about
+  0.5 MB at 48 kHz) until it ends.
+- Where the webview has no Web Audio the engine returns `false` and the app stays silent
+  without errors.
+- The chord panel calls `getAudio().strum(midis)` with the notes of a voicing, lowest string
+  first.

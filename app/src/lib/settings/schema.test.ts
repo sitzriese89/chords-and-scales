@@ -24,6 +24,7 @@ const custom: Settings = {
     direction: 'both',
     highlight: false,
   },
+  audio: { volume: 35, muted: true },
 };
 
 function parsed(text: string) {
@@ -66,6 +67,7 @@ describe('serializeSettings', () => {
         direction: 'both',
         highlight: false,
       },
+      audio: { volume: 35, muted: true },
     });
   });
 
@@ -139,6 +141,21 @@ direction = "both"
     const result = parsed('version = 1\n[last_view]\nroot = "G"\n');
     expect(result.problems).toEqual([]);
     expect(result.settings.tab).toEqual(DEFAULT_SETTINGS.tab);
+  });
+
+  it('reads the audio table and falls back per value', () => {
+    const result = parsed('version = 1\n[audio]\nvolume = 120\nmuted = true\nloud = 1\n');
+    expect(result.settings.audio).toEqual({ volume: DEFAULT_SETTINGS.audio.volume, muted: true });
+    expect(result.problems).toEqual([
+      'audio.volume should be a whole number from 0 to 100, not 120',
+      'audio.loud is not a known setting',
+    ]);
+  });
+
+  it('reads a version 1 file written before the audio table existed', () => {
+    const result = parsed('version = 1\n[last_view]\nroot = "G"\n');
+    expect(result.problems).toEqual([]);
+    expect(result.settings.audio).toEqual({ volume: 70, muted: false });
   });
 
   it('reports unknown keys and tables that are not tables', () => {
