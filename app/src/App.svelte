@@ -1,5 +1,12 @@
 <script lang="ts">
   import { AudioControls, AudioEngine, setAudio } from './lib/audio';
+  import {
+    ChordPanel,
+    ChordState,
+    harmonizer as coreHarmonizer,
+    setChordState,
+    type Harmonizer,
+  } from './lib/chords';
   import { ScaleExplorer, ScalePicker, ViewControls } from './lib/explorer';
   import { InstrumentPanel } from './lib/instrument';
   import { SettingsStore, setSettings } from './lib/settings';
@@ -8,12 +15,13 @@
   import { setUserCatalogs, UserCatalogs } from './lib/user-catalogs.svelte';
   import { applyTheme } from './styles/theme';
 
-  // Tests pass their own storage and audio engine; the app picks Tauri files or localStorage
-  // (ADR-4) and the Web Audio engine (ADR-28).
+  // Tests pass their own storage, audio engine and harmonizer; the app picks Tauri files or
+  // localStorage (ADR-4), the Web Audio engine (ADR-28) and the core's harmonize (ADR-32).
   const {
     storage = createStorage(),
     audio: injectedAudio,
-  }: { storage?: Storage; audio?: AudioEngine } = $props();
+    harmonizer = coreHarmonizer,
+  }: { storage?: Storage; audio?: AudioEngine; harmonizer?: Harmonizer | null } = $props();
 
   const coreVersion = version();
 
@@ -26,6 +34,9 @@
   // svelte-ignore state_referenced_locally
   const catalogs = new UserCatalogs(storage);
   setUserCatalogs(catalogs);
+  // The chord chosen in the chord panel, drawn on the explorer's neck (ADR-32).
+  // svelte-ignore state_referenced_locally
+  setChordState(new ChordState(settings, harmonizer, catalogs));
 
   // The sound: no AudioContext exists until the first click or key press (ADR-28). Volume and
   // mute follow the settings. The engine is closed when the app goes, unless a test owns it.
@@ -62,7 +73,7 @@
   - settings: the instrument panel (strings, tuning and custom tunings, frets, capo,
               left-handed, theme; ADR-24) and the sound (volume, mute; ADR-28). The view
               toggles stay in board.
-  - chords:   the docked chord panel (ADR-10), filled by #18.
+  - chords:   the docked chord panel (SPEC §5.3, ADR-10, ADR-32): collapsible and resizable.
   On narrow windows the regions stack in that order.
 -->
 <div class="layout">
@@ -101,9 +112,7 @@
     </aside>
 
     <aside class="region chords" aria-label="Chords">
-      <h2>Chords</h2>
-      <!-- #18: the chord panel content goes here. -->
-      <p class="muted">Chords on the neck come in a later version.</p>
+      <ChordPanel />
     </aside>
   {:else}
     <p class="muted loading">Loading…</p>

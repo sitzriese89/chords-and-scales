@@ -25,6 +25,7 @@ const custom: Settings = {
     highlight: false,
   },
   audio: { volume: 35, muted: true },
+  chordPanel: { collapsed: true, height: 300 },
 };
 
 function parsed(text: string) {
@@ -68,6 +69,7 @@ describe('serializeSettings', () => {
         highlight: false,
       },
       audio: { volume: 35, muted: true },
+      chord_panel: { collapsed: true, height: 300 },
     });
   });
 
@@ -156,6 +158,24 @@ direction = "both"
     const result = parsed('version = 1\n[last_view]\nroot = "G"\n');
     expect(result.problems).toEqual([]);
     expect(result.settings.audio).toEqual({ volume: 70, muted: false });
+  });
+
+  it('reads the chord panel table and falls back per value', () => {
+    const result = parsed('version = 1\n[chord_panel]\ncollapsed = true\nheight = 5\nwidth = 1\n');
+    expect(result.settings.chordPanel).toEqual({
+      collapsed: true,
+      height: DEFAULT_SETTINGS.chordPanel.height,
+    });
+    expect(result.problems).toEqual([
+      'chord_panel.height should be a whole number from 96 to 640, not 5',
+      'chord_panel.width is not a known setting',
+    ]);
+  });
+
+  it('reads a version 1 file written before the chord panel table existed', () => {
+    const result = parsed('version = 1\n[last_view]\nroot = "G"\n');
+    expect(result.problems).toEqual([]);
+    expect(result.settings.chordPanel).toEqual({ collapsed: false, height: 220 });
   });
 
   it('reports unknown keys and tables that are not tables', () => {

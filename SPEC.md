@@ -342,6 +342,23 @@ How the tab is shown (`app/src/lib/tab/`, ADR-25):
 - **Chord-over-scale overlay:** when a chord comes from a scale (input mode 2
   or harmonize), the parent scale is shown dimmed with chord tones emphasized.
   No general multi-layer comparison.
+- **The panel** (ADR-32): collapsed to its title bar with a button, and resized by dragging
+  its top edge (or with the arrow keys, Home and End when the edge has focus). Both are saved
+  in `settings.toml` (`[chord_panel]`: `collapsed`, `height` in pixels, 96–640) and come back
+  at the next start.
+  - **Root and quality:** pick a root and a chord from the catalog (grouped by family). The
+    neck shows the chord's tones alone, the root as a square.
+  - **Degree of the scale:** pick a degree of the scale in the explorer and triads or 7th
+    chords; the chord on that degree comes from harmonize (§5.5). The neck shows the scale
+    dimmed with the chord's tones emphasized (degree V of C major as 7th chords: G7 over
+    C major). The chord follows the explorer's scale. Until harmonize is available this input
+    is disabled.
+  - The panel lists the chord's notes (spelled by the sharp/flat setting; the root keeps its
+    spelling) and has **Strum**, which plays the chord through the audio engine (§5.9) as one
+    note per string, lowest string first, stacked upward from the lowest root on the neck.
+    **Clear chord** returns to the plain scale. The chosen chord is not saved.
+  - The chord is written as root + catalog suffix (`G7`, `Bm7b5`) until the symbol display
+    style (§4.4) lands.
 
 ### 5.4 Reverse lookup → scale finder (Q29)
 

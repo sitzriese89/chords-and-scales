@@ -99,7 +99,7 @@ describe('SettingsStore', () => {
   });
 });
 
-describe('audio settings in both Storage implementations (ADR-4)', () => {
+describe('audio and chord panel settings in both Storage implementations (ADR-4)', () => {
   const implementations: [string, () => () => Storage][] = [
     [
       'browser',
@@ -130,6 +130,35 @@ describe('audio settings in both Storage implementations (ADR-4)', () => {
     expect(second.warning).toBeNull();
     expect(second.current.audio).toEqual({ volume: 35, muted: true });
     expect(await open().read(SETTINGS_DOCUMENT)).toMatch(/\[audio\]\nvolume = 35\nmuted = true/);
+  });
+
+  it.each(implementations)(
+    'keeps the chord panel collapsed state and height across a restart: %s',
+    async (_, make) => {
+      const open = make();
+      const first = new SettingsStore(open());
+      await first.load();
+      expect(first.current.chordPanel).toEqual({ collapsed: false, height: 220 });
+      await first.update({ chordPanel: { collapsed: true } });
+      await first.update({ chordPanel: { height: 340 } });
+
+      const second = new SettingsStore(open());
+      await second.load();
+      expect(second.warning).toBeNull();
+      expect(second.current.chordPanel).toEqual({ collapsed: true, height: 340 });
+      expect(await open().read(SETTINGS_DOCUMENT)).toMatch(
+        /\[chord_panel\]\ncollapsed = true\nheight = 340/,
+      );
+    },
+  );
+
+  it('refuses a panel height the file could not hold', async () => {
+    window.localStorage.clear();
+    const store = await startApp();
+    await expect(store.update({ chordPanel: { height: 2000 } })).rejects.toThrow(
+      /chord_panel\.height/,
+    );
+    expect(store.current.chordPanel.height).toBe(220);
   });
 
   it('refuses a volume the file could not hold', async () => {
