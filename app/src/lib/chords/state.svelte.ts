@@ -1,22 +1,36 @@
 /**
  * The chord chosen in the chord panel, shared with the scale explorer's neck (ADR-32).
  *
- * The panel writes the inputs (`mode`, `root`, `chordId`, `degree`, `size`); `active` is the
- * chord they come to, with its root and catalog entry, or `null` while nothing is chosen.
+ * The panel writes the inputs (`mode`, `root`, `chordId`, `degree`, `size`, `symbol`); `active`
+ * is the chord they come to, with its root and catalog entry, or `null` while nothing is chosen.
  * In degree mode the chord follows the explorer's scale: change the scale and it is looked up
- * again. Nothing here is theory: the chord on a degree comes from the `Harmonizer` seam, the
- * rest from the catalogs.
+ * again. A typed symbol is read by the core's parser (ADR-29, ADR-33). Nothing here is theory: the
+ * chord on a degree comes from the `Harmonizer` seam, the rest from the catalogs and the core.
  */
 import { createContext } from 'svelte';
 import { displayRoot, resolveScale } from '../explorer/view';
 import type { SettingsStore } from '../settings';
-import { getChord, scaleNotes, type ChordInfo, type ScaleInfo, type ScaleNote } from '../theory';
+import {
+  getChord,
+  parseChordSymbol,
+  scaleNotes,
+  type ChordInfo,
+  type ScaleInfo,
+  type ScaleNote,
+} from '../theory';
 import type { UserCatalogs } from '../user-catalogs.svelte';
 import type { ChordOnNeck } from './overlay';
 import type { ChordSize, Harmonizer } from './harmonize';
 
-/** Where the chord comes from (SPEC §5.3 input modes 1 and 2). */
-export type ChordMode = 'root' | 'degree';
+/** Where the chord comes from (SPEC §5.3 input modes 1, 2 and 4). */
+export type ChordMode = 'root' | 'degree' | 'symbol';
+
+/** Why the typed symbol could not be read. */
+export interface SymbolProblem {
+  /** 0-based index, in characters (code points), of the first character that could not be read. */
+  position: number;
+  message: string;
+}
 
 /** The chord the inputs come to. */
 export interface ActiveChord {
@@ -27,6 +41,8 @@ export interface ActiveChord {
   fromScale: boolean;
   /** The Roman numeral the harmonizer gave, if any. */
   numeral?: string;
+  /** The bass of a typed slash chord, as typed (Unicode): `E` in `Am7/E`. */
+  bass?: string;
 }
 
 export class ChordState {
@@ -38,6 +54,8 @@ export class ChordState {
   /** Degree input: 0-based degree of the current scale, `null` while none is picked. */
   degree = $state<number | null>(null);
   size = $state<ChordSize>('triads');
+  /** Symbol input: the text as typed (`F#m7b5`). */
+  symbol = $state('');
 
   constructor(
     private readonly settings: SettingsStore,
@@ -71,8 +89,20 @@ export class ChordState {
     });
   });
 
+  /** The core's reading of the typed symbol, against the current catalogs (user chords too). */
+  private readonly parsed = $derived.by(() => {
+    void this.catalogs.revision;
+    return this.mode === 'symbol' ? parseChordSymbol(this.symbol) : undefined;
+  });
+
   readonly active = $derived.by((): ActiveChord | null => {
     void this.catalogs.revision;
+    if (this.mode === 'symbol') {
+      const parsed = this.parsed;
+      const chord = parsed?.ok ? getChord(parsed.chordId) : undefined;
+      if (!parsed?.ok || !chord) return null;
+      return { root: parsed.root, chord, fromScale: false, bass: parsed.bass };
+    }
     if (this.mode === 'root') {
       const chord = this.chordId ? getChord(this.chordId) : undefined;
       const root = displayRoot(this.root);
@@ -83,6 +113,13 @@ export class ChordState {
     return found && chord
       ? { root: found.root, chord, fromScale: true, numeral: found.numeral }
       : null;
+  });
+
+  /** Where and why the typed symbol could not be read; `null` while the field is blank. */
+  readonly symbolProblem = $derived.by((): SymbolProblem | null => {
+    const parsed = this.parsed;
+    if (!parsed || parsed.ok || this.symbol.trim() === '') return null;
+    return { position: parsed.position, message: parsed.message };
   });
 
   /** Why degree mode shows no chord although a degree is picked. */
@@ -96,7 +133,12 @@ export class ChordState {
   readonly onNeck = $derived.by((): ChordOnNeck | null => {
     const active = this.active;
     return active
-      ? { root: active.root, chordId: active.chord.id, fromScale: active.fromScale }
+      ? {
+          root: active.root,
+          chordId: active.chord.id,
+          fromScale: active.fromScale,
+          bass: active.bass,
+        }
       : null;
   });
 
@@ -104,6 +146,7 @@ export class ChordState {
   clear(): void {
     this.chordId = '';
     this.degree = null;
+    this.symbol = '';
   }
 }
 

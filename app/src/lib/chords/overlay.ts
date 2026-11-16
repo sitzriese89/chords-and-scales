@@ -21,6 +21,11 @@ export interface ChordOnNeck {
   chordId: string;
   /** The chord comes from the current scale, so the scale is drawn dimmed behind it. */
   fromScale: boolean;
+  /**
+   * The bass of a typed slash chord, written in the chord's name; the neck shows the chord's
+   * own tones (ADR-33).
+   */
+  bass?: string;
 }
 
 export interface ChordOverlayInput {

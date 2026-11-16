@@ -1,4 +1,4 @@
-//! The voicing generator (`theory::voicings`, SPEC §5.6, ADR-33).
+//! The voicing generator (`theory::voicings`, SPEC §5.6, ADR-34).
 //!
 //! Takes the neck as `fretboardPositions` does (a `Tuning` object, fret count, capo), a chord
 //! id from the current chord catalog (user chords included, `chords.rs`) and a root pitch
@@ -69,7 +69,7 @@ export interface ChordVoicing {
   played: number;
   /** The barre the shape needs, if any. */
   barre: VoicingBarre | null;
-  /** The ranking score: higher is better (ADR-33). */
+  /** The ranking score: higher is better (ADR-34). */
   score: number;
 }
 "#;
@@ -194,7 +194,7 @@ impl From<&Voicing> for VoicingRecord {
 /// The best playable shapes of chord `chordId` (from the current chord catalog) on `root`
 /// (pitch class 0 … 11), on a neck of `frets` frets (12 to 27) in `tuning` with a capo on
 /// fret `capo` (0 = none). Every result contains the root and every tone but the 5th (and an
-/// upper 9th or 11th), fits the hand and the `options`; best first (ranking: ADR-33).
+/// upper 9th or 11th), fits the hand and the `options`; best first (ranking: ADR-34).
 #[wasm_bindgen(js_name = chordVoicings)]
 pub fn chord_voicings(
     tuning: VoicingTuning,

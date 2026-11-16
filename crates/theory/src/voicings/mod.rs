@@ -1,8 +1,8 @@
-//! The voicing generator: playable shapes of a chord on any tuning (SPEC §5.6, ADR-8, ADR-33).
+//! The voicing generator: playable shapes of a chord on any tuning (SPEC §5.6, ADR-8, ADR-34).
 //!
 //! There is no shape library. [`voicings`] searches every way of playing a chord with one note
 //! (or none) per string, for any tuning of 4 to 9 strings, keeps the shapes that satisfy the
-//! [`VoicingOptions`] and a hand's limits, and ranks them. The rules, in short (ADR-33):
+//! [`VoicingOptions`] and a hand's limits, and ranks them. The rules, in short (ADR-34):
 //!
 //! - **Notes.** Every played note is a chord tone. The voicing contains every tone except those
 //!   players leave out (the rule reverse lookup uses, ADR-31): the perfect 5th, a natural 9th
@@ -184,7 +184,7 @@ impl From<FretboardError> for VoicingError {
 /// The best voicings of `chord` on `root`, at most `options.limit`, best first, on a neck of
 /// `frets` frets (12 … 27) in `tuning` with a capo on fret `capo` (0 = none, below `frets`).
 ///
-/// The rules and the ranking are in the module docs and ADR-33. A chord that needs more notes
+/// The rules and the ranking are in the module docs and ADR-34. A chord that needs more notes
 /// than the tuning has strings, or that no shape can reach, has no voicings: the result is
 /// empty, not an error.
 pub fn voicings(

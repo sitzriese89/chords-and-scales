@@ -500,7 +500,7 @@ fn nine_strings_generate_fast() {
 // An independent statement of the rules, to check every result against.
 
 /// What the voicing of `frets` (lowest string first) must be, or `None` if `frets` is not a
-/// valid voicing. Written from ADR-33, not from the search.
+/// valid voicing. Written from ADR-34, not from the search.
 fn judge(
     tuning: &Tuning,
     neck: u8,

@@ -220,7 +220,8 @@ intervals = ["1", "b3", "b5", "b7"]
     `C6/9/E` is `C6/9` over `E`. The bass is any note and keeps its spelling.
   - A symbol the catalog doesn't know (`C7b9b13` if no chord has it) is an error with the
     position of the first character it could not read; there is no guessing between chords.
-- **Display style** is a setting:
+- **Display style** is a setting (`chord_symbols` in `[display]`, chosen in the chord panel,
+  §5.3):
   - *Standard*: `Cmaj7`, `Cm7♭5`, `Cdim7`
   - *Jazz*: `CΔ7`, `Cø`, `C°7`
   - The formatter writes the root as given (ADR-6), then the chord's suffix for the style with
@@ -372,8 +373,19 @@ How the tab is shown (`app/src/lib/tab/`, ADR-25):
     spelling) and has **Strum**, which plays the chord through the audio engine (§5.9) as one
     note per string, lowest string first, stacked upward from the lowest root on the neck.
     **Clear chord** returns to the plain scale. The chosen chord is not saved.
-  - The chord is written as root + catalog suffix (`G7`, `Bm7b5`) until the symbol display
-    style (§4.4) lands.
+  - **Typed symbol:** type a chord symbol (`F#m7b5`, `CΔ7`, `Am7/G`); it is read as you type
+    by the parser (§4.4), in either style, and the neck shows the chord's tones alone, the
+    root as typed. A symbol that can't be read shows no chord: the field is marked invalid
+    and the typed text is repeated with the first unreadable character underlined (the end,
+    if the symbol stops too early), with the parser's reason and the character's number. An
+    empty field is no error. A slash chord's bass is written in the name (`Am7/G`, "Minor
+    seventh, bass G"); the neck shows the chord's own tones and does not add the bass.
+  - **Chord names** (ADR-33): every chord name in the app, in the panel, its title bar and
+    the neck's label, is written by the symbol formatter (§4.4) in the display style chosen
+    in the panel: Standard (`Cmaj7`, `Cm7♭5`) or Jazz (`CΔ7`, `Cø`), each choice showing
+    those two examples. Switching renames every visible chord at once. The style is saved in
+    `settings.toml` as `chord_symbols = "standard"` or `"jazz"` in `[display]` (default
+    Standard).
 
 ### 5.4 Reverse lookup → scale finder (Q29)
 
@@ -434,7 +446,7 @@ Algorithmic (works for any tuning and 4–9 strings; no static shape library).
 - **Playable:** at most four fingers, a barre on the lowest fretted fret counting as one.
 - **Ranking:** span, number of played strings, position on the neck, as one score; also a
   small cost for muted strings between played ones, inversions and barres. The default list
-  has the best 50 (ADR-33).
+  has the best 50 (ADR-34).
 - **Output:** chord diagrams (SVG).
 
 ### 5.7 Mood/category tags (Q6, Q14, Q31)

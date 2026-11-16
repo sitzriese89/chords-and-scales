@@ -1,9 +1,11 @@
 <!--
   @component
-  The docked chord panel (SPEC §5.3, ADR-10, ADR-32). Two ways to choose a chord: a root and a
-  quality from the catalog, or a degree of the scale in the explorer (as a triad or a 7th
-  chord). The chosen chord is drawn on the explorer's neck: alone for root and quality, over
-  the dimmed scale for a degree. The panel lists the chord's notes and strums it (lowest
+  The docked chord panel (SPEC §5.3, ADR-10, ADR-32, ADR-33). Three ways to choose a chord: a
+  root and a quality from the catalog, a degree of the scale in the explorer (as a triad or a
+  7th chord), or a typed symbol, read by the core's parser, with the place it could not read
+  marked. Chord names follow the Standard/Jazz style setting, chosen here. The chosen chord is
+  drawn on the explorer's neck: alone for root and quality or a symbol, over the dimmed scale
+  for a degree. The panel lists the chord's notes and strums it (lowest
   string first, ADR-28).
 
   The panel can be collapsed to its title bar and resized by its top edge (drag, or the arrow
@@ -12,9 +14,15 @@
 <script lang="ts">
   import { getAudio } from '../audio';
   import { rootChoices } from '../explorer/view';
-  import { getSettings, MAX_PANEL_HEIGHT, MIN_PANEL_HEIGHT } from '../settings';
+  import {
+    getSettings,
+    MAX_PANEL_HEIGHT,
+    MIN_PANEL_HEIGHT,
+    type ChordSymbolStyle,
+  } from '../settings';
   import { listChords } from '../theory';
   import { getUserCatalogs } from '../user-catalogs.svelte';
+  import { chordSymbol } from './display';
   import type { ChordSize } from './harmonize';
   import { getChordState } from './state.svelte';
   import { chordPanelView } from './view';
@@ -33,6 +41,13 @@
     ['triads', 'Triads'],
     ['sevenths', '7th chords'],
   ];
+  const STYLES: [ChordSymbolStyle, string][] = [
+    ['standard', 'Standard'],
+    ['jazz', 'Jazz'],
+  ];
+  /** Two chords in a style, written by the core: `Cmaj7 Cm7♭5`, `CΔ7 Cø`. */
+  const styleExample = (style: ChordSymbolStyle) =>
+    ['maj7', 'min7b5'].map((id) => chordSymbol('C', { id }, style)).join(' ');
   const roots = rootChoices();
   const families = $derived.by(() => {
     // Re-read the catalog when the user's chords changed (ADR-24).
@@ -43,6 +58,22 @@
   const active = $derived(chordState.active);
   const view = $derived(active ? chordPanelView(settings.current, active) : null);
   const degreeAvailable = $derived(chordState.harmonizer !== null);
+
+  /** The typed symbol split around the character the core could not read, and why. */
+  const symbolError = $derived.by(() => {
+    const problem = chordState.symbolProblem;
+    if (!problem) return null;
+    // The core counts characters (code points), not UTF-16 units.
+    const chars = Array.from(chordState.symbol);
+    const message = problem.message;
+    return {
+      before: chars.slice(0, problem.position).join(''),
+      at: chars[problem.position] ?? '',
+      after: chars.slice(problem.position + 1).join(''),
+      column: problem.position + 1,
+      message: `${message.charAt(0).toUpperCase()}${message.slice(1)}.`,
+    };
+  });
 
   function ignore() {
     // The values are always valid settings; a failed save is shown by the store's warning.
@@ -90,6 +121,10 @@
     if (!(event.key in steps)) return;
     event.preventDefault();
     saveHeight(steps[event.key]);
+  }
+
+  function setStyle(style: ChordSymbolStyle) {
+    settings.update({ chordSymbols: style }).catch(ignore);
   }
 
   function setDegree(event: Event & { currentTarget: HTMLSelectElement }) {
@@ -160,6 +195,16 @@
           />
           Degree of the scale
         </label>
+        <label>
+          <input
+            type="radio"
+            name="chord-mode"
+            value="symbol"
+            checked={chordState.mode === 'symbol'}
+            onchange={() => (chordState.mode = 'symbol')}
+          />
+          Typed symbol
+        </label>
       </fieldset>
       {#if !degreeAvailable}
         <p class="muted">Choosing by degree is not available yet.</p>
@@ -195,6 +240,36 @@
             {/each}
           </select>
         </div>
+      {:else if chordState.mode === 'symbol'}
+        <div class="field">
+          <label for="chord-symbol">Chord symbol</label>
+          <input
+            id="chord-symbol"
+            type="text"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+            placeholder="F#m7b5"
+            value={chordState.symbol}
+            aria-invalid={symbolError ? 'true' : undefined}
+            aria-describedby="chord-symbol-help"
+            oninput={(e) => (chordState.symbol = e.currentTarget.value)}
+          />
+          {#if symbolError}
+            <p id="chord-symbol-help" class="error">
+              <code class="typed" aria-hidden="true"
+                >{symbolError.before}<mark class:end={symbolError.at === ''}
+                  >{symbolError.at || '\u00a0'}</mark
+                >{symbolError.after}</code
+              >
+              <span>{symbolError.message} (character {symbolError.column})</span>
+            </p>
+          {:else}
+            <p id="chord-symbol-help" class="muted">
+              Any common spelling: Cmaj7, CΔ7, F#m7b5, Bbø, G7/B.
+            </p>
+          {/if}
+        </div>
       {:else}
         <div class="field">
           <label for="chord-degree"
@@ -227,6 +302,23 @@
           {/each}
         </fieldset>
       {/if}
+
+      <fieldset class="styles">
+        <legend>Chord names</legend>
+        {#each STYLES as [style, text] (style)}
+          <label>
+            <input
+              type="radio"
+              name="chord-symbols"
+              value={style}
+              checked={settings.current.chordSymbols === style}
+              onchange={() => setStyle(style)}
+            />
+            {text}
+            <span class="example">{styleExample(style)}</span>
+          </label>
+        {/each}
+      </fieldset>
     </div>
 
     <div class="result" aria-live="polite">
@@ -234,7 +326,9 @@
         <div class="heading">
           <h3>{view.symbol}</h3>
           <span class="name">
-            {view.name}{active.numeral ? ` (${active.numeral})` : ''}{active.fromScale
+            {view.name}{active.bass ? `, bass ${active.bass}` : ''}{active.numeral
+              ? ` (${active.numeral})`
+              : ''}{active.fromScale
               ? ` on degree ${(chordState.degree ?? 0) + 1} of ${chordState.scale.root} ${chordState.scale.info.name}`
               : ''}
           </span>
@@ -265,6 +359,8 @@
         </div>
       {:else if chordState.problem}
         <p class="muted">{chordState.problem}</p>
+      {:else if chordState.mode === 'symbol'}
+        <p class="muted">Type a chord symbol to see it on the neck.</p>
       {:else}
         <p class="muted">Choose a chord to see it on the neck.</p>
       {/if}
@@ -410,6 +506,52 @@
   .field label {
     font-size: 0.875rem;
     font-weight: 600;
+  }
+
+  .example {
+    color: var(--text-muted);
+  }
+
+  input[type='text'] {
+    font: inherit;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: 0.375rem;
+    padding: 0.25rem 0.5rem;
+    max-width: 100%;
+  }
+
+  input[aria-invalid='true'] {
+    border-color: var(--text-danger);
+  }
+
+  .error {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    margin: 0;
+    color: var(--text-danger);
+    font-size: 0.875rem;
+  }
+
+  .typed {
+    color: var(--text);
+    font-family: monospace;
+    white-space: pre;
+  }
+
+  mark {
+    color: inherit;
+    font-weight: 700;
+    background: transparent;
+    text-decoration: underline wavy var(--text-danger);
+    text-underline-offset: 0.2em;
+  }
+
+  mark.end {
+    border-bottom: 2px solid var(--text-danger);
+    text-decoration: none;
   }
 
   select {

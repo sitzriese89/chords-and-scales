@@ -71,7 +71,7 @@ Chords from every input mode, harmonize, reverse lookup, audio, then generated v
 | M2.3 Harmonize | [#16][16] | M2.1 | Done (#52) |
 | M2.4 Reverse lookup and scale finder | [#17][17] | M2.1, M1.2 | Done (#54) |
 | M2.5 Chord panel with chord-over-scale overlay | [#18][18] | M2.1, M1.8 | Done (#55) |
-| M2.6 Chord symbol input and display style | [#19][19] | M2.2, M2.5 | Open |
+| M2.6 Chord symbol input and display style | [#19][19] | M2.2, M2.5 | Done (#58) |
 | M2.7 Harmonize view | [#20][20] | M2.3, M2.5 | Open |
 | M2.8 Reverse lookup on the fretboard | [#21][21] | M2.4, M2.5 | Open |
 | M2.9 Custom chord editor | [#22][22] | M2.1, M1.11 | Open |

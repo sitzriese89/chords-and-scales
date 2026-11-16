@@ -14,6 +14,7 @@ const custom: Settings = {
   labels: 'intervals',
   theme: 'dark',
   leftHanded: true,
+  chordSymbols: 'jazz',
   instrument: { kind: 'bass', strings: 5, tuning: 'bass-5-standard', frets: 21, capo: 3 },
   lastView: { root: 'Db', scale: 'dorian' },
   tab: {
@@ -41,6 +42,7 @@ describe('settings defaults', () => {
       labels: 'notes',
       theme: 'system',
       leftHanded: false,
+      chordSymbols: 'standard',
       instrument: { frets: 24, capo: 0 },
     });
   });
@@ -57,7 +59,13 @@ describe('serializeSettings', () => {
     const doc = parse(serializeSettings(custom));
     expect(doc).toEqual({
       version: SETTINGS_VERSION,
-      display: { accidentals: 'flats', labels: 'intervals', theme: 'dark', left_handed: true },
+      display: {
+        accidentals: 'flats',
+        labels: 'intervals',
+        theme: 'dark',
+        left_handed: true,
+        chord_symbols: 'jazz',
+      },
       instrument: { kind: 'bass', strings: 5, tuning: 'bass-5-standard', frets: 21, capo: 3 },
       last_view: { root: 'Db', scale: 'dorian' },
       tab: {
@@ -176,6 +184,23 @@ direction = "both"
     const result = parsed('version = 1\n[last_view]\nroot = "G"\n');
     expect(result.problems).toEqual([]);
     expect(result.settings.chordPanel).toEqual({ collapsed: false, height: 220 });
+  });
+
+  it('reads the chord symbol style and falls back on an unknown one', () => {
+    expect(parsed('version = 1\n[display]\nchord_symbols = "jazz"\n').settings.chordSymbols).toBe(
+      'jazz',
+    );
+    const result = parsed('version = 1\n[display]\nchord_symbols = "fancy"\n');
+    expect(result.settings.chordSymbols).toBe('standard');
+    expect(result.problems).toEqual([
+      'display.chord_symbols should be "standard" or "jazz", not "fancy"',
+    ]);
+  });
+
+  it('reads a version 1 file written before the chord symbol style existed', () => {
+    const result = parsed('version = 1\n[display]\naccidentals = "flats"\n');
+    expect(result.problems).toEqual([]);
+    expect(result.settings.chordSymbols).toBe('standard');
   });
 
   it('reports unknown keys and tables that are not tables', () => {
