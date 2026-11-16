@@ -1,10 +1,11 @@
 <!--
   @component
-  Harmonize for the explorer's scale (SPEC §5.5, ADR-33). The Harmonize button opens a row with
+  Harmonize for the explorer's scale (SPEC §5.5, ADR-34). The Harmonize button opens a row with
   the chord on every degree, as triads or 7th chords, each with its Roman numeral; degrees where
   no chord forms are marked "no chord". Clicking a chord chooses it in the chord panel by its
   degree, so the neck shows it over the dimmed scale (ADR-32), and expands the panel if it is
   collapsed. The size is the chord panel's: the toggle here and the one there are the same.
+  Chord names follow the Standard/Jazz setting (ADR-33).
 
   Shown only when the app has a harmonizer (the chord panel's degree input is on).
 -->
@@ -35,7 +36,7 @@
       harmonizer,
       { id: scale.info.id, root: scale.root, notes: scale.notes },
       chordState.size,
-      settings.current.accidentals,
+      settings.current,
     );
   });
   /** The degree whose chord is on the neck, if it was chosen by degree. */

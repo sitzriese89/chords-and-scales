@@ -1,17 +1,19 @@
 /**
- * The harmonize row (SPEC §5.5, ADR-33): the chord on every degree of the explorer's scale,
+ * The harmonize row (SPEC §5.5, ADR-34): the chord on every degree of the explorer's scale,
  * with its Roman numeral, or "no chord" where no stack of thirds forms.
  *
  * Nothing here is theory. Each degree is asked through the chord panel's `Harmonizer` seam
  * (ADR-32), which the app answers from the core's harmonize (ADR-30), so the row and the
- * panel's degree input cannot disagree. The chord's name is written by `chordSymbol`.
+ * panel's degree input cannot disagree. The chord's name is written by `chordSymbol` in the
+ * Standard or Jazz style from the settings (ADR-33).
  */
 import { chordSymbol, type ChordSize, type Harmonizer } from '../chords';
-import { getChord, type Accidentals, type ScaleNote } from '../theory';
+import type { Settings } from '../settings';
+import { getChord, type ScaleNote } from '../theory';
 
 /** The chord on one degree of the row. */
 export interface HarmonizeChord {
-  /** The chord as written: `Bm7b5`. */
+  /** The chord as written in the style: `Bm7♭5`, `Bø`. */
   symbol: string;
   /** The catalog name: `Half-diminished seventh`. */
   name: string;
@@ -38,11 +40,14 @@ export interface HarmonizeScale {
   notes: ScaleNote[];
 }
 
+/** The settings the row reads: the sharp/flat preference and the chord name style. */
+export type HarmonizeSettings = Pick<Settings, 'accidentals' | 'chordSymbols'>;
+
 export function harmonizeRow(
   harmonizer: Harmonizer,
   scale: HarmonizeScale,
   size: ChordSize,
-  accidentals: Accidentals,
+  settings: HarmonizeSettings,
 ): HarmonizeCell[] {
   return scale.notes.map((note, degree) => {
     const found = harmonizer.chordOnDegree({
@@ -50,14 +55,18 @@ export function harmonizeRow(
       root: scale.root,
       degree,
       size,
-      accidentals,
+      accidentals: settings.accidentals,
     });
     // A chord id the catalog doesn't have (a user chord just deleted) counts as no chord, as
     // in the chord panel.
     const info = found ? getChord(found.chordId) : undefined;
     const chord =
       found && info
-        ? { symbol: chordSymbol(found.root, info), name: info.name, numeral: found.numeral ?? '' }
+        ? {
+            symbol: chordSymbol(found.root, info, settings.chordSymbols),
+            name: info.name,
+            numeral: found.numeral ?? '',
+          }
         : null;
     return { degree, note, chord };
   });

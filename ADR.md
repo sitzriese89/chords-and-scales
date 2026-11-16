@@ -43,6 +43,8 @@ ADR-1 to ADR-13 come from the design interview behind [SPEC.md](SPEC.md) (decisi
 | 30 | [Harmonize: stack thirds in the scale, number by the scale's own degrees](#adr-30-harmonize-stack-thirds-in-the-scale-number-by-the-scales-own-degrees) | Accepted |
 | 31 | [Reverse lookup and the scale finder: contain every note, inversions are cheap, omissions cost more](#adr-31-reverse-lookup-and-the-scale-finder-contain-every-note-inversions-are-cheap-omissions-cost-more) | Accepted |
 | 32 | [The chord panel: one chosen chord drawn on the explorer neck, degrees behind a seam](#adr-32-the-chord-panel-one-chosen-chord-drawn-on-the-explorer-neck-degrees-behind-a-seam) | Accepted |
+| 33 | [Chord names: the style is passed to one formatter call; typed symbols are read as you type](#adr-33-chord-names-the-style-is-passed-to-one-formatter-call-typed-symbols-are-read-as-you-type) | Accepted |
+| 34 | [The harmonize view: a row over the panel's seam, one chord size, clicks choose a degree](#adr-34-the-harmonize-view-a-row-over-the-panels-seam-one-chord-size-clicks-choose-a-degree) | Accepted |
 
 ---
 
@@ -1011,7 +1013,45 @@ the neck, the tab and the layout region (ADR-23); chords on a degree come from h
 - Each degree asks the core for the whole table of the scale and takes one entry; the table is
   small, so there is no cache.
 
-## ADR-33: The harmonize view: a row over the panel's seam, one chord size, clicks choose a degree
+## ADR-33: Chord names: the style is passed to one formatter call; typed symbols are read as you type
+
+**Context.** M2.6 adds the Standard/Jazz display style (SPEC §4.4) and typed chord symbols as
+the chord panel's third input (SPEC §5.3). ADR-32 left `chordSymbol(root, chord)` as the one
+place chord names are written, as root + stored suffix; ADR-29 built the parser and the
+formatter in the core.
+
+**Decision.**
+- **One call, the style passed in.** `chordSymbol(root, chord, style, bass?)`
+  (`app/src/lib/chords/display.ts`) calls the core's `formatChordSymbol`; every chord name
+  goes through it. The style is a required argument, read by the caller from
+  `settings.current.chordSymbols`, not a module-level value: names are derived from the
+  settings like everything else, so switching the style re-renders every name, and a new caller
+  that forgets the style fails to compile instead of showing Standard names.
+- **A display setting.** `chord_symbols = "standard" | "jazz"` in `[display]` of
+  `settings.toml`, default Standard. A missing key means the default, so the version stays 1
+  (ADR-25). The control sits in the chord panel ("Chord names"), where chords are chosen; each
+  choice shows two example chords written by the formatter in that style.
+- **Typed symbols.** The panel's third mode, "Typed symbol", keeps the text in `ChordState`
+  and parses it with `parseChordSymbol` on every change, against the current catalogs (user
+  chords included). A readable symbol is the active chord, drawn alone like root and quality;
+  its root keeps the typed spelling (ADR-6). An unreadable one gives no chord and an inline
+  error: the typed text repeated with the character at the parser's position marked (the
+  position counts code points, so the UI splits with `Array.from`; a position at the end
+  marks a blank), the core's message and the character number, linked to the field with
+  `aria-describedby` and `aria-invalid`. No live-region alert, since it changes on every key.
+  A blank field is no error.
+- **Slash chords.** The parsed bass travels with the chord (`ActiveChord.bass`,
+  `ChordOnNeck.bass`) and is written in the name. The neck and the notes list show the chord's
+  own tones: putting a non-chord bass on the neck or lowest in the strum is voicing work
+  (M2.11, M2.12).
+
+**Consequences.**
+- Every caller of `chordSymbol` (the harmonize view, reverse lookup) passes the style; the
+  formatter's output is the only spelling of suffixes in the UI, so a catalog `jazz_symbol`
+  change shows up everywhere.
+- `C/D` names the chord over D but does not show D on the neck.
+
+## ADR-34: The harmonize view: a row over the panel's seam, one chord size, clicks choose a degree
 
 **Context.** M2.7 shows harmonize (SPEC §5.5, ADR-30) in the scale explorer: a Harmonize
 button, a triads/7ths toggle and a row of chords with Roman numerals, a click opening the chord
@@ -1023,22 +1063,26 @@ harmonized chord over the scale, through the `Harmonizer` seam and `ChordState`.
   between the scale's notes and the neck, and is the only change to the explorer. It renders
   nothing when the app has no harmonizer (the panel's degree input is off then too).
 - **The row asks the panel's seam.** `harmonizeRow` asks `Harmonizer.chordOnDegree` for each
-  degree of `ChordState.scale` and names each chord with `chordSymbol` (so the display style,
-  M2.6, applies) and the catalog's name. No new binding and no wider seam: the row and the
-  degree input can't disagree, and tests can pass the same fixtures. A degree with no chord,
+  degree of `ChordState.scale` and names each chord with `chordSymbol` in the style from the
+  settings (`chordSymbols`, ADR-33) and with the catalog's name. No new binding and no wider
+  seam: the row and the degree input can't disagree, and tests can pass the same fixtures. A degree with no chord,
   or with a chord id the catalog lacks, shows the scale's note and *no chord*; the core gives
   no numeral there, and none is made up.
 - **One chord size.** The row's Triads / 7th chords toggle writes `ChordState.size`, the
   panel's own toggle. A second size would let the row show G7 while the neck shows G.
 - **A click chooses a degree.** `ChordState.chooseDegree(n)` sets the degree mode and the
-  degree; the panel, the neck and the overlay follow as for a degree picked in the panel, and
-  the row marks that chord (`aria-pressed`) while it is the panel's chord. A collapsed panel is
-  expanded (saved, like its own Expand button).
+  degree, whichever input the panel was on (root and quality, typed symbol); what was entered
+  there is kept for when the user switches back. The panel, the neck and the overlay follow as
+  for a degree picked in the panel, and the row marks that chord (`aria-pressed`) only while
+  the panel is in degree mode on it: the same chord typed as a symbol is not marked. A
+  collapsed panel is expanded (saved, like its own Expand button).
 - **Open or closed is not saved**, like the chosen chord (ADR-32): the row starts closed.
 
 **Consequences.**
 - Opening the row asks the core for the scale's table once per degree (eight calls at most
   for the built-in scales); ADR-32 already accepted the table being small. A `harmonizeScale`
   method on the seam would make it one call, if that ever matters.
-- Changing the size in the row while a chord from root and quality is shown changes nothing on
-  the neck; it is the size the next degree is chosen in.
+- Changing the size in the row while a chord from root and quality or a typed symbol is shown
+  changes nothing on the neck; it is the size the next degree is chosen in.
+- Switching the Standard/Jazz style renames the row with everything else, since the row reads
+  the style from the settings like every other caller of `chordSymbol`.

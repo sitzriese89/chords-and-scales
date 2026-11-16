@@ -1,10 +1,18 @@
-import type { ChordInfo } from '../theory';
+import type { ChordSymbolStyle } from '../settings';
+import { formatChordSymbol, type ChordInfo } from '../theory';
 
 /**
- * How a chord is written: its root and the catalog's suffix as stored (`Gm7b5`, `Dmaj7`).
- * Every place that shows a chord's name goes through here, so that the symbol formatter and
- * the display style (M2.2, M2.6) replace it in one spot.
+ * How a chord is written: `Gm7♭5` in the Standard style, `Gø` in the Jazz one (SPEC §4.4,
+ * ADR-33). Every place that shows a chord's name goes through here, with the style from the
+ * settings (`settings.current.chordSymbols`), so switching the style renames every chord on
+ * screen. The text comes from the core's formatter: the root as given, the suffix for the
+ * style, and `/bass` for a slash chord.
  */
-export function chordSymbol(root: string, chord: Pick<ChordInfo, 'symbol'>): string {
-  return `${root}${chord.symbol}`;
+export function chordSymbol(
+  root: string,
+  chord: Pick<ChordInfo, 'id'>,
+  style: ChordSymbolStyle,
+  bass?: string,
+): string {
+  return formatChordSymbol(root, chord.id, bass, style);
 }

@@ -81,7 +81,7 @@ describe('harmonize view', () => {
       'IIImaj7 Fmaj7',
       'IV7 G7',
       'v7 Am7',
-      'viø7 Bm7b5',
+      'viø7 Bm7♭5',
       'VIImaj7 Cmaj7',
     ]);
 
@@ -149,6 +149,55 @@ describe('harmonize view', () => {
     // Clearing the chord leaves nothing pressed.
     await fireEvent.click(screen.getByRole('button', { name: 'Clear chord' }));
     expect(screen.getByRole('button', { name: 'IV G' })).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('renames the row when the chord name style changes', async () => {
+    await startApp({ change: (s) => ((s.lastView.root = 'D'), (s.lastView.scale = 'dorian')) });
+    await openRow();
+    await pickSize('7th chords');
+    expect(row('D Dorian')).toContain('viø7 Bm7♭5');
+
+    await fireEvent.click(screen.getByRole('radio', { name: /^Jazz/ }));
+    expect(row('D Dorian')).toEqual([
+      'i7 Dm7',
+      'ii7 Em7',
+      'IIImaj7 FΔ7',
+      'IV7 G7',
+      'v7 Am7',
+      'viø7 Bø',
+      'VIImaj7 CΔ7',
+    ]);
+  });
+
+  it('switches the chord panel from a typed symbol to the clicked degree', async () => {
+    await startApp({ change: (s) => ((s.lastView.root = 'D'), (s.lastView.scale = 'dorian')) });
+    await fireEvent.click(screen.getByRole('radio', { name: 'Typed symbol' }));
+    await fireEvent.input(screen.getByRole('textbox', { name: 'Chord symbol' }), {
+      target: { value: 'Em' },
+    });
+    expect(screen.getByRole('heading', { name: 'Em' })).toBeInTheDocument();
+
+    await openRow();
+    // The typed Em is the second degree's chord, but it wasn't chosen there.
+    const em = screen.getByRole('button', { name: 'ii Em' });
+    expect(em).toHaveAttribute('aria-pressed', 'false');
+
+    await fireEvent.click(em);
+    expect(em).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('radio', { name: 'Degree of the scale' })).toBeChecked();
+    expect(screen.getByRole('combobox', { name: 'Degree of D Dorian' })).toHaveValue('1');
+    expect(screen.getByText(/\(ii\) on degree 2 of D Dorian/)).toBeInTheDocument();
+    // Over the dimmed scale now, which a typed symbol is not.
+    expect(neck()).toEqual({
+      root: new Set(['E']),
+      tone: new Set(['G', 'B']),
+      dim: new Set(['D', 'F', 'A', 'C']),
+    });
+
+    // Back to the typed symbol: the row's chord is no longer the panel's.
+    await fireEvent.click(screen.getByRole('radio', { name: 'Typed symbol' }));
+    expect(screen.getByRole('textbox', { name: 'Chord symbol' })).toHaveValue('Em');
+    expect(em).toHaveAttribute('aria-pressed', 'false');
   });
 
   it('expands the chord panel when a chord is clicked while it is collapsed', async () => {

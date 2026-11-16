@@ -94,6 +94,17 @@ describe('explorerView with a chord', () => {
     expect(view.pitches.get('3:0')).toBe(55);
   });
 
+  it('names the chord in the display style, with the bass of a slash chord', () => {
+    const jazz: Settings = { ...settings, chordSymbols: 'jazz' };
+    expect(explorerView(jazz, { root: 'B', chordId: 'min7b5', fromScale: true }).chord).toEqual({
+      name: 'Bø',
+      overScale: true,
+    });
+    const slash = { root: 'A', chordId: 'min7b5', fromScale: false, bass: 'G' };
+    expect(explorerView(settings, slash).chord?.name).toBe('Am7♭5/G');
+    expect(explorerView(jazz, slash).chord?.name).toBe('Aø/G');
+  });
+
   it('ignores a chord that is not in the catalog', () => {
     const view = explorerView(settings, { root: 'G', chordId: 'no-such-chord', fromScale: false });
     expect(view.chord).toBeNull();
@@ -177,9 +188,33 @@ describe('chordPanelView', () => {
 });
 
 describe('chordSymbol', () => {
-  it('writes the root and the catalog suffix', () => {
-    expect(chordSymbol('G', getChord('dom7')!)).toBe('G7');
-    expect(chordSymbol('D♭', getChord('major')!)).toBe('D♭');
-    expect(chordSymbol('B', getChord('min7b5')!)).toBe('Bm7b5');
+  it('writes the chord in the Standard style', () => {
+    expect(chordSymbol('G', getChord('dom7')!, 'standard')).toBe('G7');
+    expect(chordSymbol('D♭', getChord('major')!, 'standard')).toBe('D♭');
+    expect(chordSymbol('B', getChord('min7b5')!, 'standard')).toBe('Bm7♭5');
+    expect(chordSymbol('C', getChord('maj7')!, 'standard')).toBe('Cmaj7');
+  });
+
+  it('writes the chord in the Jazz style', () => {
+    expect(chordSymbol('B', getChord('min7b5')!, 'jazz')).toBe('Bø');
+    expect(chordSymbol('C', getChord('maj7')!, 'jazz')).toBe('CΔ7');
+    expect(chordSymbol('C', getChord('dim7')!, 'jazz')).toBe('C°7');
+    // A chord without a jazz suffix keeps its standard one.
+    expect(chordSymbol('G', getChord('dom7')!, 'jazz')).toBe('G7');
+  });
+
+  it('adds the bass of a slash chord', () => {
+    expect(chordSymbol('A', getChord('min7')!, 'standard', 'E')).toBe('Am7/E');
+    expect(chordSymbol('E♭', getChord('min7b5')!, 'jazz', 'B♭')).toBe('E♭ø/B♭');
+  });
+});
+
+describe('chordPanelView in the display style', () => {
+  it('writes the symbol in the chosen style, with the bass', () => {
+    const settings = defaultSettings();
+    const active = { root: 'C', chord: getChord('maj7')!, fromScale: false, bass: 'E' };
+    expect(chordPanelView(settings, active).symbol).toBe('Cmaj7/E');
+    settings.chordSymbols = 'jazz';
+    expect(chordPanelView(settings, active).symbol).toBe('CΔ7/E');
   });
 });

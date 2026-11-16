@@ -220,7 +220,8 @@ intervals = ["1", "b3", "b5", "b7"]
     `C6/9/E` is `C6/9` over `E`. The bass is any note and keeps its spelling.
   - A symbol the catalog doesn't know (`C7b9b13` if no chord has it) is an error with the
     position of the first character it could not read; there is no guessing between chords.
-- **Display style** is a setting:
+- **Display style** is a setting (`chord_symbols` in `[display]`, chosen in the chord panel,
+  §5.3):
   - *Standard*: `Cmaj7`, `Cm7♭5`, `Cdim7`
   - *Jazz*: `CΔ7`, `Cø`, `C°7`
   - The formatter writes the root as given (ADR-6), then the chord's suffix for the style with
@@ -372,8 +373,19 @@ How the tab is shown (`app/src/lib/tab/`, ADR-25):
     spelling) and has **Strum**, which plays the chord through the audio engine (§5.9) as one
     note per string, lowest string first, stacked upward from the lowest root on the neck.
     **Clear chord** returns to the plain scale. The chosen chord is not saved.
-  - The chord is written as root + catalog suffix (`G7`, `Bm7b5`) until the symbol display
-    style (§4.4) lands.
+  - **Typed symbol:** type a chord symbol (`F#m7b5`, `CΔ7`, `Am7/G`); it is read as you type
+    by the parser (§4.4), in either style, and the neck shows the chord's tones alone, the
+    root as typed. A symbol that can't be read shows no chord: the field is marked invalid
+    and the typed text is repeated with the first unreadable character underlined (the end,
+    if the symbol stops too early), with the parser's reason and the character's number. An
+    empty field is no error. A slash chord's bass is written in the name (`Am7/G`, "Minor
+    seventh, bass G"); the neck shows the chord's own tones and does not add the bass.
+  - **Chord names** (ADR-33): every chord name in the app, in the panel, its title bar and
+    the neck's label, is written by the symbol formatter (§4.4) in the display style chosen
+    in the panel: Standard (`Cmaj7`, `Cm7♭5`) or Jazz (`CΔ7`, `Cø`), each choice showing
+    those two examples. Switching renames every visible chord at once. The style is saved in
+    `settings.toml` as `chord_symbols = "standard"` or `"jazz"` in `[display]` (default
+    Standard).
 
 ### 5.4 Reverse lookup → scale finder (Q29)
 
@@ -416,15 +428,17 @@ The core does both searches (ADR-31). The input is a set of pitch classes with a
   Examples: the minor pentatonic has Cm (and Cm7) on its root and E♭ on the ♭III
   as triads, and no chord on the other degrees; the whole tone scale has an
   augmented triad on every degree and no seventh chords (ADR-30).
-- **In the app** (ADR-33): a **Harmonize** button next to the scale's notes in the explorer
+- **In the app** (ADR-34): a **Harmonize** button next to the scale's notes in the explorer
   opens a row with the chord on every degree of the current scale, its Roman numeral above
   its symbol (D Dorian as 7th chords: i7 Dm7, ii7 Em7, IIImaj7 Fmaj7, IV7 G7, v7 Am7,
-  viø7 Bm7b5, VIImaj7 Cmaj7). The row has its own **Triads** / **7th chords** toggle, which
-  is the chord panel's size (§5.3): changing one changes the other. A degree where no chord
-  forms shows its note and *no chord*. Clicking a chord chooses it in the chord panel by its
-  degree, so the neck shows it over the dimmed scale (the chord-over-scale overlay, §5.3),
-  and expands the panel if it was collapsed; the chosen chord is marked in the row. The row
-  follows the explorer's scale, root and sharp/flat setting. Whether it is open is not saved.
+  viø7 Bm7♭5, VIImaj7 Cmaj7; in the Jazz style FΔ7, Bø and CΔ7). The row has its own
+  **Triads** / **7th chords** toggle, which is the chord panel's size (§5.3): changing one
+  changes the other. A degree where no chord forms shows its note and *no chord*. Clicking a
+  chord chooses it in the chord panel by its degree (whatever input the panel was on), so the
+  neck shows it over the dimmed scale (the chord-over-scale overlay, §5.3), and expands the
+  panel if it was collapsed; the chosen chord is marked in the row. The row follows the
+  explorer's scale, root, sharp/flat setting and chord name style. Whether it is open is not
+  saved.
 
 ### 5.6 Voicing generator (Q28)
 

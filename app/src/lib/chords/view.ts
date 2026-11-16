@@ -10,7 +10,7 @@ import { strumPitches } from './strum';
 import type { ActiveChord } from './state.svelte';
 
 export interface ChordPanelView {
-  /** The chord as written: `G7`. */
+  /** The chord as written, in the display style: `G7`, `CΔ7`, `Am7/E`. */
   symbol: string;
   /** The catalog name: `Dominant seventh`. */
   name: string;
@@ -20,7 +20,7 @@ export interface ChordPanelView {
   strum: number[];
 }
 
-type ViewSettings = Pick<Settings, 'accidentals' | 'instrument'>;
+type ViewSettings = Pick<Settings, 'accidentals' | 'instrument' | 'chordSymbols'>;
 
 export function chordPanelView(settings: ViewSettings, active: ActiveChord): ChordPanelView {
   const { chord, root } = active;
@@ -37,7 +37,7 @@ export function chordPanelView(settings: ViewSettings, active: ActiveChord): Cho
     notes[0].pitchClass,
   );
   return {
-    symbol: chordSymbol(root, chord),
+    symbol: chordSymbol(root, chord, settings.chordSymbols, active.bass),
     name: chord.name,
     notes,
     strum: strumPitches(
