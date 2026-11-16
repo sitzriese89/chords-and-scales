@@ -95,7 +95,7 @@ export {
 export type { ScalePattern } from './wasm/theory_wasm.js';
 export { fretWindow, threeNotesPerString } from './wasm/theory_wasm.js';
 
-// Chord voicings (crates/theory-wasm/src/voicings.rs, ADR-34): playable shapes of a catalog
+// Chord voicings (crates/theory-wasm/src/voicings.rs, ADR-35): playable shapes of a catalog
 // chord on any tuning, best first. Takes the neck as fretboardPositions does plus a chord id
 // and root pitch class; `strings` come lowest string first (`x32010`), null for a muted one.
 export type {

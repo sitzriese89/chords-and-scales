@@ -428,6 +428,17 @@ The core does both searches (ADR-31). The input is a set of pitch classes with a
   Examples: the minor pentatonic has Cm (and Cm7) on its root and E♭ on the ♭III
   as triads, and no chord on the other degrees; the whole tone scale has an
   augmented triad on every degree and no seventh chords (ADR-30).
+- **In the app** (ADR-34): a **Harmonize** button next to the scale's notes in the explorer
+  opens a row with the chord on every degree of the current scale, its Roman numeral above
+  its symbol (D Dorian as 7th chords: i7 Dm7, ii7 Em7, IIImaj7 Fmaj7, IV7 G7, v7 Am7,
+  viø7 Bm7♭5, VIImaj7 Cmaj7; in the Jazz style FΔ7, Bø and CΔ7). The row has its own
+  **Triads** / **7th chords** toggle, which is the chord panel's size (§5.3): changing one
+  changes the other. A degree where no chord forms shows its note and *no chord*. Clicking a
+  chord chooses it in the chord panel by its degree (whatever input the panel was on), so the
+  neck shows it over the dimmed scale (the chord-over-scale overlay, §5.3), and expands the
+  panel if it was collapsed; the chosen chord is marked in the row. The row follows the
+  explorer's scale, root, sharp/flat setting and chord name style. Whether it is open is not
+  saved.
 
 ### 5.6 Voicing generator (Q28)
 
@@ -446,7 +457,7 @@ Algorithmic (works for any tuning and 4–9 strings; no static shape library).
 - **Playable:** at most four fingers, a barre on the lowest fretted fret counting as one.
 - **Ranking:** span, number of played strings, position on the neck, as one score; also a
   small cost for muted strings between played ones, inversions and barres. The default list
-  has the best 50 (ADR-34).
+  has the best 50 (ADR-35).
 - **Output:** chord diagrams (SVG).
 
 ### 5.7 Mood/category tags (Q6, Q14, Q31)

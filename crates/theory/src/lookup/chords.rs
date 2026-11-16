@@ -103,7 +103,7 @@ fn fit<'a>(
 
 /// Whether `interval` may be left out of a chord with these `intervals`: the perfect 5th, a
 /// natural 9th below an 11th or 13th, a natural 11th below a 13th (ADR-31). The voicing
-/// generator leaves out the same tones (ADR-34).
+/// generator leaves out the same tones (ADR-35).
 pub(crate) fn may_omit(interval: Interval, intervals: &[Interval]) -> bool {
     omission_penalty(interval, intervals).is_some()
 }
