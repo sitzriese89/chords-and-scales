@@ -126,7 +126,8 @@ type ViewSettings = Pick<
 /**
  * What to show for `settings`. Unusable stored values fall back to the defaults. With a
  * `chord` the neck shows its tones instead of the scale: over the scale, dimmed, when the
- * chord comes from it, alone otherwise. The tab below the neck stays the scale's.
+ * chord comes from it, alone otherwise; with a voicing chosen (`chord.shape`), only its
+ * positions. The tab below the neck stays the scale's.
  */
 export function explorerView(settings: ViewSettings, chord?: ChordOnNeck | null): ExplorerView {
   const defaults = DEFAULT_SETTINGS;
@@ -189,12 +190,14 @@ export function explorerView(settings: ViewSettings, chord?: ChordOnNeck | null)
       labels: settings.labels,
       chord: chordNotes(chord.chordId, chord.root, settings.accidentals),
       scale: chord.fromScale ? notes : null,
+      shape: chord.shape,
     });
     dots = overlay.dots;
     pitched = overlay.positions;
     chordInfo = {
       name: chordSymbol(chord.root, definition, settings.chordSymbols, chord.bass),
-      overScale: chord.fromScale,
+      // A chosen voicing is drawn alone, without the scale.
+      overScale: chord.fromScale && !chord.shape,
     };
   }
 

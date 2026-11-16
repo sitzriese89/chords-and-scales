@@ -27,7 +27,11 @@ symbol it can't read is marked where it goes wrong). **Harmonize**, next to the 
 notes, lists the chord on every degree of the scale with its Roman numeral (triads or 7th
 chords; "no chord" where none forms, as on most degrees of a pentatonic scale); click one to
 show it on the neck over the scale. **Chord names** switches every chord name between
-Standard (`Cmaj7`, `Cm7♭5`) and Jazz (`CΔ7`, `Cø`). **Strum** plays the chord;
+Standard (`Cmaj7`, `Cm7♭5`) and Jazz (`CΔ7`, `Cø`). **Strum** plays the chord. Under it,
+**Voicings** lists the best playable shapes of the chord on your instrument, tuning and capo
+as chord diagrams, best first; set the widest fret span and whether open strings, muted
+strings and inversions are allowed. Click a shape to hear it and to see just that shape on
+the neck; click it again (or **Show all positions**) to see the whole neck again.
 **Collapse** and the panel's top edge (drag, or the arrow keys) fold and resize the panel.
 Everything is saved and comes back
 at the next start. Your own scales and tunings go in `scales.toml` and `tunings.toml` next to

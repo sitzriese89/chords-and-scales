@@ -27,6 +27,7 @@ const custom: Settings = {
   },
   audio: { volume: 35, muted: true },
   chordPanel: { collapsed: true, height: 300 },
+  voicings: { maxSpan: 6, openStrings: false, mutedStrings: false, inversions: true },
 };
 
 function parsed(text: string) {
@@ -78,6 +79,7 @@ describe('serializeSettings', () => {
       },
       audio: { volume: 35, muted: true },
       chord_panel: { collapsed: true, height: 300 },
+      voicings: { max_span: 6, open_strings: false, muted_strings: false, inversions: true },
     });
   });
 
@@ -184,6 +186,33 @@ direction = "both"
     const result = parsed('version = 1\n[last_view]\nroot = "G"\n');
     expect(result.problems).toEqual([]);
     expect(result.settings.chordPanel).toEqual({ collapsed: false, height: 220 });
+  });
+
+  it('reads the voicing constraints and falls back per value', () => {
+    const result = parsed(
+      'version = 1\n[voicings]\nmax_span = 9\nopen_strings = false\ninversions = true\nlimit = 3\n',
+    );
+    expect(result.settings.voicings).toEqual({
+      maxSpan: 4,
+      openStrings: false,
+      mutedStrings: true,
+      inversions: true,
+    });
+    expect(result.problems).toEqual([
+      'voicings.max_span should be a whole number from 1 to 6, not 9',
+      'voicings.limit is not a known setting',
+    ]);
+  });
+
+  it('reads a version 1 file written before the voicings table existed', () => {
+    const result = parsed('version = 1\n[last_view]\nroot = "G"\n');
+    expect(result.problems).toEqual([]);
+    expect(result.settings.voicings).toEqual({
+      maxSpan: 4,
+      openStrings: true,
+      mutedStrings: true,
+      inversions: false,
+    });
   });
 
   it('reads the chord symbol style and falls back on an unknown one', () => {
