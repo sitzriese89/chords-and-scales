@@ -118,7 +118,10 @@ export function resolveScale(settings: Pick<Settings, 'lastView'>): {
   return { root, scale, fallbacks };
 }
 
-type ViewSettings = Pick<Settings, 'accidentals' | 'labels' | 'instrument' | 'lastView' | 'tab'>;
+type ViewSettings = Pick<
+  Settings,
+  'accidentals' | 'labels' | 'instrument' | 'lastView' | 'tab' | 'chordSymbols'
+>;
 
 /**
  * What to show for `settings`. Unusable stored values fall back to the defaults. With a
@@ -189,7 +192,10 @@ export function explorerView(settings: ViewSettings, chord?: ChordOnNeck | null)
     });
     dots = overlay.dots;
     pitched = overlay.positions;
-    chordInfo = { name: chordSymbol(chord.root, definition), overScale: chord.fromScale };
+    chordInfo = {
+      name: chordSymbol(chord.root, definition, settings.chordSymbols, chord.bass),
+      overScale: chord.fromScale,
+    };
   }
 
   const tabNotes = playingOrder(position.positions, settings.tab.direction).map((p) => ({

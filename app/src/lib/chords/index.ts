@@ -14,6 +14,7 @@ export {
   setChordState,
   type ActiveChord,
   type ChordMode,
+  type SymbolProblem,
 } from './state.svelte';
 export { strumPitches } from './strum';
 export { chordPanelView, type ChordPanelView } from './view';

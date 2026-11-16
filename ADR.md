@@ -43,6 +43,7 @@ ADR-1 to ADR-13 come from the design interview behind [SPEC.md](SPEC.md) (decisi
 | 30 | [Harmonize: stack thirds in the scale, number by the scale's own degrees](#adr-30-harmonize-stack-thirds-in-the-scale-number-by-the-scales-own-degrees) | Accepted |
 | 31 | [Reverse lookup and the scale finder: contain every note, inversions are cheap, omissions cost more](#adr-31-reverse-lookup-and-the-scale-finder-contain-every-note-inversions-are-cheap-omissions-cost-more) | Accepted |
 | 32 | [The chord panel: one chosen chord drawn on the explorer neck, degrees behind a seam](#adr-32-the-chord-panel-one-chosen-chord-drawn-on-the-explorer-neck-degrees-behind-a-seam) | Accepted |
+| 33 | [Chord names: the style is passed to one formatter call; typed symbols are read as you type](#adr-33-chord-names-the-style-is-passed-to-one-formatter-call-typed-symbols-are-read-as-you-type) | Accepted |
 
 ---
 
@@ -1010,3 +1011,41 @@ the neck, the tab and the layout region (ADR-23); chords on a degree come from h
   adds typed symbols as a third input.
 - Each degree asks the core for the whole table of the scale and takes one entry; the table is
   small, so there is no cache.
+
+## ADR-33: Chord names: the style is passed to one formatter call; typed symbols are read as you type
+
+**Context.** M2.6 adds the Standard/Jazz display style (SPEC §4.4) and typed chord symbols as
+the chord panel's third input (SPEC §5.3). ADR-32 left `chordSymbol(root, chord)` as the one
+place chord names are written, as root + stored suffix; ADR-29 built the parser and the
+formatter in the core.
+
+**Decision.**
+- **One call, the style passed in.** `chordSymbol(root, chord, style, bass?)`
+  (`app/src/lib/chords/display.ts`) calls the core's `formatChordSymbol`; every chord name
+  goes through it. The style is a required argument, read by the caller from
+  `settings.current.chordSymbols`, not a module-level value: names are derived from the
+  settings like everything else, so switching the style re-renders every name, and a new caller
+  that forgets the style fails to compile instead of showing Standard names.
+- **A display setting.** `chord_symbols = "standard" | "jazz"` in `[display]` of
+  `settings.toml`, default Standard. A missing key means the default, so the version stays 1
+  (ADR-25). The control sits in the chord panel ("Chord names"), where chords are chosen; each
+  choice shows two example chords written by the formatter in that style.
+- **Typed symbols.** The panel's third mode, "Typed symbol", keeps the text in `ChordState`
+  and parses it with `parseChordSymbol` on every change, against the current catalogs (user
+  chords included). A readable symbol is the active chord, drawn alone like root and quality;
+  its root keeps the typed spelling (ADR-6). An unreadable one gives no chord and an inline
+  error: the typed text repeated with the character at the parser's position marked (the
+  position counts code points, so the UI splits with `Array.from`; a position at the end
+  marks a blank), the core's message and the character number, linked to the field with
+  `aria-describedby` and `aria-invalid`. No live-region alert, since it changes on every key.
+  A blank field is no error.
+- **Slash chords.** The parsed bass travels with the chord (`ActiveChord.bass`,
+  `ChordOnNeck.bass`) and is written in the name. The neck and the notes list show the chord's
+  own tones: putting a non-chord bass on the neck or lowest in the strum is voicing work
+  (M2.11, M2.12).
+
+**Consequences.**
+- Every caller of `chordSymbol` (the harmonize view, reverse lookup) passes the style; the
+  formatter's output is the only spelling of suffixes in the UI, so a catalog `jazz_symbol`
+  change shows up everywhere.
+- `C/D` names the chord over D but does not show D on the neck.
