@@ -10,6 +10,7 @@
 mod chords;
 mod scales;
 
+pub(crate) use chords::may_omit;
 pub use chords::{BASE_SCORE, ChordMatch, DEFAULT_CHORD_LIMIT, SLASH_PENALTY, lookup_chords};
 pub use scales::{DEFAULT_SCALE_LIMIT, ScaleMatch, ScaleSearch, find_scales};
 

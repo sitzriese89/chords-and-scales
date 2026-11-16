@@ -422,12 +422,19 @@ The core does both searches (ADR-31). The input is a set of pitch classes with a
 Algorithmic (works for any tuning and 4–9 strings; no static shape library).
 
 - **Constraints (user-adjustable):**
-  - Max fret span (default 4)
-  - Allow/forbid open strings
-  - Allow/forbid inversions
-  - Allow/forbid muted strings
-- **Required tones:** root and 3rd; the 5th may be omitted.
-- **Ranking:** span, number of played strings, position on the neck.
+  - Max fret span (default 4, up to 6; open strings don't count)
+  - Allow/forbid open strings (with a capo: the capo fret)
+  - Allow/forbid inversions (default forbidden: the root is the lowest note)
+  - Allow/forbid muted strings (default allowed)
+- **Required tones:** root and 3rd; the 5th may be omitted. Precisely, every chord tone sounds
+  except those reverse lookup also lets a voicing leave out (§5.4, ADR-31): the perfect 5th, a natural
+  9th below an 11th or 13th, a natural 11th below a 13th. A sus chord keeps its 2nd or 4th, a
+  power chord its 5th; a chord with more required tones than a shape can hold has no voicings.
+  At least three strings sound (two for a power chord).
+- **Playable:** at most four fingers, a barre on the lowest fretted fret counting as one.
+- **Ranking:** span, number of played strings, position on the neck, as one score; also a
+  small cost for muted strings between played ones, inversions and barres. The default list
+  has the best 50 (ADR-33).
 - **Output:** chord diagrams (SVG).
 
 ### 5.7 Mood/category tags (Q6, Q14, Q31)

@@ -91,12 +91,7 @@ pub fn positions(
     pitch_classes: &[PitchClass],
     root: PitchClass,
 ) -> Result<Vec<Position>, FretboardError> {
-    if !(MIN_FRETS..=MAX_FRETS).contains(&frets) {
-        return Err(FretboardError::Frets(frets));
-    }
-    if capo >= frets {
-        return Err(FretboardError::Capo { capo, frets });
-    }
+    check_neck(frets, capo)?;
     let mut wanted = [false; 12];
     for pc in pitch_classes {
         wanted[usize::from(pc.value())] = true;
@@ -120,6 +115,17 @@ pub fn positions(
         }
     }
     Ok(result)
+}
+
+/// `Ok` for a neck of 12 … 27 `frets` with a capo below the last fret (0 = none).
+pub(crate) fn check_neck(frets: u8, capo: u8) -> Result<(), FretboardError> {
+    if !(MIN_FRETS..=MAX_FRETS).contains(&frets) {
+        return Err(FretboardError::Frets(frets));
+    }
+    if capo >= frets {
+        return Err(FretboardError::Capo { capo, frets });
+    }
+    Ok(())
 }
 
 #[cfg(test)]
