@@ -356,3 +356,129 @@ describe('chord panel with the real harmonize core', () => {
     });
   });
 });
+
+describe('chord panel: typed symbols and the display style', () => {
+  beforeEach(() => window.localStorage.clear());
+  afterEach(cleanup);
+
+  const symbolInput = () => screen.getByRole('textbox', { name: 'Chord symbol' });
+  const type = (text: string) => fireEvent.input(symbolInput(), { target: { value: text } });
+  const marked = () => document.querySelector('#chord-symbol-help mark');
+
+  it('shows a typed symbol on the neck', async () => {
+    await startApp({});
+    await pickMode('Typed symbol');
+    expect(screen.getByText('Type a chord symbol to see it on the neck.')).toBeInTheDocument();
+
+    await type('F#m7b5');
+    expect(screen.getByRole('heading', { name: 'F♯m7♭5' })).toBeInTheDocument();
+    expect(neck()).toEqual({
+      root: new Set(['F♯']),
+      tone: new Set(['A', 'C', 'E']),
+      dim: new Set(),
+    });
+    expect(screen.getByRole('grid', { name: /^Fretboard: F♯m7♭5 chord/ })).toBeInTheDocument();
+    expect(symbolInput()).not.toHaveAttribute('aria-invalid');
+  });
+
+  it('reads the jazz spellings and keeps the typed root', async () => {
+    await startApp({});
+    await pickMode('Typed symbol');
+    await type('dbΔ7');
+    expect(screen.getByRole('heading', { name: 'D♭maj7' })).toBeInTheDocument();
+    expect(neck().root).toEqual(new Set(['D♭']));
+  });
+
+  it('writes the bass of a slash chord in its name', async () => {
+    await startApp({});
+    await pickMode('Typed symbol');
+    await type('Am7/G');
+    expect(screen.getByRole('heading', { name: 'Am7/G' })).toBeInTheDocument();
+    expect(screen.getByText('Minor seventh, bass G')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Strum Am7/G' })).toBeEnabled();
+  });
+
+  it('marks where an invalid symbol could not be read, and shows no chord', async () => {
+    await startApp({});
+    await pickMode('Typed symbol');
+    await type('Cmaj7x');
+
+    expect(symbolInput()).toHaveAttribute('aria-invalid', 'true');
+    expect(symbolInput()).toHaveAccessibleDescription(
+      '"maj7x" is not a known chord. (character 6)',
+    );
+    expect(marked()).toHaveTextContent('x');
+    expect(document.querySelector('#chord-symbol-help code')).toHaveTextContent('Cmaj7x');
+    // The neck shows the plain scale.
+    expect(neck().tone).toEqual(new Set(['D', 'E', 'F', 'G', 'A', 'B']));
+
+    await type('H7');
+    expect(marked()).toHaveTextContent('H');
+    expect(symbolInput()).toHaveAccessibleDescription(/^A chord starts with a note name/);
+
+    await type('Cmaj7');
+    expect(symbolInput()).not.toHaveAttribute('aria-invalid');
+    expect(screen.getByRole('heading', { name: 'Cmaj7' })).toBeInTheDocument();
+  });
+
+  it('counts characters, not UTF-16 units, and marks the end of a symbol cut short', async () => {
+    await startApp({});
+    await pickMode('Typed symbol');
+    await type('C♭Δ7x');
+    expect(marked()).toHaveTextContent('x');
+    expect(symbolInput()).toHaveAccessibleDescription(/\(character 5\)$/);
+
+    await type('C/');
+    expect(marked()).toHaveClass('end');
+    expect(symbolInput()).toHaveAccessibleDescription(/\(character 3\)$/);
+  });
+
+  it('shows no error for an empty field, and Clear chord empties it', async () => {
+    await startApp({});
+    await pickMode('Typed symbol');
+    await type('   ');
+    expect(symbolInput()).not.toHaveAttribute('aria-invalid');
+
+    await type('G7');
+    await fireEvent.click(screen.getByRole('button', { name: 'Clear chord' }));
+    expect(symbolInput()).toHaveValue('');
+    expect(neck().dim.size).toBe(0);
+    expect(neck().tone).toEqual(new Set(['D', 'E', 'F', 'G', 'A', 'B']));
+  });
+
+  it('renames every visible chord when the style changes, and keeps it across a restart', async () => {
+    const storage = await startApp({});
+    // Each choice shows what its style looks like, written by the core.
+    expect(screen.getByRole('radio', { name: 'Standard Cmaj7 Cm7♭5' })).toBeChecked();
+    expect(screen.getByRole('radio', { name: 'Jazz CΔ7 Cø' })).not.toBeChecked();
+
+    await pickMode('Typed symbol');
+    await type('Bm7b5');
+    expect(screen.getByRole('heading', { name: 'Bm7♭5' })).toBeInTheDocument();
+
+    await fireEvent.click(screen.getByRole('radio', { name: /^Jazz/ }));
+    expect(screen.getByRole('heading', { name: 'Bø' })).toBeInTheDocument();
+    expect(screen.getByRole('grid', { name: /^Fretboard: Bø chord/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Strum Bø' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Notes of Bø')).toBeInTheDocument();
+    await fireEvent.click(screen.getByRole('button', { name: 'Collapse' }));
+    expect(screen.getByText('Bø', { selector: '.current' })).toBeInTheDocument();
+    await expect.poll(() => storage.read(SETTINGS_DOCUMENT)).toMatch(/chord_symbols = "jazz"/);
+    cleanup();
+
+    await startApp({ storage });
+    await fireEvent.click(screen.getByRole('button', { name: 'Expand' }));
+    expect(screen.getByRole('radio', { name: /^Jazz/ })).toBeChecked();
+    await pick('Chord quality', 'maj7');
+    expect(screen.getByRole('heading', { name: 'CΔ7' })).toBeInTheDocument();
+  });
+
+  it('names a chord on a degree in the chosen style', async () => {
+    await startApp({ change: (s) => (s.chordSymbols = 'jazz') });
+    await pickMode('Degree of the scale');
+    await fireEvent.click(screen.getByRole('radio', { name: '7th chords' }));
+    await pick('Degree of C Major', '6');
+    expect(screen.getByRole('heading', { name: 'Bø' })).toBeInTheDocument();
+    expect(screen.getByRole('grid', { name: /^Fretboard: Bø over C Major/ })).toBeInTheDocument();
+  });
+});

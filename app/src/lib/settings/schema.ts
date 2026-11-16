@@ -3,6 +3,7 @@
  *
  * Tables: `display`, `instrument`, `last_view`, `tab` (the tab view's position, ADR-25),
  * `audio` (volume and mute, ADR-28) and `chord_panel` (collapsed and height, ADR-32).
+ * `display.chord_symbols` is the style chord names are written in (ADR-33).
  * Adding a key or table whose absence means its default is not a format change: older files
  * load with the default, so the version stays.
  *
@@ -22,6 +23,8 @@ export const SETTINGS_VERSION = 1;
 export const ACCIDENTALS = ['sharps', 'flats'] as const;
 export const LABEL_MODES = ['notes', 'intervals', 'none'] as const;
 export const THEMES = ['system', 'light', 'dark'] as const;
+/** How chord names are written (SPEC §4.4): `Cmaj7`, `Cm7♭5` or `CΔ7`, `Cø`. */
+export const CHORD_SYMBOL_STYLES = ['standard', 'jazz'] as const;
 export const INSTRUMENT_KINDS = ['guitar', 'bass'] as const;
 /** Tab positions (ADR-7): a 3-notes-per-string pattern or a fret window. */
 export const POSITION_SYSTEMS = ['3nps', 'window'] as const;
@@ -48,6 +51,7 @@ export const MAX_PATTERN = 11;
 export type Accidentals = (typeof ACCIDENTALS)[number];
 export type LabelMode = (typeof LABEL_MODES)[number];
 export type Theme = (typeof THEMES)[number];
+export type ChordSymbolStyle = (typeof CHORD_SYMBOL_STYLES)[number];
 export type InstrumentKind = (typeof INSTRUMENT_KINDS)[number];
 export type PositionSystem = (typeof POSITION_SYSTEMS)[number];
 export type Direction = (typeof DIRECTIONS)[number];
@@ -59,6 +63,8 @@ export interface Settings {
   labels: LabelMode;
   theme: Theme;
   leftHanded: boolean;
+  /** The style every chord name is written in (ADR-33). */
+  chordSymbols: ChordSymbolStyle;
   instrument: {
     kind: InstrumentKind;
     strings: number;
@@ -111,6 +117,7 @@ export const DEFAULT_SETTINGS: Readonly<Settings> = Object.freeze({
   labels: 'notes',
   theme: 'system',
   leftHanded: false,
+  chordSymbols: 'standard',
   instrument: Object.freeze({
     kind: 'guitar',
     strings: 6,
@@ -280,6 +287,7 @@ export function parseSettings(text: string): ParsedSettings {
   const labels = display.oneOf('labels', LABEL_MODES, d.labels);
   const theme = display.oneOf('theme', THEMES, d.theme);
   const leftHanded = display.boolean('left_handed', d.leftHanded);
+  const chordSymbols = display.oneOf('chord_symbols', CHORD_SYMBOL_STYLES, d.chordSymbols);
   display.unknownKeys();
 
   const inst = root.section('instrument');
@@ -329,6 +337,7 @@ export function parseSettings(text: string): ParsedSettings {
       labels,
       theme,
       leftHanded,
+      chordSymbols,
       instrument: { kind, strings, tuning, frets, capo },
       lastView: { root: rootNote, scale },
       tab,
@@ -352,6 +361,7 @@ export function serializeSettings(settings: Settings): string {
       labels: settings.labels,
       theme: settings.theme,
       left_handed: settings.leftHanded,
+      chord_symbols: settings.chordSymbols,
     },
     instrument: { ...settings.instrument },
     last_view: { ...settings.lastView },
