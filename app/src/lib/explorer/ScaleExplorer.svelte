@@ -2,7 +2,7 @@
   @component
   The neck for the current last view: the scale's notes on the root across the whole neck of
   the current instrument (tuning, fret count, capo, left-handed from the settings), with a
-  summary of the scale above it, and under it the tab of one position with its controls
+  summary of the scale and its Harmonize row (ADR-33) above it, and under it the tab of one position with its controls
   (ADR-25); the position's notes are highlighted on the neck. Everything shown comes from the
   core (`explorerView`).
 -->
@@ -10,6 +10,7 @@
   import { getAudio } from '../audio';
   import { getChordState } from '../chords';
   import { Fretboard, type FretPosition } from '../fretboard';
+  import { HarmonizeView } from '../harmonize';
   import { getSettings } from '../settings';
   import { PositionControls, TabView } from '../tab';
   import { getUserCatalogs } from '../user-catalogs.svelte';
@@ -58,6 +59,8 @@
       {/each}
     </dl>
   </div>
+
+  <HarmonizeView />
 
   {#each view.fallbacks as fallback (fallback)}
     <p class="fallback">{fallback}</p>

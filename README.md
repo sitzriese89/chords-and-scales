@@ -21,8 +21,11 @@ are highlighted on the neck. **New tuning** makes your own tuning, a note and oc
 string; your tunings can be edited and deleted there too. Click a dot to hear the note, or
 press **Play** next to the tab to hear the position; volume and mute are under **Sound** on
 the right. The **Chords** panel under the neck shows a chord on the neck: pick a root and a
-chord quality, or (once harmonize is available) a degree of the current scale as a triad or
-7th chord, which shows the chord emphasized over the dimmed scale. **Strum** plays it;
+chord quality, or a degree of the current scale as a triad or 7th chord, which shows the
+chord emphasized over the dimmed scale. **Harmonize**, next to the scale's notes, lists the
+chord on every degree of the scale with its Roman numeral (triads or 7th chords; "no chord"
+where none forms, as on most degrees of a pentatonic scale); click one to show it on the neck
+over the scale. **Strum** plays it;
 **Collapse** and the panel's top edge (drag, or the arrow keys) fold and resize the panel.
 Everything is saved and comes back
 at the next start. Your own scales and tunings go in `scales.toml` and `tunings.toml` next to

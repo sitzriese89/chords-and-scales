@@ -1010,3 +1010,35 @@ the neck, the tab and the layout region (ADR-23); chords on a degree come from h
   adds typed symbols as a third input.
 - Each degree asks the core for the whole table of the scale and takes one entry; the table is
   small, so there is no cache.
+
+## ADR-33: The harmonize view: a row over the panel's seam, one chord size, clicks choose a degree
+
+**Context.** M2.7 shows harmonize (SPEC §5.5, ADR-30) in the scale explorer: a Harmonize
+button, a triads/7ths toggle and a row of chords with Roman numerals, a click opening the chord
+in the chord panel over the dimmed scale (ADR-32). The panel's degree input already shows a
+harmonized chord over the scale, through the `Harmonizer` seam and `ChordState`.
+
+**Decision.**
+- **Its own component.** `HarmonizeView` (`app/src/lib/harmonize/`) sits in the explorer
+  between the scale's notes and the neck, and is the only change to the explorer. It renders
+  nothing when the app has no harmonizer (the panel's degree input is off then too).
+- **The row asks the panel's seam.** `harmonizeRow` asks `Harmonizer.chordOnDegree` for each
+  degree of `ChordState.scale` and names each chord with `chordSymbol` (so the display style,
+  M2.6, applies) and the catalog's name. No new binding and no wider seam: the row and the
+  degree input can't disagree, and tests can pass the same fixtures. A degree with no chord,
+  or with a chord id the catalog lacks, shows the scale's note and *no chord*; the core gives
+  no numeral there, and none is made up.
+- **One chord size.** The row's Triads / 7th chords toggle writes `ChordState.size`, the
+  panel's own toggle. A second size would let the row show G7 while the neck shows G.
+- **A click chooses a degree.** `ChordState.chooseDegree(n)` sets the degree mode and the
+  degree; the panel, the neck and the overlay follow as for a degree picked in the panel, and
+  the row marks that chord (`aria-pressed`) while it is the panel's chord. A collapsed panel is
+  expanded (saved, like its own Expand button).
+- **Open or closed is not saved**, like the chosen chord (ADR-32): the row starts closed.
+
+**Consequences.**
+- Opening the row asks the core for the scale's table once per degree (eight calls at most
+  for the built-in scales); ADR-32 already accepted the table being small. A `harmonizeScale`
+  method on the seam would make it one call, if that ever matters.
+- Changing the size in the row while a chord from root and quality is shown changes nothing on
+  the neck; it is the size the next degree is chosen in.

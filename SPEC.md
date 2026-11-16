@@ -416,6 +416,15 @@ The core does both searches (ADR-31). The input is a set of pitch classes with a
   Examples: the minor pentatonic has Cm (and Cm7) on its root and E♭ on the ♭III
   as triads, and no chord on the other degrees; the whole tone scale has an
   augmented triad on every degree and no seventh chords (ADR-30).
+- **In the app** (ADR-33): a **Harmonize** button next to the scale's notes in the explorer
+  opens a row with the chord on every degree of the current scale, its Roman numeral above
+  its symbol (D Dorian as 7th chords: i7 Dm7, ii7 Em7, IIImaj7 Fmaj7, IV7 G7, v7 Am7,
+  viø7 Bm7b5, VIImaj7 Cmaj7). The row has its own **Triads** / **7th chords** toggle, which
+  is the chord panel's size (§5.3): changing one changes the other. A degree where no chord
+  forms shows its note and *no chord*. Clicking a chord chooses it in the chord panel by its
+  degree, so the neck shows it over the dimmed scale (the chord-over-scale overlay, §5.3),
+  and expands the panel if it was collapsed; the chosen chord is marked in the row. The row
+  follows the explorer's scale, root and sharp/flat setting. Whether it is open is not saved.
 
 ### 5.6 Voicing generator (Q28)
 

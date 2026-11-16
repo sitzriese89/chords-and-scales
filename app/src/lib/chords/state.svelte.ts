@@ -100,6 +100,15 @@ export class ChordState {
       : null;
   });
 
+  /**
+   * The chord on a degree of the current scale, over the dimmed scale, in the current size:
+   * what a click in the harmonize row (SPEC §5.5) chooses.
+   */
+  chooseDegree(degree: number): void {
+    this.mode = 'degree';
+    this.degree = degree;
+  }
+
   /** Back to no chord: the neck shows the scale alone. */
   clear(): void {
     this.chordId = '';
