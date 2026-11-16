@@ -13,6 +13,7 @@ pub mod notes;
 pub mod scale_positions;
 pub mod scales;
 pub mod tuning;
+pub mod voicings;
 
 pub use catalog_file::CatalogError;
 pub use chords::{
@@ -42,6 +43,7 @@ pub use tuning::{
     InstrumentKind, ParsedTunings, Tuning, TuningCatalog, TuningError, TuningFileError,
     TuningItemError, builtin_tunings, parse_tunings, write_tunings,
 };
+pub use voicings::{Barre, VoicedNote, Voicing, VoicingError, VoicingOptions, voicings};
 
 /// The version of the theory core, as set in the workspace `Cargo.toml`.
 pub fn version() -> &'static str {

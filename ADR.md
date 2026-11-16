@@ -45,6 +45,7 @@ ADR-1 to ADR-13 come from the design interview behind [SPEC.md](SPEC.md) (decisi
 | 32 | [The chord panel: one chosen chord drawn on the explorer neck, degrees behind a seam](#adr-32-the-chord-panel-one-chosen-chord-drawn-on-the-explorer-neck-degrees-behind-a-seam) | Accepted |
 | 33 | [Chord names: the style is passed to one formatter call; typed symbols are read as you type](#adr-33-chord-names-the-style-is-passed-to-one-formatter-call-typed-symbols-are-read-as-you-type) | Accepted |
 | 34 | [The harmonize view: a row over the panel's seam, one chord size, clicks choose a degree](#adr-34-the-harmonize-view-a-row-over-the-panels-seam-one-chord-size-clicks-choose-a-degree) | Accepted |
+| 35 | [Voicings: a pruned search over one fret per string, a hand model, one score](#adr-35-voicings-a-pruned-search-over-one-fret-per-string-a-hand-model-one-score) | Accepted |
 
 ---
 
@@ -1086,3 +1087,71 @@ harmonized chord over the scale, through the `Harmonizer` seam and `ChordState`.
   changes nothing on the neck; it is the size the next degree is chosen in.
 - Switching the Standard/Jazz style renames the row with everything else, since the row reads
   the style from the settings like every other caller of `chordSymbol`.
+
+## ADR-35: Voicings: a pruned search over one fret per string, a hand model, one score
+
+**Context.** M2.11 builds the voicing generator of ADR-8 and SPEC §5.6: playable shapes of a
+catalog chord for any tuning of 4–9 strings, with a capo, under four user constraints (max fret
+span, open strings, inversions, muted strings). The spec fixes the root and 3rd as required, the
+5th as optional, and ranking by span, strings played and position. It leaves open what
+"playable" means, what happens to chords without a 3rd or with extensions, how the criteria are
+weighed, and how many results there are. The chord diagrams and voicing browser (M2.12) build on
+the result.
+
+**Decision.**
+- **The search.** `theory::voicings` tries one fret or none per string. For each lowest fretted
+  fret from the capo up (plus the shapes with only open strings) a depth-first walk gives each
+  string the choices muted, open and the chord tones within `max_span` frets. Branches that
+  can't hold the required tones, need a fifth finger, or can't score enough to enter the list
+  are cut. The cut changes nothing in the result: a property test compares it with the uncut
+  ranking, another with a brute force over every fret on four strings.
+- **The notes.** Every played note is a chord tone. Every tone must sound except those reverse
+  lookup lets a voicing leave out (ADR-31, one shared rule): the perfect 5th, a natural 9th
+  below an 11th or 13th, a natural 11th below a 13th. So the 3rd is required as the spec says,
+  and a chord without one keeps what replaces it (the 2nd or 4th of a sus chord); 7ths,
+  altered tones and the 13th are required too, because without them the voicing is another
+  chord. At least two different notes sound (a power chord keeps its 5th) on at least three
+  strings, or two for a two-tone chord. A chord with more required tones than a shape can hold
+  (the seven-tone `7alt` on six strings) has no voicings: an empty list, not an error. Rootless
+  voicings are not generated.
+- **The hand.** Fretted notes (above the capo) lie within `max_span` frets (1 to 6, default 4;
+  open strings don't count). At most four fingers: a shape with more than four fretted notes
+  needs a barre on its lowest fretted fret, from the lowest to the highest string fretted
+  there, with every string under it fretted (not open, not muted), plus a finger for each
+  note above it. A barre on another fret, thumb-over and finger crossings are not modelled.
+- **The options.** Open strings mean the capo fret when there is a capo; frets stay absolute
+  (ADR-18). Forbidding muted strings plays every string. An inversion is a lowest-sounding
+  note (by pitch, so re-entrant tunings work) other than the root; inversions are off by
+  default, so the default list is root-position shapes.
+- **One score.** Higher is better: 8 per played string, minus 8 per fret past the first that
+  the shape covers on a diagram (from the lowest to the highest fretted note, or from the nut
+  when an open string sounds), 2 per fret the lowest fretted note sits above the capo, 5 per
+  muted string between played ones, 5 for an inversion and 2 for a barre. Ties go to the lower
+  shape, then by frets from the lowest string. The weights are constants in one file, chosen
+  so that 29 chord-book shapes on standard tuning (open C, A, D, E, G, the F and B barres, the
+  common 7, m7, maj7, sus and power shapes) each land in the first five; a test keeps them
+  there. Counting the open strings' reach in the span keeps shapes that ring open strings far
+  below the hand (`355003` for G) under the ones players use.
+- **How many.** The core takes a limit and keeps only that many while searching; the default
+  is 50. Every catalog chord on a 9-string guitar takes well under 100 ms (a few ms in a
+  release build, under 20 ms unoptimised); a test asserts the 100 ms in every build.
+- **The result.** A `Voicing` has one entry per string, lowest string first (as tunings list
+  them and shapes are written: `x32010`), each played one with its fretboard string number,
+  absolute fret, note and the chord's own interval label (`9`, `#11`), plus the bass tone, the
+  omitted tones, lowest fret, span, strings played, the barre and the score: what a chord
+  diagram needs without asking again.
+- **WASM.** `voicings.rs` exports `chordVoicings(tuning, frets, capo, chordId, root,
+  options?)`, taking the neck as `fretboardPositions` does and the chord from the current
+  catalog (user chords included); `options` has `maxSpan`, `openStrings`, `mutedStrings`,
+  `inversions` and `limit`, each optional.
+
+**Consequences.**
+- Any tuning and string count works, and user chords get voicings without extra data.
+- The ranking is a judgement: it favours full, compact, low shapes and puts the open position
+  first. Players who want shapes up the neck will need the browser (M2.12) to filter by
+  position or ask for a longer list. Changing a weight changes the order, not what is found.
+- The hand model accepts some shapes that are awkward in practice (the G-shape barre
+  `542225`) and rejects a few that skilled players use (a barre on a higher fret, the thumb
+  over the neck).
+- Extended chords with more required tones than a shape can hold, and rootless jazz voicings,
+  are not found; dropping more tones would make the voicing read as another chord in lookup.
