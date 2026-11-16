@@ -64,6 +64,37 @@ describe('chordOverlay', () => {
     expect(overlay('dom7', 'G', true, 'none').dots.every((d) => d.label === '')).toBe(true);
   });
 
+  it('shows only the positions of a chosen voicing, without the scale', () => {
+    // 320003: the open G shape.
+    const shape = [
+      { string: 6, fret: 3 },
+      { string: 5, fret: 2 },
+      { string: 4, fret: 0 },
+      { string: 3, fret: 0 },
+      { string: 2, fret: 0 },
+      { string: 1, fret: 3 },
+    ];
+    const { dots, positions } = chordOverlay({
+      tuning,
+      frets: 24,
+      capo: 0,
+      labels: 'notes',
+      chord: chordNotes('major', 'G', 'sharps'),
+      scale: scaleNotes('major', 'C', 'sharps'),
+      shape,
+    });
+    const at = (d: { string: number; fret: number }) => `${d.string}:${d.fret}`;
+    expect(dots.map(at).sort()).toEqual(shape.map(at).sort());
+    expect(positions.map(at).sort()).toEqual(shape.map(at).sort());
+    expect(
+      dots
+        .filter((d) => d.role === 'root')
+        .map(at)
+        .sort(),
+    ).toEqual(['1:3', '3:0', '6:3']);
+    expect(dots.some((d) => d.role === 'dim')).toBe(false);
+  });
+
   it('measures the degree from the chord root', () => {
     const { dots } = overlay('dom7', 'G', true);
     expect(dots.find((d) => d.label === 'B')?.degree).toBe(4);

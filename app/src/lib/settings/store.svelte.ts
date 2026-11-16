@@ -9,13 +9,14 @@ export const SETTINGS_BACKUP_DOCUMENT = 'settings-backup';
 
 /** A change to some settings; nested groups can be changed partly. */
 export type SettingsChange = Partial<
-  Omit<Settings, 'instrument' | 'lastView' | 'tab' | 'audio' | 'chordPanel'>
+  Omit<Settings, 'instrument' | 'lastView' | 'tab' | 'audio' | 'chordPanel' | 'voicings'>
 > & {
   instrument?: Partial<Settings['instrument']>;
   lastView?: Partial<Settings['lastView']>;
   tab?: Partial<Settings['tab']>;
   audio?: Partial<Settings['audio']>;
   chordPanel?: Partial<Settings['chordPanel']>;
+  voicings?: Partial<Settings['voicings']>;
 };
 
 function message(error: unknown): string {
@@ -85,6 +86,7 @@ export class SettingsStore {
       tab: { ...this.current.tab, ...change.tab },
       audio: { ...this.current.audio, ...change.audio },
       chordPanel: { ...this.current.chordPanel, ...change.chordPanel },
+      voicings: { ...this.current.voicings, ...change.voicings },
     };
     const text = serializeSettings(next);
     const check = parseSettings(text);

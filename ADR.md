@@ -46,6 +46,7 @@ ADR-1 to ADR-13 come from the design interview behind [SPEC.md](SPEC.md) (decisi
 | 33 | [Chord names: the style is passed to one formatter call; typed symbols are read as you type](#adr-33-chord-names-the-style-is-passed-to-one-formatter-call-typed-symbols-are-read-as-you-type) | Accepted |
 | 34 | [The harmonize view: a row over the panel's seam, one chord size, clicks choose a degree](#adr-34-the-harmonize-view-a-row-over-the-panels-seam-one-chord-size-clicks-choose-a-degree) | Accepted |
 | 35 | [Voicings: a pruned search over one fret per string, a hand model, one score](#adr-35-voicings-a-pruned-search-over-one-fret-per-string-a-hand-model-one-score) | Accepted |
+| 37 | [The voicing browser: diagrams from the core's result, saved constraints, one chosen shape on the neck](#adr-37-the-voicing-browser-diagrams-from-the-cores-result-saved-constraints-one-chosen-shape-on-the-neck) | Accepted |
 
 ---
 
@@ -1155,3 +1156,61 @@ the result.
   over the neck).
 - Extended chords with more required tones than a shape can hold, and rootless jazz voicings,
   are not found; dropping more tones would make the voicing read as another chord in lookup.
+
+## ADR-37: The voicing browser: diagrams from the core's result, saved constraints, one chosen shape on the neck
+
+**Context.** M2.12 shows the voicing generator (ADR-35, SPEC §5.6) to players: chord diagrams,
+the four constraints and a ranked list in the chord panel (ADR-10, ADR-32), and "selecting one
+shows it on the neck". The panel already draws its chord on the explorer's neck through
+`ChordState`; the generator's result already carries what a diagram needs (frets, intervals,
+barre, MIDI pitches). Undecided were the diagram's conventions (which way round, where the
+window starts, what a capo looks like, left-handed), whether the constraints are saved, and how
+a chosen shape reaches the neck and when it goes away.
+
+**Decision.**
+- **Diagrams draw the core's result as given.** `ChordDiagram` (`app/src/lib/voicings/`) is
+  presentational SVG (ADR-3) over one `ChordVoicing`; `diagram.ts` holds the geometry and no
+  theory. Upright, one column per string, the lowest string on the left as chord books draw it.
+  A shape whose fretted notes lie within four frets of the nut is drawn from the nut; with a
+  capo, from the capo, drawn like the nut in the capo colour, with the first fret's number
+  beside it since frets stay absolute (ADR-18, ADR-25); any other shape from its lowest fretted
+  fret, numbered, with as many rows as it spans (four at least, six at most with the widest
+  span). × and ○ above the strings mark muted and open (capo-fret) strings, the barre is a bar
+  on its fret from its lowest to its highest string, and dots follow the neck: the root a square,
+  colours from the `--fretboard-*` tokens, labels from the dot label setting (names spelled by
+  the core's `chordNotes`, intervals from the voicing). Dots carry no finger numbers: the core
+  does not assign fingers.
+- **Left-handed mirrors the diagram**, the lowest string on the right and the fret number on
+  that side, as left-handed chord books do and as the neck mirrors (ADR-18). Text is not
+  mirrored.
+- **The constraints are settings.** Players set them once for how they play (no open strings,
+  every string) rather than per chord, so they go in `settings.toml` as `[voicings]`
+  (`max_span` 1–6, `open_strings`, `muted_strings`, `inversions`), with the core's defaults. A
+  missing key is the default, so the version stays 1 (ADR-25). The list limit stays the core's
+  50 and is not a control.
+- **The list is the core's, asked again on every change.** `voicingList` passes the instrument
+  (tuning, falling back to the default as the explorer does, fret count, capo) and the saved
+  constraints to `chordVoicings` for the panel's chord. No caching: the call takes milliseconds.
+- **One chosen shape, in `ChordState`.** `ChordState.voicing` is a writable `$derived` that
+  resets to `null` whenever its key changes: the chord (root, id, bass), the tuning, fret count,
+  capo, the constraints and the user catalogs' revision. `onNeck` reads it first on every
+  evaluation, so a shape chosen before **Clear chord** does not come back with the same chord.
+  With a shape, `ChordOnNeck.shape` lists its positions and `chordOverlay` keeps only those: the
+  neck shows that shape alone, named as the chord, without the scale even for a chord on a
+  degree (a shape plays chord tones only). The choice is not saved, like the chord (ADR-32).
+- **Choosing a shape strums it**, its MIDI pitches lowest string first, as a click on a neck dot
+  plays the dot. Choosing it again, or **Show all positions**, returns to the whole neck. The
+  panel's **Strum** button keeps playing ADR-32's stacked chord.
+- **Mounted as one element.** `VoicingBrowser` reads `ChordState`, the settings and the
+  catalogs itself and renders nothing without a chord, so the chord panel only places it.
+
+**Consequences.**
+- Diagrams work for any string count and tuning without data; a 9-string diagram is wider
+  than a 6-string one rather than squeezed.
+- A shape chosen in the browser and the panel's Strum can disagree; making Strum play the chosen
+  shape (or the best one) is a one-line change in the panel once nothing else is editing it.
+- A slash chord's bass (ADR-33) is not used yet: the browser lists the chord's own voicings,
+  root in the bass unless inversions are on. Filtering by the typed bass would need the core to
+  take a bass note.
+- The ranking (ADR-35) is now visible to players; reordering is a change to the core's
+  weights, not to the browser.

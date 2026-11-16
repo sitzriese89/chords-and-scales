@@ -2,7 +2,8 @@
  * The settings document `settings.toml` (ADR-17): display preferences and the last view.
  *
  * Tables: `display`, `instrument`, `last_view`, `tab` (the tab view's position, ADR-25),
- * `audio` (volume and mute, ADR-28) and `chord_panel` (collapsed and height, ADR-32).
+ * `audio` (volume and mute, ADR-28), `chord_panel` (collapsed and height, ADR-32) and
+ * `voicings` (the voicing browser's constraints, ADR-37).
  * `display.chord_symbols` is the style chord names are written in (ADR-33).
  * Adding a key or table whose absence means its default is not a format change: older files
  * load with the default, so the version stays.
@@ -38,6 +39,9 @@ export const MAX_VOLUME = 100;
 export const MIN_PANEL_HEIGHT = 96;
 export const MAX_PANEL_HEIGHT = 640;
 export const DEFAULT_PANEL_HEIGHT = 220;
+
+/** The voicing browser's widest fret span (SPEC §5.6; the core's limit, ADR-35). */
+export const MAX_VOICING_SPAN = 6;
 
 export const MIN_STRINGS = 4;
 export const MAX_STRINGS = 9;
@@ -110,6 +114,17 @@ export interface Settings {
     /** Height of the open panel in pixels. */
     height: number;
   };
+  /** The voicing browser's constraints (SPEC §5.6, ADR-37); the defaults are the core's. */
+  voicings: {
+    /** The most frets the fretted notes may cover, 1 to `MAX_VOICING_SPAN`. */
+    maxSpan: number;
+    /** Open strings (the capo fret, with a capo) may sound. */
+    openStrings: boolean;
+    /** Strings may be left unplayed. */
+    mutedStrings: boolean;
+    /** A chord tone other than the root may be the lowest note. */
+    inversions: boolean;
+  };
 }
 
 export const DEFAULT_SETTINGS: Readonly<Settings> = Object.freeze({
@@ -136,6 +151,7 @@ export const DEFAULT_SETTINGS: Readonly<Settings> = Object.freeze({
   }),
   audio: Object.freeze({ volume: 70, muted: false }),
   chordPanel: Object.freeze({ collapsed: false, height: DEFAULT_PANEL_HEIGHT }),
+  voicings: Object.freeze({ maxSpan: 4, openStrings: true, mutedStrings: true, inversions: false }),
 });
 
 export function defaultSettings(): Settings {
@@ -328,6 +344,15 @@ export function parseSettings(text: string): ParsedSettings {
   };
   panelTable.unknownKeys();
 
+  const voicingTable = root.section('voicings');
+  const voicings: Settings['voicings'] = {
+    maxSpan: voicingTable.integer('max_span', 1, MAX_VOICING_SPAN, d.voicings.maxSpan),
+    openStrings: voicingTable.boolean('open_strings', d.voicings.openStrings),
+    mutedStrings: voicingTable.boolean('muted_strings', d.voicings.mutedStrings),
+    inversions: voicingTable.boolean('inversions', d.voicings.inversions),
+  };
+  voicingTable.unknownKeys();
+
   root.unknownKeys();
 
   return {
@@ -343,6 +368,7 @@ export function parseSettings(text: string): ParsedSettings {
       tab,
       audio,
       chordPanel,
+      voicings,
     },
     problems,
   };
@@ -377,6 +403,12 @@ export function serializeSettings(settings: Settings): string {
     chord_panel: {
       collapsed: settings.chordPanel.collapsed,
       height: settings.chordPanel.height,
+    },
+    voicings: {
+      max_span: settings.voicings.maxSpan,
+      open_strings: settings.voicings.openStrings,
+      muted_strings: settings.voicings.mutedStrings,
+      inversions: settings.voicings.inversions,
     },
   };
   return `${HEADER}\n${stringify(doc).trimEnd()}\n`;

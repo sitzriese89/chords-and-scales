@@ -77,7 +77,7 @@ Chords from every input mode, harmonize, reverse lookup, audio, then generated v
 | M2.9 Custom chord editor | [#22][22] | M2.1, M1.11 | Open |
 | M2.10 Audio playback | [#23][23] | M1.8 | Done (#51) |
 | M2.11 Voicing generator | [#24][24] | M2.1, M1.3 | Done (#59) |
-| M2.12 Chord diagrams and voicing browser | [#25][25] | M2.11, M2.5 | Open |
+| M2.12 Chord diagrams and voicing browser | [#25][25] | M2.11, M2.5 | Done (#60) |
 
 Suggested waves: (1) M2.1 → (2) M2.2, M2.3, M2.4, M2.5, M2.10, M2.11 → (3) M2.6, M2.7, M2.8, M2.9, M2.12.
 

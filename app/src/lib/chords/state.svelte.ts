@@ -19,6 +19,8 @@ import {
   type ScaleNote,
 } from '../theory';
 import type { UserCatalogs } from '../user-catalogs.svelte';
+import { shapePositions } from '../voicings/list';
+import type { ChordVoicing } from '../theory';
 import type { ChordOnNeck } from './overlay';
 import type { ChordSize, Harmonizer } from './harmonize';
 
@@ -129,8 +131,40 @@ export class ChordState {
     return `No ${this.size === 'sevenths' ? '7th ' : ''}chord forms on degree ${this.degree + 1} of ${this.scale.root} ${this.scale.info.name}.`;
   });
 
+  /** What a chosen voicing belongs to: the chord, the neck and the constraints (ADR-37). */
+  private readonly voicingFor = $derived.by((): string => {
+    const active = this.active;
+    if (!active) return '';
+    const { instrument, voicings } = this.settings.current;
+    const { tuning, frets, capo } = instrument;
+    const { revision } = this.catalogs;
+    return JSON.stringify([
+      active.root,
+      active.chord.id,
+      active.bass,
+      tuning,
+      frets,
+      capo,
+      voicings,
+      revision,
+    ]);
+  });
+
+  /**
+   * The voicing chosen in the voicing browser (SPEC §5.6, ADR-37): the neck shows only its
+   * positions. Assign it to choose one; it goes back to `null` whenever the chord, the
+   * instrument, its tuning or the voicing constraints change.
+   */
+  voicing = $derived.by((): ChordVoicing | null => {
+    void this.voicingFor;
+    return null;
+  });
+
   /** What the scale explorer draws on the neck. */
   readonly onNeck = $derived.by((): ChordOnNeck | null => {
+    // Read first, also with no chord: a derived only notices a change while it is read, so
+    // the chosen voicing must not survive Clear chord and come back with the same chord.
+    const voicing = this.voicing;
     const active = this.active;
     return active
       ? {
@@ -138,6 +172,7 @@ export class ChordState {
           chordId: active.chord.id,
           fromScale: active.fromScale,
           bass: active.bass,
+          shape: voicing ? shapePositions(voicing) : undefined,
         }
       : null;
   });
