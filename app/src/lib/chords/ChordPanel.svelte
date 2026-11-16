@@ -23,6 +23,7 @@
   } from '../settings';
   import { listChords } from '../theory';
   import { getUserCatalogs } from '../user-catalogs.svelte';
+  import VoicingBrowser from '../voicings/VoicingBrowser.svelte';
   import ChordEditorDialog from './ChordEditorDialog.svelte';
   import { chordSymbol } from './display';
   import type { ChordSize } from './harmonize';
@@ -369,6 +370,8 @@
         <p class="muted">Choose a chord to see it on the neck.</p>
       {/if}
     </div>
+
+    <VoicingBrowser />
   </div>
 
   <ChordEditorDialog />

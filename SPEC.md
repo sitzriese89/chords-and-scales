@@ -87,7 +87,8 @@ Files are hand-editable and shareable; the UI offers import/export of them.
 - `settings.toml` holds the display preferences (sharps/flats, dot labels, theme,
   left-handed), the last instrument (kind, string count, tuning, fret count, capo) and the
   last view (root, scale) and the tab view's position (system, 3NPS pattern, fret window,
-  direction, highlight; ADR-25) and the sound (volume 0–100, mute; ADR-28). It is created with
+  direction, highlight; ADR-25), the sound (volume 0–100, mute; ADR-28) and the voicing
+  browser's constraints (`[voicings]`; ADR-37). It is created with
   the defaults on first start, read once at start and saved on every change.
 - The user's own scales, chords and tunings are `scales.toml`, `chords.toml` and
   `tunings.toml`, in the format of the built-in catalogs (§4.2, §4.3, §5.1). They are read at
@@ -478,6 +479,27 @@ Algorithmic (works for any tuning and 4–9 strings; no static shape library).
   small cost for muted strings between played ones, inversions and barres. The default list
   has the best 50 (ADR-35).
 - **Output:** chord diagrams (SVG).
+- **In the app** (ADR-37): the chord panel (§5.3) lists the voicings of its chord under the
+  chord, on the current instrument, tuning, fret count and capo, best first (the best 50),
+  each as a chord diagram with the shape written under it (`x32010`, lowest string first),
+  plus its bass when it is an inversion and the tones it leaves out.
+  - **Diagrams:** upright, one column per string, the lowest on the left (mirrored when
+    left-handed, like the neck), four fret rows or as many as the shape spans. A shape within
+    the first four frets is drawn from the nut (drawn thick); with a capo, from the capo,
+    numbered with the first fret above it; any other shape from its lowest fretted fret, with
+    that fret's number beside it. Frets keep their numbers (ADR-18). × above a string mutes
+    it, ○ plays it open (at the capo fret, with a capo). Dots carry the dot label setting
+    (note names, intervals or none), the root as a square; a barre is a bar across its
+    strings. Works for 4–9 strings, in both themes.
+  - **Constraints:** max fret span (1–6), open strings, muted strings and inversions, as
+    above; changing one updates the list at once. They are saved in `settings.toml`
+    (`[voicings]`: `max_span`, `open_strings`, `muted_strings`, `inversions`; missing keys
+    take the defaults above).
+  - **Choosing a shape** shows only its positions on the explorer's neck, still named as the
+    chord and without the scale behind it, and strums it lowest string first. Choosing it
+    again, or **Show all positions**, shows the chord across the neck again. The choice is not
+    saved, and it is dropped when the chord, the instrument (tuning, fret count, capo) or a
+    constraint changes.
 
 ### 5.7 Mood/category tags (Q6, Q14, Q31)
 
