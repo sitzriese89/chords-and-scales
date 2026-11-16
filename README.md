@@ -29,9 +29,14 @@ chords; "no chord" where none forms, as on most degrees of a pentatonic scale); 
 show it on the neck over the scale. **Chord names** switches every chord name between
 Standard (`Cmaj7`, `Cm7♭5`) and Jazz (`CΔ7`, `Cø`). **Strum** plays the chord;
 **Collapse** and the panel's top edge (drag, or the arrow keys) fold and resize the panel.
-Everything is saved and comes back
-at the next start. Your own scales and tunings go in `scales.toml` and `tunings.toml` next to
-`settings.toml` in the app-data folder, in the format described in [SPEC.md](SPEC.md).
+**New chord**, under the chord quality, makes your own chord: pick intervals over two octaves
+(`♭9`, `♯11`, `13` above the octave) or click notes on the neck, give it a name, the symbol
+written after the root (`m7b5`) and, if you like, a Jazz symbol and a family. Your chords are
+listed with the others (under *Custom* unless you named a family), can be typed by their
+symbol, and can be edited and deleted there. Everything is saved and comes back at the next
+start. Your own scales, chords and tunings go in `scales.toml`, `chords.toml` and
+`tunings.toml` next to `settings.toml` in the app-data folder, in the format described in
+[SPEC.md](SPEC.md).
 
 ## Install
 

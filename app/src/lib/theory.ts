@@ -20,8 +20,9 @@ export {
   spellPitchClass,
 } from './wasm/theory_wasm.js';
 
-// User catalog files (crates/theory-wasm/src/user_files.rs, ADR-23). Scales and tunings load
-// the same way: `setUserScales(toml)` / `setUserTunings(toml)` replace the user items in the
+// User catalog files (crates/theory-wasm/src/user_files.rs, ADR-23). Scales, chords and tunings
+// load the same way: `setUserScales(toml)` / `setUserChords(toml)` / `setUserTunings(toml)`
+// replace the user items in the
 // current catalog and return a UserFileReport (0-based `item`, null for the whole file; a bad
 // file never throws). Call them at start and after each change to the user file.
 export type { UserFileError, UserFileReport } from './wasm/theory_wasm.js';
@@ -43,8 +44,20 @@ export {
 // Chord catalog (crates/theory-wasm/src/chords.rs): the built-ins, with the user chords last
 // passed to setUserChords merged over them, same report as scales. Intervals and note names are
 // Unicode; the suffixes (`symbol`, `aliases`, `jazzSymbol`) are stored as written, ASCII.
-export type { ChordFamily, ChordInfo, ChordNote } from './wasm/theory_wasm.js';
-export { chordNotes, getChord, listChords, setUserChords } from './wasm/theory_wasm.js';
+// `writeChords` turns user chords into the text of `chords.toml` (checked by the core, which
+// also refuses a duplicate id, name or suffix, and a suffix it can't read back), `newChordId`
+// makes the id of a new one and `chordIntervalLabels` names the intervals the editor offers
+// (ADR-36).
+export type { ChordFamily, ChordInfo, ChordInput, ChordNote } from './wasm/theory_wasm.js';
+export {
+  chordIntervalLabels,
+  chordNotes,
+  getChord,
+  listChords,
+  newChordId,
+  setUserChords,
+  writeChords,
+} from './wasm/theory_wasm.js';
 
 // Chord symbols (crates/theory-wasm/src/symbols.rs, SPEC §4.4): `parseChordSymbol` reads typed
 // text against the current chord catalog and never throws (`ok: false` carries the position of

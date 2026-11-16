@@ -16,7 +16,10 @@ mod symbols;
 mod user_files;
 mod voicings;
 
-pub use chords::{chord_notes, get_chord, list_chords, set_user_chords};
+pub use chords::{
+    chord_interval_labels_js, chord_notes, get_chord, list_chords, new_chord_id, set_user_chords,
+    write_chords_toml,
+};
 pub use fretboard::{
     fretboard_positions, get_tuning, list_tunings, new_tuning_id, set_user_tunings,
     write_tunings_toml,

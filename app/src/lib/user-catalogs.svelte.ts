@@ -1,25 +1,30 @@
 /**
- * The user's own scales and tunings (SPEC §3.2, ADR-23, ADR-24, ADR-26): the documents
- * `scales` and `tunings` (`scales.toml`, `tunings.toml` in the app-data folder), in the same
- * format as the built-in catalogs. They are read once at start and handed to the core, which
- * merges them over the built-ins. A missing document means "none"; a broken item is skipped
- * and reported, and a broken file leaves the built-ins.
+ * The user's own scales, chords and tunings (SPEC §3.2, ADR-23, ADR-24, ADR-26, ADR-36): the
+ * documents `scales`, `chords` and `tunings` (`scales.toml`, `chords.toml`, `tunings.toml` in
+ * the app-data folder), in the same format as the built-in catalogs. They are read once at
+ * start and handed to the core, which merges them over the built-ins. A missing document means
+ * "none"; a broken item is skipped and reported, and a broken file leaves the built-ins.
  *
  * The catalogs live in the WASM binding, so a component can't see when they change. Every
  * change goes through `UserCatalogs`, which bumps `revision`; components that read a catalog
  * read `revision` in the same `$derived` so they re-read it (ADR-24). The tuning editor saves
- * through `saveUserTunings`, the scale editor through `saveUserScales`; both write only what
- * the core checked and wrote.
+ * through `saveUserTunings`, the scale editor through `saveUserScales` and the chord editor
+ * through `saveUserChords`; all write only what the core checked and wrote.
  */
 import { createContext } from 'svelte';
 import type { Storage } from './storage';
 import {
+  getChord,
   getScale,
   getTuning,
+  setUserChords,
   setUserScales,
   setUserTunings,
+  writeChords,
   writeScales,
   writeTunings,
+  type ChordInfo,
+  type ChordInput,
   type ScaleInfo,
   type ScaleInput,
   type Tuning,
@@ -27,13 +32,16 @@ import {
 } from './theory';
 
 export const USER_SCALES_DOCUMENT = 'scales';
+export const USER_CHORDS_DOCUMENT = 'chords';
 export const USER_TUNINGS_DOCUMENT = 'tunings';
 /** Where `scales.toml` is kept before the app first rewrites a file with broken items. */
 export const USER_SCALES_BACKUP_DOCUMENT = 'scales-backup';
+/** Where `chords.toml` is kept before the app first rewrites a file with broken items. */
+export const USER_CHORDS_BACKUP_DOCUMENT = 'chords-backup';
 /** Where `tunings.toml` is kept before the app first rewrites a file with broken items. */
 export const USER_TUNINGS_BACKUP_DOCUMENT = 'tunings-backup';
 
-type Kind = 'scales' | 'tunings';
+type Kind = 'scales' | 'chords' | 'tunings';
 
 const documents: Record<Kind, { name: string; backup: string; load: typeof setUserScales }> = {
   scales: {
@@ -41,13 +49,18 @@ const documents: Record<Kind, { name: string; backup: string; load: typeof setUs
     backup: USER_SCALES_BACKUP_DOCUMENT,
     load: setUserScales,
   },
+  chords: {
+    name: USER_CHORDS_DOCUMENT,
+    backup: USER_CHORDS_BACKUP_DOCUMENT,
+    load: setUserChords,
+  },
   tunings: {
     name: USER_TUNINGS_DOCUMENT,
     backup: USER_TUNINGS_BACKUP_DOCUMENT,
     load: setUserTunings,
   },
 };
-const kinds: Kind[] = ['scales', 'tunings'];
+const kinds: Kind[] = ['scales', 'chords', 'tunings'];
 
 function message(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
@@ -58,6 +71,8 @@ export class UserCatalogs {
   revision = $state(0);
   /** The user's scales as loaded from `scales.toml`, in file order. */
   userScales = $state<ScaleInfo[]>([]);
+  /** The user's chords as loaded from `chords.toml`, in file order. */
+  userChords = $state<ChordInfo[]>([]);
   /** The user's tunings as loaded from `tunings.toml`, in file order. */
   userTunings = $state<Tuning[]>([]);
   /** Readable problems per document, `tunings.toml: tuning 2 ("bass-3"): …`. */
@@ -76,7 +91,7 @@ export class UserCatalogs {
     return kinds.flatMap((kind) => this.problemsBy[documents[kind].name] ?? []);
   }
 
-  /** Loads both user documents into the core's catalogs. Never rejects. */
+  /** Loads the user documents into the core's catalogs. Never rejects. */
   async load(): Promise<void> {
     for (const kind of kinds) {
       const { name, load } = documents[kind];
@@ -104,6 +119,16 @@ export class UserCatalogs {
    */
   async saveUserScales(scales: readonly ScaleInput[]): Promise<void> {
     await this.save('scales', writeScales($state.snapshot(scales) as ScaleInput[]));
+  }
+
+  /**
+   * Replaces the user's chords with `chords`: checks them in the core (which also refuses a
+   * duplicate id, name or suffix, and a suffix it can't read back), writes `chords.toml` and
+   * loads it into the catalog. Rejects with the core's message for an invalid chord, or the
+   * storage's when writing fails; either way nothing changes.
+   */
+  async saveUserChords(chords: readonly ChordInput[]): Promise<void> {
+    await this.save('chords', writeChords($state.snapshot(chords) as ChordInput[]));
   }
 
   /**
@@ -135,6 +160,7 @@ export class UserCatalogs {
   /** Keeps the user's items that `report` says are now in the catalog of `kind`. */
   private keep(kind: Kind, report: UserFileReport) {
     if (kind === 'scales') this.userScales = report.loaded.flatMap((id) => getScale(id) ?? []);
+    else if (kind === 'chords') this.userChords = report.loaded.flatMap((id) => getChord(id) ?? []);
     else this.userTunings = report.loaded.flatMap((id) => getTuning(id) ?? []);
   }
 }

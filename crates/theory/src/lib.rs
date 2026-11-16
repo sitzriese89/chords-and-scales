@@ -18,7 +18,7 @@ pub mod voicings;
 pub use catalog_file::CatalogError;
 pub use chords::{
     Chord, ChordCatalog, ChordError, ChordFamily, ChordNote, ChordSpec, ParsedChords,
-    parse_user_chords,
+    chord_interval_labels, parse_user_chords, write_chords,
 };
 pub use chords::{
     ChordSymbol, SymbolError, SymbolErrorKind, SymbolStyle, format_symbol, parse_symbol,

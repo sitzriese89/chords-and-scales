@@ -4,8 +4,7 @@ use std::sync::OnceLock;
 use serde::{Deserialize, Serialize};
 
 use super::{Scale, ScaleError, Source};
-use crate::catalog_file::{CatalogError, parse_items};
-use crate::tuning::{cut, slug};
+use crate::catalog_file::{CatalogError, name_key, new_id, parse_items};
 
 /// The built-in catalog, embedded at build time.
 const BUILTIN_TOML: &str = include_str!("../../data/scales.toml");
@@ -135,9 +134,6 @@ fn validate(raw: RawScale, source: Source) -> Result<Scale, String> {
     .map_err(|error| error.to_string())
 }
 
-/// The longest id [`ScaleCatalog::new_id`] makes.
-const MAX_NEW_ID: usize = 64;
-
 impl ScaleCatalog {
     /// The id for a new user scale called `name`: the kebab-case slug of the name
     /// (`"My Dorian ♭2"` → `my-dorian-2`), with `-2`, `-3`, … appended if the id is taken by a
@@ -145,31 +141,10 @@ impl ScaleCatalog {
     /// scale replaces a built-in only if its id is written into `scales.toml` by hand). A name
     /// without ASCII letters or digits gives `custom`. At most 64 characters.
     pub fn new_id(&self, name: &str) -> String {
-        let mut base = slug(name);
-        if base.is_empty() {
-            base.push_str("custom");
-        }
-        let taken = |id: &str| self.get(id).is_some() || ScaleCatalog::builtin().get(id).is_some();
-        let first = cut(&base, MAX_NEW_ID);
-        if !taken(first) {
-            return first.to_owned();
-        }
-        (2..)
-            .map(|n| {
-                let suffix = format!("-{n}");
-                format!("{}{suffix}", cut(&base, MAX_NEW_ID - suffix.len()))
-            })
-            .find(|id| !taken(id))
-            .expect("one of infinitely many suffixes is free")
+        new_id(name, |id| {
+            self.get(id).is_some() || ScaleCatalog::builtin().get(id).is_some()
+        })
     }
-}
-
-/// A name as compared for duplicates: case and runs of white space don't count.
-fn name_key(name: &str) -> String {
-    name.split_whitespace()
-        .collect::<Vec<_>>()
-        .join(" ")
-        .to_lowercase()
 }
 
 /// The header of a scale file written by [`write_scales`].

@@ -2,15 +2,23 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { BrowserStorage, StorageError, TauriStorage, type Storage } from './storage';
 import { fakeCommands } from './storage/fake-commands';
 import {
+  getChord,
   getScale,
   getTuning,
+  listChords,
   listScales,
+  lookupChords,
+  parseChordSymbol,
+  setUserChords,
   setUserScales,
   setUserTunings,
+  type ChordInput,
   type ScaleInput,
   type Tuning,
 } from './theory';
 import {
+  USER_CHORDS_BACKUP_DOCUMENT,
+  USER_CHORDS_DOCUMENT,
   USER_SCALES_BACKUP_DOCUMENT,
   USER_SCALES_DOCUMENT,
   USER_TUNINGS_DOCUMENT,
@@ -98,6 +106,86 @@ describe.each(implementations)('UserCatalogs scales (%s storage)', (_label, fixt
     // Only once: a later save leaves the backup alone.
     await catalogs.saveUserScales([]);
     expect(await open().read(USER_SCALES_BACKUP_DOCUMENT)).toBe(broken);
+  });
+});
+
+const mystic: ChordInput = {
+  id: 'mystic',
+  name: 'Mystic',
+  symbol: 'myst',
+  jazzSymbol: 'Myst',
+  intervals: ['1', '3', '♯4', '♭7', '9', '13'],
+};
+
+describe.each(implementations)('UserCatalogs chords (%s storage)', (_label, fixture) => {
+  let open: () => Storage;
+
+  beforeEach(() => {
+    open = fixture();
+  });
+
+  afterEach(() => {
+    setUserChords('');
+  });
+
+  it('saves the user chords and keeps them over a restart, found by reverse lookup', async () => {
+    const catalogs = new UserCatalogs(open());
+    await catalogs.load();
+    await catalogs.saveUserChords([mystic]);
+    expect(catalogs.revision).toBe(2);
+    expect(catalogs.userChords).toEqual([expect.objectContaining({ id: 'mystic' })]);
+    expect(getChord('mystic')).toMatchObject({ family: 'Custom', builtIn: false });
+    expect(listChords().at(-1)).toMatchObject({ name: 'Custom', chords: [{ id: 'mystic' }] });
+    expect(await open().read(USER_CHORDS_DOCUMENT)).toContain('id = "mystic"');
+
+    // A restart: a fresh core catalog and new UserCatalogs over the same storage.
+    setUserChords('');
+    expect(getChord('mystic')).toBeUndefined();
+    const again = new UserCatalogs(open());
+    await again.load();
+    expect(again.userChords).toEqual([
+      expect.objectContaining({
+        id: 'mystic',
+        symbol: 'myst',
+        jazzSymbol: 'Myst',
+        intervals: ['1', '3', '♯4', '♭7', '9', '13'],
+      }),
+    ]);
+    expect(parseChordSymbol('Dmyst')).toEqual({ ok: true, root: 'D', chordId: 'mystic' });
+    // D F♯ G♯ C E B: the mystic chord on D.
+    const found = lookupChords([2, 6, 8, 0, 4, 11], 2, 'sharps');
+    expect(found.find((m) => m.chordId === 'mystic')).toMatchObject({ root: 'D', omitted: [] });
+  });
+
+  it('changes nothing when the core refuses a chord', async () => {
+    const catalogs = new UserCatalogs(open());
+    await catalogs.load();
+    await expect(catalogs.saveUserChords([{ ...mystic, intervals: ['1'] }])).rejects.toThrow(
+      /at least one note besides the root/,
+    );
+    await expect(catalogs.saveUserChords([{ ...mystic, symbol: 'maj7' }])).rejects.toThrow(
+      'the symbol "maj7" already means the chord "Major seventh"',
+    );
+    expect(catalogs.revision).toBe(1);
+    expect(catalogs.userChords).toEqual([]);
+    expect(await open().read(USER_CHORDS_DOCUMENT)).toBeNull();
+  });
+
+  it('lists broken chords and keeps their file as chords-backup.toml before the first save', async () => {
+    const broken =
+      '[[chord]]\nid = "bad"\nname = "Bad"\nsymbol = "bad"\nintervals = ["1", "5", "3"]\n';
+    await open().write(USER_CHORDS_DOCUMENT, broken);
+    const catalogs = new UserCatalogs(open());
+    await catalogs.load();
+    expect(catalogs.problems).toEqual([expect.stringMatching(/^chords\.toml: chord 1 \("bad"\)/)]);
+
+    await catalogs.saveUserChords([mystic]);
+    expect(await open().read(USER_CHORDS_BACKUP_DOCUMENT)).toBe(broken);
+    expect(catalogs.problems).toEqual([
+      'chords.toml had chords that could not be loaded; the old file was kept as chords-backup.toml.',
+    ]);
+    await catalogs.saveUserChords([]);
+    expect(await open().read(USER_CHORDS_BACKUP_DOCUMENT)).toBe(broken);
   });
 });
 

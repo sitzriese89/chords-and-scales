@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { formatChordSymbol, listChords, parseChordSymbol, setUserChords } from './theory';
+import {
+  formatChordSymbol,
+  listChords,
+  parseChordSymbol,
+  setUserChords,
+  writeChords,
+} from './theory';
 
 describe('chord symbols (WASM)', () => {
   afterEach(() => {
@@ -90,5 +96,32 @@ intervals = ["1", "b2", "5"]
     expect(formatChordSymbol('A', 'mine', undefined, 'jazz')).toBe('AЖ');
     setUserChords('');
     expect(parseChordSymbol('Amine')).toMatchObject({ ok: false });
+  });
+
+  it('formats saved user chords in both styles, with and without a Jazz symbol', () => {
+    setUserChords(
+      writeChords([
+        {
+          id: 'jazzy',
+          name: 'Jazzy',
+          symbol: 'q7#9',
+          jazzSymbol: 'Q#9',
+          intervals: ['1', '3', '♭7', '♯9'],
+        },
+        { id: 'plain', name: 'Plain', symbol: 'qb13', intervals: ['1', '3', '♭13'] },
+      ]),
+    );
+    expect(formatChordSymbol('B♭', 'jazzy', undefined, 'standard')).toBe('B♭q7♯9');
+    expect(formatChordSymbol('B♭', 'jazzy', undefined, 'jazz')).toBe('B♭Q♯9');
+    expect(formatChordSymbol('E', 'plain', 'G♯', 'standard')).toBe('Eq♭13/G♯');
+    expect(formatChordSymbol('E', 'plain', undefined, 'jazz')).toBe('Eq♭13');
+    // What is shown reads back as the chord.
+    expect(parseChordSymbol('B♭Q♯9')).toEqual({ ok: true, root: 'B♭', chordId: 'jazzy' });
+    expect(parseChordSymbol('Eq♭13/G♯')).toEqual({
+      ok: true,
+      root: 'E',
+      chordId: 'plain',
+      bass: 'G♯',
+    });
   });
 });

@@ -13,6 +13,7 @@ export {
   getChordState,
   setChordState,
   type ActiveChord,
+  type ChordEditing,
   type ChordMode,
   type SymbolProblem,
 } from './state.svelte';

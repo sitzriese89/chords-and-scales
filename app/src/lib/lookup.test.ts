@@ -7,6 +7,7 @@ import {
   lookupChords,
   setUserChords,
   setUserScales,
+  writeChords,
 } from './theory';
 
 // C = 0, D = 2, E = 4, G = 7, A = 9, B♭ = 10.
@@ -97,6 +98,24 @@ intervals = ["1", "4", "#4", "b7"]
 `);
     const found = lookupChords([2, 7, 8, 0], 2, 'sharps');
     expect(found.some((match) => match.chordId === 'mystic')).toBe(true);
+  });
+
+  it('finds a chord saved by the chord editor, on any root and inverted', () => {
+    // C E G♯ B D♯: no built-in chord has 1 3 ♯5 7 ♯9.
+    const notes = [0, 4, 8, 11, 3];
+    expect(lookupChords(notes, 0, 'sharps').some((m) => m.chordId === 'mine')).toBe(false);
+    setUserChords(
+      writeChords([
+        { id: 'mine', name: 'Mine', symbol: 'q', intervals: ['1', '3', '♯5', '7', '♯9'] },
+      ]),
+    );
+    expect(lookupChords(notes, 0, 'sharps')[0]).toMatchObject({ chordId: 'mine', root: 'C' });
+    const up = notes.map((pc) => (pc + 2) % 12);
+    expect(lookupChords(up, 6, 'sharps').find((m) => m.chordId === 'mine')).toMatchObject({
+      chordId: 'mine',
+      root: 'D',
+      bass: 'F♯',
+    });
   });
 
   it('gives nothing for fewer than two notes', () => {

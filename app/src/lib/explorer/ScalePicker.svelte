@@ -9,16 +9,9 @@
   dialog with its own neck, and saves to `scales.toml` through `UserCatalogs`.
 -->
 <script lang="ts">
-  import { IntervalSetEditor, type IntervalSetDraft, type Neck } from '../editor';
+  import { IntervalSetEditor, editorNeck, type IntervalSetDraft, type Neck } from '../editor';
   import { DEFAULT_SETTINGS, getSettings } from '../settings';
-  import {
-    getScale,
-    getTuning,
-    listScales,
-    newScaleId,
-    type ScaleInfo,
-    type ScaleInput,
-  } from '../theory';
+  import { getScale, listScales, newScaleId, type ScaleInfo, type ScaleInput } from '../theory';
   import { getUserCatalogs } from '../user-catalogs.svelte';
   import { displayRoot, rootChoices } from './view';
 
@@ -44,9 +37,7 @@
   /** The neck the editor shows: the current instrument, on the current root. */
   const neck = $derived.by((): Neck => {
     void catalogs.revision;
-    const { instrument, leftHanded } = settings.current;
-    const tuning = getTuning(instrument.tuning) ?? getTuning(DEFAULT_SETTINGS.instrument.tuning)!;
-    return { tuning, frets: instrument.frets, capo: instrument.capo, leftHanded };
+    return editorNeck(settings.current);
   });
   const editorRoot = $derived(
     displayRoot(settings.current.lastView.root) ?? displayRoot(DEFAULT_SETTINGS.lastView.root)!,

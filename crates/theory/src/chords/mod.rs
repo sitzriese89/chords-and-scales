@@ -5,12 +5,18 @@
 //! `crates/theory/data/chords.toml`, embedded at build time; user chords arrive as a TOML string
 //! in the same format and are merged over it ([`ChordCatalog::with_user_chords`]). The symbol
 //! parser and formatter (`symbols`, ADR-29) are built on the symbols stored here.
+//!
+//! The chord editor saves the user's file (ADR-36): [`Chord::new`] checks one chord as an item
+//! of a file is checked, [`write_chords`] writes the file (and refuses duplicate ids, names and
+//! suffixes, and suffixes that can't be read back), [`ChordCatalog::new_id`] makes the id of a
+//! new user chord and [`chord_interval_labels`] names the intervals the editor offers.
 
 mod catalog;
 mod symbols;
 
 pub use catalog::{
-    ChordCatalog, ChordFamily, MAX_CHORD_SEMITONES, ParsedChords, parse_user_chords,
+    ChordCatalog, ChordFamily, MAX_CHORD_SEMITONES, ParsedChords, chord_interval_labels,
+    parse_user_chords, write_chords,
 };
 pub use symbols::{
     ChordSymbol, SymbolError, SymbolErrorKind, SymbolStyle, format_symbol, parse_symbol,
@@ -47,6 +53,18 @@ pub enum ChordError {
     RootOnly,
     /// Two intervals on one pitch class (`b5` and `#11`).
     RepeatedPitchClass(Interval, Interval),
+    /// Two chords with one id in one file ([`write_chords`]).
+    DuplicateId(String),
+    /// Two chords with one name in the catalog a file would give ([`write_chords`]).
+    DuplicateName(String),
+    /// An empty symbol on a chord that isn't the major triad ([`write_chords`]).
+    NoSymbol,
+    /// A suffix that another chord in the catalog a file would give already has
+    /// ([`write_chords`]): `symbol`, and the name of the `chord` it means.
+    SymbolTaken { symbol: String, chord: String },
+    /// A suffix that the symbol parser would not read back as its chord after a root, such as
+    /// `b9` (`Cb9` is C♭ and `9`) or `m7♭5` (read as `m7b5`) ([`write_chords`]).
+    UnreadableSymbol(String),
 }
 
 impl fmt::Display for ChordError {
@@ -77,6 +95,19 @@ impl fmt::Display for ChordError {
                 "{:?} and {:?} are the same note",
                 a.to_string(),
                 b.to_string()
+            ),
+            Self::DuplicateId(id) => write!(f, "two chords have the id {id:?}"),
+            Self::DuplicateName(name) => write!(f, "there is already a chord called {name:?}"),
+            Self::NoSymbol => f.write_str(
+                "a chord needs a symbol, the suffix after the root (only the major triad has none)",
+            ),
+            Self::SymbolTaken { symbol, chord } => {
+                write!(f, "the symbol {symbol:?} already means the chord {chord:?}")
+            }
+            Self::UnreadableSymbol(symbol) => write!(
+                f,
+                "the symbol {symbol:?} would not be read back after a root (as in \"C{symbol}\"): \
+                 it must not start with # or b, and ♭ ♯ △ Ø º are written b # Δ ø °"
             ),
         }
     }
@@ -184,6 +215,9 @@ impl Chord {
                 return Err(ChordError::DuplicateSymbol(alias.clone()));
             }
         }
+        // A Jazz symbol equal to the symbol is no special form: kept as none, so a written
+        // file reads back as the same chord.
+        let jazz_symbol = jazz_symbol.filter(|jazz| *jazz != symbol);
         let family = match family {
             Some(family) if family.trim().is_empty() => return Err(ChordError::EmptyFamily),
             Some(family) => family,
