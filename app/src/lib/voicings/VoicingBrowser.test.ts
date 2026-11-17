@@ -83,6 +83,22 @@ describe('voicing browser', () => {
     expect(screen.getByRole('img', { name: 'C: x32010' })).toBeInTheDocument();
   });
 
+  it('heads a slash chord by the chord alone and says its bass is not voiced', async () => {
+    await startApp();
+    await pick('Chord quality', 'major');
+    expect(screen.queryByText(/bass isn't voiced/)).not.toBeInTheDocument();
+
+    await fireEvent.click(screen.getByRole('radio', { name: 'Typed symbol' }));
+    await fireEvent.input(screen.getByRole('textbox', { name: 'Chord symbol' }), {
+      target: { value: 'Am7/G' },
+    });
+    expect(screen.getByRole('heading', { name: 'Voicings of Am7' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /^Voicings of Am7\/G/ })).not.toBeInTheDocument();
+    expect(screen.getByText("Shapes of Am7; the G bass isn't voiced.")).toBeInTheDocument();
+    expect(screen.getByRole('list', { name: 'Voicings of Am7' })).toBeInTheDocument();
+    expect(screen.getAllByRole('img', { name: /^Am7: / }).length).toBeGreaterThan(0);
+  });
+
   it('updates the list when a constraint changes, and saves the constraints', async () => {
     const storage = await startApp();
     await pick('Chord quality', 'major');

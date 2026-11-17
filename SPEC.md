@@ -391,7 +391,8 @@ How the tab is shown (`app/src/lib/tab/`, ADR-25):
     pentatonic degrees), the panel says so and the neck shows the scale alone.
   - The panel lists the chord's notes (spelled by the sharp/flat setting; the root keeps its
     spelling) and has **Strum**, which plays the chord through the audio engine (§5.9) as one
-    note per string, lowest string first, stacked upward from the lowest root on the neck.
+    note per string, lowest string first, stacked upward from the lowest root on the neck;
+    with a shape chosen in the voicing browser (§5.6), it plays that shape instead.
     **Clear chord** returns to the plain scale. The chosen chord is not saved.
   - **Typed symbol:** type a chord symbol (`F#m7b5`, `CΔ7`, `Am7/G`); it is read as you type
     by the parser (§4.4), in either style, and the neck shows the chord's tones alone, the
@@ -482,7 +483,9 @@ Algorithmic (works for any tuning and 4–9 strings; no static shape library).
 - **In the app** (ADR-37): the chord panel (§5.3) lists the voicings of its chord under the
   chord, on the current instrument, tuning, fret count and capo, best first (the best 50),
   each as a chord diagram with the shape written under it (`x32010`, lowest string first),
-  plus its bass when it is an inversion and the tones it leaves out.
+  plus its bass when it is an inversion and the tones it leaves out. The list is headed by the
+  chord's name; a slash chord's bass is not voiced, so `Am7/G` is headed "Voicings of Am7"
+  with a note that the G bass isn't voiced.
   - **Diagrams:** upright, one column per string, the lowest on the left (mirrored when
     left-handed, like the neck), four fret rows or as many as the shape spans. A shape within
     the first four frets is drawn from the nut (drawn thick); with a capo, from the capo,
@@ -496,10 +499,10 @@ Algorithmic (works for any tuning and 4–9 strings; no static shape library).
     (`[voicings]`: `max_span`, `open_strings`, `muted_strings`, `inversions`; missing keys
     take the defaults above).
   - **Choosing a shape** shows only its positions on the explorer's neck, still named as the
-    chord and without the scale behind it, and strums it lowest string first. Choosing it
-    again, or **Show all positions**, shows the chord across the neck again. The choice is not
-    saved, and it is dropped when the chord, the instrument (tuning, fret count, capo) or a
-    constraint changes.
+    chord and without the scale behind it, and strums it lowest string first; while it is
+    chosen, the panel's **Strum** plays it too. Choosing it again, or **Show all positions**,
+    shows the chord across the neck again. The choice is not saved, and it is dropped when the
+    chord, the instrument (tuning, fret count, capo) or a constraint changes.
 
 ### 5.7 Mood/category tags (Q6, Q14, Q31)
 

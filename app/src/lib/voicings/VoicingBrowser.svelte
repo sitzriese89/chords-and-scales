@@ -6,17 +6,21 @@
   as a chord diagram. Choosing a shape shows only its positions on the explorer's neck and
   strums it; choosing it again shows every position of the chord again. Nothing is shown while
   no chord is chosen.
+
+  The shapes are the chord's own: a slash chord's bass (`Am7/G`) is not voiced, so the list is
+  headed by the chord without it and says so.
 -->
 <script lang="ts">
   import { getAudio } from '../audio';
   import { chordSymbol } from '../chords/display';
   import { getChordState } from '../chords/state.svelte';
+  import { shapePitches } from '../chords/strum';
   import { getSettings, MAX_VOICING_SPAN, type Settings } from '../settings';
   import type { ChordVoicing } from '../theory';
   import { getUserCatalogs } from '../user-catalogs.svelte';
   import ChordDiagram from './ChordDiagram.svelte';
   import { shapeText } from './diagram';
-  import { dotLabeller, shapeKey, shapePitches, voicingList } from './list';
+  import { dotLabeller, shapeKey, voicingList } from './list';
 
   const settings = getSettings();
   const catalogs = getUserCatalogs();
@@ -32,10 +36,9 @@
     void catalogs.revision;
     return chord ? voicingList(settings.current, chord) : [];
   });
+  /** The chord the shapes are of: without a slash chord's bass, which they don't voice. */
   const symbol = $derived(
-    active
-      ? chordSymbol(active.root, active.chord, settings.current.chordSymbols, active.bass)
-      : '',
+    active ? chordSymbol(active.root, active.chord, settings.current.chordSymbols) : '',
   );
   const label = $derived(
     chord ? dotLabeller(settings.current.labels, chord, settings.current.accidentals) : () => '',
@@ -87,6 +90,9 @@
         </button>
       {/if}
     </div>
+    {#if active.bass}
+      <p class="muted">Shapes of {symbol}; the {active.bass} bass isn't voiced.</p>
+    {/if}
 
     <fieldset class="constraints">
       <legend>Constraints</legend>

@@ -7,7 +7,7 @@ export {
   type DegreeChordRequest,
   type Harmonizer,
 } from './harmonize';
-export { chordOverlay, type ChordOnNeck } from './overlay';
+export { chordOverlay, shapePositions, type ChordOnNeck } from './overlay';
 export {
   ChordState,
   getChordState,
@@ -17,5 +17,5 @@ export {
   type ChordMode,
   type SymbolProblem,
 } from './state.svelte';
-export { strumPitches } from './strum';
+export { shapePitches, strumPitches } from './strum';
 export { chordPanelView, type ChordPanelView } from './view';

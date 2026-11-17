@@ -1289,3 +1289,15 @@ a chosen shape reaches the neck and when it goes away.
   take a bass note.
 - The ranking (ADR-35) is now visible to players; reordering is a change to the core's
   weights, not to the browser.
+
+**Amended (after the M2 review).**
+- **Strum plays the chosen shape.** With a shape chosen, the panel's **Strum** plays its notes
+  (its MIDI pitches, lowest string first), as choosing it does; with none, it stays ADR-32's
+  stacked chord. The disagreement noted above is gone.
+- **A slash chord is headed without its bass.** The shapes are the chord's own, so the list is
+  headed "Voicings of Am7" for `Am7/G`, with a note that the G bass isn't voiced, instead of
+  naming a bass none of the shapes has. Voicing the typed bass still needs the core to take one.
+- **The app places the browser in the panel.** `ChordPanel` renders what it is given at the
+  end of its body and `App` gives it `VoicingBrowser`, and a shape's neck positions and pitches
+  live in `chords/` (`shapePositions`, `shapePitches`), so `chords/` imports nothing from
+  `voicings/`; the browser still reads `ChordState` itself.

@@ -15,13 +15,12 @@ import {
   parseChordSymbol,
   scaleNotes,
   type ChordInfo,
+  type ChordVoicing,
   type ScaleInfo,
   type ScaleNote,
 } from '../theory';
 import type { UserCatalogs } from '../user-catalogs.svelte';
-import { shapePositions } from '../voicings/list';
-import type { ChordVoicing } from '../theory';
-import type { ChordOnNeck } from './overlay';
+import { shapePositions, type ChordOnNeck } from './overlay';
 import type { ChordSize, Harmonizer } from './harmonize';
 
 /** Where the chord comes from (SPEC §5.3 input modes 1, 2 and 4). */
@@ -140,8 +139,11 @@ export class ChordState {
     return `No ${this.size === 'sevenths' ? '7th ' : ''}chord forms on degree ${this.degree + 1} of ${this.scale.root} ${this.scale.info.name}.`;
   });
 
-  /** What a chosen voicing belongs to: the chord, the neck and the constraints (ADR-37). */
-  private readonly voicingFor = $derived.by((): string => {
+  /**
+   * The reset key of the chosen voicing (ADR-37): what it belongs to, the chord, the neck and
+   * the constraints. `voicing` goes back to `null` whenever this changes.
+   */
+  private readonly voicingResetKey = $derived.by((): string => {
     const active = this.active;
     if (!active) return '';
     const { instrument, voicings } = this.settings.current;
@@ -161,11 +163,12 @@ export class ChordState {
 
   /**
    * The voicing chosen in the voicing browser (SPEC §5.6, ADR-37): the neck shows only its
-   * positions. Assign it to choose one; it goes back to `null` whenever the chord, the
-   * instrument, its tuning or the voicing constraints change.
+   * positions and the panel's Strum plays it. Assign it to choose one; it goes back to `null`
+   * whenever `voicingResetKey` changes: the chord, the instrument, its tuning or the voicing
+   * constraints.
    */
   voicing = $derived.by((): ChordVoicing | null => {
-    void this.voicingFor;
+    void this.voicingResetKey;
     return null;
   });
 

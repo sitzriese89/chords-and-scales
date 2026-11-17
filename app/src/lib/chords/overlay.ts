@@ -8,10 +8,15 @@ import type { LabelMode } from '../settings';
 import {
   fretboardPositions,
   type ChordNote,
+  type ChordVoicing,
   type NotePosition,
   type ScaleNote,
   type Tuning,
 } from '../theory';
+
+/** The positions a voicing (ADR-35) plays on the neck: `ChordOnNeck.shape` for it. */
+export const shapePositions = (voicing: ChordVoicing): FretPosition[] =>
+  voicing.strings.flatMap((s) => (s === null ? [] : [{ string: s.string, fret: s.fret }]));
 
 /** A chord to show on the neck: what `explorerView` needs to draw it. */
 export interface ChordOnNeck {
