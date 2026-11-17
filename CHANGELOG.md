@@ -27,9 +27,10 @@ and hear them. Make your own chords like your own scales.
 - **Harmonize.** The chord on every degree of the current scale, as triads or 7th chords, with
   Roman numerals (D Dorian: i7 ii7 IIImaj7 IV7 v7 viø7 VIImaj7). Degrees where no chord forms,
   as on most degrees of a pentatonic scale, say so. Click a chord to show it over the scale.
-- **Find chords and scales on the neck.** Select notes on the fretboard to list the chords
-  they make (slash chords and chords with the 5th left out included) and the scales that
-  contain them; click a result to show it, or save the notes as your own scale or chord.
+- **Find chords and scales on the neck.** Turn on **Select notes** and click positions on the
+  fretboard; the lowest is the bass. The app lists the chords they make (slash chords and
+  chords with the 5th left out included) and the scales that contain them, best first. Click a
+  result to show it, or save the notes as your own scale or chord.
 - **Voicings.** Playable shapes of the chosen chord for your tuning, 4–9 strings and capo
   included, best first, as chord diagrams. Set the widest stretch and whether open strings,
   muted strings and inversions are allowed; the settings are saved. Choose a shape to see it
