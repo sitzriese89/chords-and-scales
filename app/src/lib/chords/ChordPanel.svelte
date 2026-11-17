@@ -6,7 +6,8 @@
   marked. Chord names follow the Standard/Jazz style setting, chosen here. The chosen chord is
   drawn on the explorer's neck: alone for root and quality or a symbol, over the dimmed scale
   for a degree. The panel lists the chord's notes and strums it (lowest
-  string first, ADR-28).
+  string first, ADR-28). The user's own chords are made, edited and deleted in the root and
+  quality picker (ADR-36).
 
   The panel can be collapsed to its title bar and resized by its top edge (drag, or the arrow
   keys when the edge has focus); both are saved in the settings.
@@ -23,9 +24,11 @@
   import { listChords } from '../theory';
   import { getUserCatalogs } from '../user-catalogs.svelte';
   import VoicingBrowser from '../voicings/VoicingBrowser.svelte';
+  import ChordEditorDialog from './ChordEditorDialog.svelte';
   import { chordSymbol } from './display';
   import type { ChordSize } from './harmonize';
   import { getChordState } from './state.svelte';
+  import UserChordButtons from './UserChordButtons.svelte';
   import { chordPanelView } from './view';
 
   const settings = getSettings();
@@ -241,6 +244,7 @@
             {/each}
           </select>
         </div>
+        <UserChordButtons />
       {:else if chordState.mode === 'symbol'}
         <div class="field">
           <label for="chord-symbol">Chord symbol</label>
@@ -369,6 +373,8 @@
 
     <VoicingBrowser />
   </div>
+
+  <ChordEditorDialog />
 </div>
 
 <style>

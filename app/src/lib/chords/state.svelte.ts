@@ -47,7 +47,16 @@ export interface ActiveChord {
   bass?: string;
 }
 
+/**
+ * What the chord editor is open for (ADR-36): a new chord, starting from `intervals` (labels
+ * from the root, `1` first) on `root` if given, or one of the user's chords.
+ */
+export type ChordEditing =
+  { mode: 'new'; intervals: string[]; root?: string } | { mode: 'edit'; chord: ChordInfo };
+
 export class ChordState {
+  /** The open chord editor, `null` while it is closed. */
+  editing = $state<ChordEditing | null>(null);
   mode = $state<ChordMode>('root');
   /** Root and quality input: the root as picked. */
   root = $state('C');
@@ -184,6 +193,24 @@ export class ChordState {
   chooseDegree(degree: number): void {
     this.mode = 'degree';
     this.degree = degree;
+  }
+
+  /**
+   * Opens the chord editor for a new chord. `intervals` (labels from the root, `1` first, e.g.
+   * notes picked on the neck) preset its notes and `root` the root its neck is shown on; by
+   * default only the root, on the panel's root. Saving it chooses it as root and quality.
+   */
+  newChord(intervals: readonly string[] = ['1'], root?: string): void {
+    this.editing = { mode: 'new', intervals: [...intervals], root };
+  }
+
+  /** Opens the chord editor on one of the user's chords. */
+  editChord(chord: ChordInfo): void {
+    if (!chord.builtIn) this.editing = { mode: 'edit', chord };
+  }
+
+  closeEditor(): void {
+    this.editing = null;
   }
 
   /** Back to no chord: the neck shows the scale alone. */

@@ -1,27 +1,33 @@
 <!--
   @component
-  The form for a user item made of intervals above a root: a custom scale now, a custom chord
-  later (M2.9). The intervals are picked on a 12-semitone picker or by clicking notes on its own
-  neck (the current instrument, on the current root); a click toggles the note's interval, as
-  the core reports it. The root is always in. Plus a name and a family.
+  The form for a user item made of intervals above a root: a custom scale (ADR-26) or a custom
+  chord (ADR-36). The intervals are picked on a picker of one or two octaves (`labels`) or by
+  clicking notes on its own neck (the current instrument, on the current root); a click
+  toggles the note's interval, as the core reports it. The root is always in, and each note is
+  in at most once (`2` or `9`). Plus a name, a family and whatever the item needs besides
+  (`extra`, e.g. a chord's symbols).
 
   The form checks nothing itself: `onsave` gets what was entered, and a rejection's message
-  (the core's: no notes, a duplicate name, …) is shown in the form (ADR-26).
+  (the core's: no notes, a duplicate name, …) is shown in the form.
 -->
 <script lang="ts">
+  import type { Snippet } from 'svelte';
   import { Fretboard, type FretPosition } from '../fretboard';
   import { pitchClassOf } from '../theory';
   import {
-    SEMITONES,
     chosenDots,
     chosenFrom,
+    columnOf,
     defaultLabels,
     degreeAt,
     intervalsOf,
     neckNotes,
+    rowsOf,
     toggle,
+    toggleColumn,
     type IntervalSetDraft,
     type Neck,
+    type Offered,
   } from './intervals';
 
   interface Props {
@@ -39,13 +45,32 @@
     root: string;
     /** The neck to click notes on. */
     neck: Neck;
+    /**
+     * The picker's cells: per semitone from the root, the label a chosen cell gets, `null` for
+     * no cell. One octave by the core's default labels unless given; a chord passes two
+     * (`chordIntervalLabels`).
+     */
+    labels?: Offered;
+    /** More fields after the family, for what the item needs besides (a chord's symbols). */
+    extra?: Snippet;
     /** Saves the item; a rejection's message is shown in the form. */
     onsave: (draft: IntervalSetDraft) => Promise<void>;
     oncancel: () => void;
   }
 
-  const { title, noun, initial, families, defaultFamily, root, neck, onsave, oncancel }: Props =
-    $props();
+  const {
+    title,
+    noun,
+    initial,
+    families,
+    defaultFamily,
+    root,
+    neck,
+    labels = defaultLabels(),
+    extra,
+    onsave,
+    oncancel,
+  }: Props = $props();
 
   // The form edits its own copy; `initial` only seeds it.
   // svelte-ignore state_referenced_locally
@@ -53,15 +78,21 @@
   // svelte-ignore state_referenced_locally
   let family = $state(initial.family);
   // svelte-ignore state_referenced_locally
-  let chosen = $state(chosenFrom(initial.intervals));
+  let chosen = $state(chosenFrom(initial.intervals, labels.length));
   let error = $state<string | null>(null);
   let saving = $state(false);
 
   const id = $props.id();
-  const labels = defaultLabels();
+  const rows = $derived(rowsOf(labels.length));
   const notes = $derived(neckNotes(neck, pitchClassOf(root)));
   const dots = $derived(chosenDots(notes, chosen));
   const count = $derived(intervalsOf(chosen).length);
+
+  /** What a picker row is called: the only one is "Intervals". */
+  function rowName(row: number): string {
+    if (rows.length === 1) return 'Intervals';
+    return row === 0 ? 'Intervals up to the octave' : 'Intervals above the octave';
+  }
 
   function pick(semitones: number) {
     chosen = toggle(chosen, semitones, labels);
@@ -69,7 +100,7 @@
 
   function activate(position: FretPosition) {
     const degree = degreeAt(notes, position);
-    if (degree !== undefined) pick(degree);
+    if (degree !== undefined) chosen = toggleColumn(chosen, columnOf(degree), labels);
   }
 
   let nameInput: HTMLInputElement | undefined = $state();
@@ -121,24 +152,31 @@
         {/each}
       </datalist>
     </div>
+    {@render extra?.()}
   </div>
 
   <fieldset>
     <legend>Intervals from the root ({count} {count === 1 ? 'note' : 'notes'})</legend>
-    <div class="semitones" role="group" aria-label="Intervals">
-      {#each SEMITONES as n (n)}
-        <button
-          type="button"
-          class="semitone"
-          aria-pressed={chosen[n] !== null}
-          disabled={n === 0}
-          title={n === 0 ? 'The root is always in' : undefined}
-          onclick={() => pick(n)}
-        >
-          {chosen[n] ?? labels[n]}
-        </button>
-      {/each}
-    </div>
+    {#each rows as row, index (index)}
+      <div class="semitones" role="group" aria-label={rowName(index)}>
+        {#each row as n (n)}
+          {#if chosen[n] !== null || labels[n] !== null}
+            <button
+              type="button"
+              class="semitone"
+              aria-pressed={chosen[n] !== null}
+              disabled={n === 0}
+              title={n === 0 ? 'The root is always in' : undefined}
+              onclick={() => pick(n)}
+            >
+              {chosen[n] ?? labels[n]}
+            </button>
+          {:else}
+            <span class="gap" aria-hidden="true"></span>
+          {/if}
+        {/each}
+      </div>
+    {/each}
   </fieldset>
 
   <div class="neck">
@@ -224,6 +262,10 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(2.75rem, 1fr));
     gap: 0.375rem;
+  }
+
+  .semitones + .semitones {
+    margin-top: 0.375rem;
   }
 
   button {

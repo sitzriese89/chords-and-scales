@@ -90,12 +90,13 @@ Files are hand-editable and shareable; the UI offers import/export of them.
   direction, highlight; ADR-25), the sound (volume 0–100, mute; ADR-28) and the voicing
   browser's constraints (`[voicings]`; ADR-37). It is created with
   the defaults on first start, read once at start and saved on every change.
-- The user's own scales and tunings are `scales.toml` and `tunings.toml`, in the format of the
-  built-in catalogs (§4.2, §5.1). They are read at start; a broken item is skipped and listed
-  in a collapsed note in the window, and the rest load (ADR-23). The tuning and scale editors
-  rewrite `tunings.toml` and `scales.toml` when they save (comments are not kept); if the file
-  had items that didn't load, the old file is first kept as `tunings-backup.toml` or
-  `scales-backup.toml` (ADR-24, ADR-26).
+- The user's own scales, chords and tunings are `scales.toml`, `chords.toml` and
+  `tunings.toml`, in the format of the built-in catalogs (§4.2, §4.3, §5.1). They are read at
+  start; a broken item is skipped and listed in a collapsed note in the window, and the rest
+  load (ADR-23). The tuning, scale and chord editors rewrite `tunings.toml`, `scales.toml` and
+  `chords.toml` when they save (comments are not kept); if the file had items that didn't
+  load, the old file is first kept as `tunings-backup.toml`, `scales-backup.toml` or
+  `chords-backup.toml` (ADR-24, ADR-26, ADR-36).
 - A value the app doesn't understand falls back to its default and the app shows a warning
   naming it. A file that can't be used at all (not TOML, missing or unsupported version) is
   kept as `settings-backup.toml`, the defaults are used, and the app says so. It never
@@ -121,6 +122,23 @@ Files are hand-editable and shareable; the UI offers import/export of them.
   and extra spaces ignored. A new scale's id is made from its name (`my-scale`, then
   `my-scale-2`, …) and kept when it is renamed; deleting the selected scale shows the
   built-in it replaced, or the default scale.
+- Chords (ADR-36): **New chord** under the chord quality in the chord panel (§5.3) opens the
+  same editor; a user chord that is chosen there can be edited or deleted. The picker has two
+  rows of one octave each, labelled as the built-in chords write them: `1 ♭2 2 ♭3 3 4 ♭5 5 ♯5
+  6 ♭7 7`, then `♭9 9 ♯9 11 ♯11 ♭13 13` above the octave (a chord tone an octave up, such as
+  `10`, is written within the octave). Each note is in once: choosing `9` takes out `2`, and
+  a click on the neck adds the note's lower interval or takes the note out. Besides name and
+  family (blank = *Custom*), a chord has its **symbol**, the suffix after the root
+  (`m7b5`, ASCII `b` and `#`), and an optional **Jazz symbol** (`ø`; blank = the symbol). The
+  core checks the chord when it is saved and the message is shown in the editor: a note
+  besides the root, no two notes on one pitch class, no two chords (built-in or the user's)
+  with the same name (case and extra spaces ignored), no suffix that another chord already
+  has (only the major triad has an empty one), and every suffix must read back as the chord
+  after a root (so it can't start with `#` or `b`, and is written `b5`, not `♭5`). A new
+  chord's id is made from its name and kept when it is renamed; saving a new chord chooses it.
+  Deleting the chosen chord shows the built-in it replaced, or no chord. User chords are
+  typeable by their suffixes (§4.4), found by reverse lookup (§5.4) and used by harmonize
+  (§5.5) like built-in ones.
 
 ---
 
@@ -364,7 +382,8 @@ How the tab is shown (`app/src/lib/tab/`, ADR-25):
   in `settings.toml` (`[chord_panel]`: `collapsed`, `height` in pixels, 96–640) and come back
   at the next start.
   - **Root and quality:** pick a root and a chord from the catalog (grouped by family). The
-    neck shows the chord's tones alone, the root as a square.
+    neck shows the chord's tones alone, the root as a square. **New chord**, **Edit chord**
+    and **Delete chord** there make and change the user's own chords (§3.3).
   - **Degree of the scale:** pick a degree of the scale in the explorer and triads or 7th
     chords; the chord on that degree comes from harmonize (§5.5). The neck shows the scale
     dimmed with the chord's tones emphasized (degree V of C major as 7th chords: G7 over

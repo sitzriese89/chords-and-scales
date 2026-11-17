@@ -4,6 +4,8 @@
 use std::collections::HashMap;
 use std::fmt;
 
+use crate::tuning::{cut, slug};
+
 /// Why an item of a catalog file (a scale or a chord), or the file as a whole, was not loaded.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CatalogError {
@@ -122,4 +124,36 @@ pub(crate) fn is_kebab_case(id: &str) -> bool {
                     .bytes()
                     .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit())
         })
+}
+
+/// The longest id [`new_id`] makes.
+const MAX_NEW_ID: usize = 64;
+
+/// The id for a new user item called `name` (ADR-26): the kebab-case slug of the name
+/// (`"My Dorian ♭2"` → `my-dorian-2`), with `-2`, `-3`, … appended while `taken` says the id
+/// is in use. A name without ASCII letters or digits gives `custom`. At most 64 characters.
+pub(crate) fn new_id(name: &str, taken: impl Fn(&str) -> bool) -> String {
+    let mut base = slug(name);
+    if base.is_empty() {
+        base.push_str("custom");
+    }
+    let first = cut(&base, MAX_NEW_ID);
+    if !taken(first) {
+        return first.to_owned();
+    }
+    (2..)
+        .map(|n| {
+            let suffix = format!("-{n}");
+            format!("{}{suffix}", cut(&base, MAX_NEW_ID - suffix.len()))
+        })
+        .find(|id| !taken(id))
+        .expect("one of infinitely many suffixes is free")
+}
+
+/// A name as compared for duplicates: case and runs of white space don't count (ADR-26).
+pub(crate) fn name_key(name: &str) -> String {
+    name.split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
+        .to_lowercase()
 }

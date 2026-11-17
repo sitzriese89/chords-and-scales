@@ -6,11 +6,16 @@
 //! unknown id throws a JS `Error`. User files load with the same report as scales and tunings
 //! (`user_files`, ADR-23). Chord suffixes (`symbol`, `aliases`, `jazzSymbol`) are ASCII as
 //! stored; the symbol parser and formatter (`symbols.rs`) turn them into what is shown.
+//! `writeChords`, `newChordId` and `chordIntervalLabels` are for the chord editor, which saves
+//! the user's file (ADR-36).
 
 use std::cell::RefCell;
 
-use serde::Serialize;
-use theory::{Chord, ChordCatalog, Glyphs, NoteName, Source, parse_user_chords};
+use serde::{Deserialize, Serialize};
+use theory::{
+    Chord, ChordCatalog, ChordSpec, Glyphs, NoteName, Source, chord_interval_labels,
+    parse_user_chords, write_chords,
+};
 use wasm_bindgen::prelude::*;
 
 use crate::notes::Accidentals;
@@ -55,7 +60,45 @@ export interface ChordNote {
   /** Spelled name, Unicode: `E♭`. */
   name: string;
 }
+
+/**
+ * A user chord to write with `writeChords`. A `ChordInfo` is one too (its other fields are
+ * ignored; a `jazzSymbol` equal to `symbol` means none). Suffixes are stored as given, so
+ * write `b5` and `#9`, not `♭5` and `♯9`; interval labels may be ASCII or Unicode. A missing
+ * `family` lists the chord under "Custom".
+ */
+export interface ChordInput {
+  id: string;
+  name: string;
+  symbol: string;
+  aliases?: string[];
+  jazzSymbol?: string;
+  family?: string;
+  intervals: string[];
+}
 "#;
+
+#[wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen(typescript_type = "readonly ChordInput[]")]
+    pub type ChordInputList;
+}
+
+/// A `ChordInput` object.
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ChordRecord {
+    id: String,
+    name: String,
+    symbol: String,
+    #[serde(default)]
+    aliases: Vec<String>,
+    #[serde(default)]
+    jazz_symbol: Option<String>,
+    #[serde(default)]
+    family: Option<String>,
+    intervals: Vec<String>,
+}
 
 thread_local! {
     pub(crate) static CATALOG: RefCell<ChordCatalog> = RefCell::new(ChordCatalog::builtin().clone());
@@ -194,9 +237,105 @@ fn load_user_chords(toml: &str) -> (ChordCatalog, UserFileReport) {
     )
 }
 
+/// The text of a user chord file holding `chords`, in order, which `setUserChords` reads back
+/// unchanged. Each chord is checked as one from a file is; the first invalid one throws with
+/// its name and the reason (`“Mine”: a chord needs at least one note besides the root`). Two
+/// chords with one id or one name, a suffix another chord has, or a suffix that the symbol
+/// parser wouldn't read back as the chord, among the built-ins and these, throw too. Doesn't
+/// change the catalog: save the text, then pass it to `setUserChords`.
+#[wasm_bindgen(js_name = writeChords)]
+pub fn write_chords_toml(chords: ChordInputList) -> Result<String, JsError> {
+    let records: Vec<ChordRecord> = serde_wasm_bindgen::from_value(chords.into())
+        .map_err(|err| JsError::new(&format!("not a list of chords: {err}")))?;
+    write_chords_text(records).map_err(|err| JsError::new(&err))
+}
+
+/// `writeChords` without the JS conversion.
+fn write_chords_text(records: Vec<ChordRecord>) -> Result<String, String> {
+    let chords = records
+        .into_iter()
+        .map(|record| {
+            let name = record.name.trim().to_owned();
+            Chord::new(ChordSpec {
+                id: record.id,
+                name: record.name,
+                symbol: record.symbol,
+                aliases: record.aliases,
+                jazz_symbol: record.jazz_symbol,
+                family: record.family,
+                intervals: record.intervals,
+            })
+            .map_err(|err| match name.as_str() {
+                "" => err.to_string(),
+                name => format!("“{name}”: {err}"),
+            })
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    write_chords(&chords).map_err(|err| err.to_string())
+}
+
+/// The id for a new user chord called `name`: the kebab-case slug of the name (`my-7-9`), with
+/// `-2`, `-3`, … if the current catalog or the built-ins already have it. A new chord saved
+/// under it never replaces another.
+#[wasm_bindgen(js_name = newChordId)]
+pub fn new_chord_id(name: &str) -> String {
+    CATALOG.with_borrow(|catalog| catalog.new_id(name))
+}
+
+/// The label the chord editor offers for each width from 0 to 23 semitones (index =
+/// semitones), Unicode: the one the built-in chords use (`♯5`, `♭9`, `♯11`, `13`), the default
+/// label within the octave where no chord uses one, and `null` above the octave where none
+/// does (`8`, `10`, `12`, …).
+#[wasm_bindgen(js_name = chordIntervalLabels, unchecked_return_type = "(string | null)[]")]
+pub fn chord_interval_labels_js() -> Result<JsValue, JsError> {
+    let labels: Vec<Option<String>> = chord_interval_labels()
+        .iter()
+        .map(|label| label.map(|label| label.format(Glyphs::Unicode)))
+        .collect();
+    to_js(&labels)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn record(id: &str, name: &str, symbol: &str, intervals: &[&str]) -> ChordRecord {
+        ChordRecord {
+            id: id.to_owned(),
+            name: name.to_owned(),
+            symbol: symbol.to_owned(),
+            aliases: Vec::new(),
+            jazz_symbol: None,
+            family: None,
+            intervals: intervals.iter().map(|&s| s.to_owned()).collect(),
+        }
+    }
+
+    #[test]
+    fn written_chords_load_and_errors_name_the_chord() {
+        let text =
+            write_chords_text(vec![record("mine", "Mine", "q7", &["1", "3", "♭7", "♯9"])]).unwrap();
+        let (catalog, report) = load_user_chords(&text);
+        assert_eq!(report.loaded, ["mine"]);
+        assert_eq!(report.errors, []);
+        assert_eq!(
+            catalog.get("mine").unwrap().formula().to_string(),
+            "1 3 b7 #9"
+        );
+
+        assert_eq!(
+            write_chords_text(vec![record("mine", " Mine ", "q", &["1"])]),
+            Err("“Mine”: a chord needs at least one note besides the root".to_owned())
+        );
+        assert_eq!(
+            write_chords_text(vec![record("mine", "", "q", &["1", "3"])]),
+            Err("name must not be empty".to_owned())
+        );
+        assert_eq!(
+            write_chords_text(vec![record("mine", "Mine", "m7", &["1", "3"])]),
+            Err("the symbol \"m7\" already means the chord \"Minor seventh\"".to_owned())
+        );
+    }
 
     #[test]
     fn user_chord_errors_use_the_shared_shape_with_items_from_zero() {

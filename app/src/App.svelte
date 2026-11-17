@@ -30,7 +30,8 @@
   // svelte-ignore state_referenced_locally
   const settings = new SettingsStore(storage);
   setSettings(settings);
-  // The user's scales and tunings; editors save through it and it tells the views (ADR-24).
+  // The user's scales, chords and tunings; editors save through it and it tells the views
+  // (ADR-24).
   // svelte-ignore state_referenced_locally
   const catalogs = new UserCatalogs(storage);
   setUserCatalogs(catalogs);

@@ -1,7 +1,11 @@
+use std::collections::{HashMap, HashSet};
 use std::sync::OnceLock;
 
-use super::{Chord, ChordSpec};
-use crate::catalog_file::{CatalogError, parse_items};
+use serde::Serialize;
+
+use super::{Chord, ChordError, ChordSpec, SymbolStyle, format_symbol};
+use crate::catalog_file::{CatalogError, name_key, new_id, parse_items};
+use crate::notes::{Interval, NoteName};
 use crate::scales::Source;
 
 /// The built-in catalog, embedded at build time.
@@ -116,6 +120,198 @@ fn parse(toml: &str, source: Source) -> ParsedChords {
         Chord::id,
     );
     ParsedChords { chords, errors }
+}
+
+impl ChordCatalog {
+    /// The id for a new user chord called `name`, made as for scales
+    /// ([`crate::ScaleCatalog::new_id`]): the kebab-case slug of the name (`"My 7♯9"` →
+    /// `my-7-9`), with `-2`, `-3`, … if a chord in this catalog or a built-in one has it, so a
+    /// new chord never replaces another. `custom` for a name without ASCII letters or digits;
+    /// at most 64 characters.
+    pub fn new_id(&self, name: &str) -> String {
+        new_id(name, |id| {
+            self.get(id).is_some() || ChordCatalog::builtin().get(id).is_some()
+        })
+    }
+}
+
+/// The label the chord editor offers for each width from 0 to 23 semitones (index =
+/// semitones): the label the built-in chords use most for that width (`#5`, `#9`, `#11`, `b13`;
+/// the first one in catalog order on a tie), the default label ([`Interval::from_semitones`])
+/// for a width within the octave that no built-in chord uses (`b2`), and `None` for a width
+/// above the octave that none uses (`8`, `10`, `12`, `b14`, `14`): those are chord tones an
+/// octave up, which a chord writes within the octave.
+pub fn chord_interval_labels() -> &'static [Option<Interval>] {
+    static LABELS: OnceLock<Vec<Option<Interval>>> = OnceLock::new();
+    LABELS.get_or_init(|| {
+        let mut used: Vec<Vec<(Interval, usize)>> = vec![Vec::new(); MAX_CHORD_SEMITONES.into()];
+        for chord in ChordCatalog::builtin().chords() {
+            for &interval in chord.formula().intervals() {
+                let counts = &mut used[usize::from(interval.semitones())];
+                match counts.iter_mut().find(|(label, _)| *label == interval) {
+                    Some((_, count)) => *count += 1,
+                    None => counts.push((interval, 1)),
+                }
+            }
+        }
+        (0..MAX_CHORD_SEMITONES)
+            .map(|semitones| {
+                let counts = &used[usize::from(semitones)];
+                // `max_by_key` would keep the last of equals; the first one wins here.
+                let most =
+                    counts
+                        .iter()
+                        .fold(None::<&(Interval, usize)>, |best, entry| match best {
+                            Some(best) if best.1 >= entry.1 => Some(best),
+                            _ => Some(entry),
+                        });
+                most.map(|&(label, _)| label).or_else(|| {
+                    (semitones < 12)
+                        .then(|| Interval::from_semitones(semitones))
+                        .flatten()
+                })
+            })
+            .collect()
+    })
+}
+
+/// The header of a chord file written by [`write_chords`].
+const WRITTEN_HEADER: &str = "\
+# Your chords, written by Chords & Scales in the format of the built-in chords.
+# You can edit this file while the app is closed; the app doesn't keep comments when it saves.
+";
+
+/// One `[[chord]]` table as [`write_chords`] writes it.
+#[derive(Serialize)]
+struct WrittenChord<'a> {
+    id: &'a str,
+    name: &'a str,
+    symbol: &'a str,
+    #[serde(skip_serializing_if = "<[String]>::is_empty")]
+    aliases: &'a [String],
+    #[serde(skip_serializing_if = "Option::is_none")]
+    jazz_symbol: Option<&'a str>,
+    family: &'a str,
+    intervals: Vec<String>,
+}
+
+#[derive(Serialize)]
+struct WrittenFile<'a> {
+    chord: Vec<WrittenChord<'a>>,
+}
+
+/// Writes `chords` as a user chord file that [`parse_user_chords`] reads back unchanged and in
+/// order (intervals as ASCII labels, kept as they are: `#11` stays `#11`; `aliases` and
+/// `jazz_symbol` only when there are some).
+///
+/// Refuses what reading the file back would not keep, or what would make chords ambiguous, in
+/// the catalog the file gives (the built-ins merged with these chords; a user chord that
+/// replaces a built-in by id may keep its name and suffixes):
+/// - two chords with one id ([`ChordError::DuplicateId`]);
+/// - two chords with one name, case and extra spaces ignored ([`ChordError::DuplicateName`]);
+/// - a suffix (symbol, alias or Jazz symbol) of a chord of `chords` that another chord has
+///   ([`ChordError::SymbolTaken`], or [`ChordError::NoSymbol`] for an empty symbol): the parser
+///   would read it as only one of them;
+/// - a suffix of a chord of `chords` that the symbol parser doesn't read back as that chord
+///   after the root `C`, as typed and as the formatter shows it
+///   ([`ChordError::UnreadableSymbol`]).
+pub fn write_chords(chords: &[Chord]) -> Result<String, ChordError> {
+    let mut ids = HashSet::new();
+    if let Some(chord) = chords.iter().find(|chord| !ids.insert(chord.id())) {
+        return Err(ChordError::DuplicateId(chord.id().to_owned()));
+    }
+    let merged = ChordCatalog::builtin().with_user_chords(chords.iter().cloned());
+    let mut names = HashSet::new();
+    if let Some(chord) = merged
+        .chords()
+        .iter()
+        .find(|chord| !names.insert(name_key(chord.name())))
+    {
+        return Err(ChordError::DuplicateName(chord.name().to_owned()));
+    }
+    check_suffixes(&merged)?;
+    if chords.is_empty() {
+        return Ok(WRITTEN_HEADER.to_owned());
+    }
+    let file = WrittenFile {
+        chord: chords
+            .iter()
+            .map(|chord| WrittenChord {
+                id: chord.id(),
+                name: chord.name(),
+                symbol: chord.symbol(),
+                aliases: chord.aliases(),
+                jazz_symbol: chord.jazz_symbol.as_deref(),
+                family: chord.family(),
+                intervals: chord
+                    .formula()
+                    .intervals()
+                    .iter()
+                    .map(ToString::to_string)
+                    .collect(),
+            })
+            .collect(),
+    };
+    let body = toml::to_string(&file).expect("a list of chords is valid TOML");
+    Ok(format!("{WRITTEN_HEADER}\n{body}"))
+}
+
+/// The suffix rules of [`write_chords`], for the user chords of `merged`.
+fn check_suffixes(merged: &ChordCatalog) -> Result<(), ChordError> {
+    let mut owners: HashMap<&str, &Chord> = HashMap::new();
+    for chord in merged.chords() {
+        for suffix in chord.suffixes() {
+            let Some(&owner) = owners.get(suffix) else {
+                owners.insert(suffix, chord);
+                continue;
+            };
+            if owner.id() == chord.id()
+                || (owner.source() == Source::BuiltIn && chord.source() == Source::BuiltIn)
+            {
+                continue;
+            }
+            // Report it for the user's chord, naming the other one.
+            let (mine, other) = if chord.source() == Source::User {
+                (chord, owner)
+            } else {
+                (owner, chord)
+            };
+            if suffix.is_empty() && mine.symbol().is_empty() {
+                return Err(ChordError::NoSymbol);
+            }
+            return Err(ChordError::SymbolTaken {
+                symbol: suffix.to_owned(),
+                chord: other.name().to_owned(),
+            });
+        }
+    }
+
+    let root: NoteName = "C".parse().expect("C is a note");
+    for chord in merged
+        .chords()
+        .iter()
+        .filter(|chord| chord.source() == Source::User)
+    {
+        let reads_back = |text: &str| {
+            merged.parse_symbol(text).is_ok_and(|found| {
+                found.root == root && found.chord_id == chord.id() && found.bass.is_none()
+            })
+        };
+        for suffix in chord.suffixes() {
+            if !reads_back(&format!("C{suffix}")) {
+                return Err(ChordError::UnreadableSymbol(suffix.to_owned()));
+            }
+        }
+        for (style, suffix) in [
+            (SymbolStyle::Standard, chord.symbol()),
+            (SymbolStyle::Jazz, chord.jazz_symbol()),
+        ] {
+            if !reads_back(&format_symbol(root, chord, None, style)) {
+                return Err(ChordError::UnreadableSymbol(suffix.to_owned()));
+            }
+        }
+    }
+    Ok(())
 }
 
 #[cfg(test)]
@@ -632,5 +828,257 @@ mod tests {
         let chord = Chord::new(spec("mine")).unwrap();
         assert_eq!(chord.source(), Source::User);
         assert_eq!(chord.family(), CUSTOM);
+    }
+
+    fn user(id: &str, name: &str, symbol: &str, intervals: &[&str]) -> Chord {
+        user_with(id, name, symbol, None, intervals)
+    }
+
+    fn user_with(
+        id: &str,
+        name: &str,
+        symbol: &str,
+        jazz_symbol: Option<&str>,
+        intervals: &[&str],
+    ) -> Chord {
+        Chord::new(ChordSpec {
+            id: id.to_owned(),
+            name: name.to_owned(),
+            symbol: symbol.to_owned(),
+            aliases: Vec::new(),
+            jazz_symbol: jazz_symbol.map(str::to_owned),
+            family: None,
+            intervals: intervals.iter().map(|&s| s.to_owned()).collect(),
+        })
+        .unwrap()
+    }
+
+    #[test]
+    fn a_jazz_symbol_equal_to_the_symbol_is_none() {
+        let chord = user_with("x", "X", "x", Some("x"), &["1", "3"]);
+        assert_eq!(chord, user("x", "X", "x", &["1", "3"]));
+        assert_eq!(chord.jazz_symbol(), "x");
+    }
+
+    #[test]
+    fn written_chords_read_back_unchanged() {
+        let chords = vec![
+            Chord::new(ChordSpec {
+                id: "my-lydian".into(),
+                name: "My \"Lydian\", ♯11\\b5".into(),
+                symbol: "maj7#11no5".into(),
+                aliases: vec!["Δ#11no5".into(), "M7#11no5".into()],
+                jazz_symbol: Some("Δ7#11no5".into()),
+                family: Some("Mine".into()),
+                intervals: ["1", "3", "7", "9", "#11", "13"].map(str::to_owned).into(),
+            })
+            .unwrap(),
+            user("two-notes", "Two notes", "tt", &["1", "b5"]),
+            // A user chord that replaces a built-in keeps its name and suffixes.
+            Chord::new(ChordSpec {
+                id: "maj7".into(),
+                name: "Major seventh".into(),
+                symbol: "maj7".into(),
+                aliases: vec!["M7".into()],
+                jazz_symbol: Some("Δ7".into()),
+                family: Some("Sevenths".into()),
+                intervals: ["1", "3", "5", "7", "9"].map(str::to_owned).into(),
+            })
+            .unwrap(),
+        ];
+        let text = write_chords(&chords).unwrap();
+        assert!(text.starts_with("# Your chords"), "{text}");
+        assert!(
+            text.contains(r##"intervals = ["1", "3", "7", "9", "#11", "13"]"##),
+            "{text}"
+        );
+        assert!(text.contains("family = \"Custom\""), "{text}");
+        assert_eq!(text.matches("jazz_symbol").count(), 2, "{text}");
+        assert_eq!(text.matches("aliases").count(), 2, "{text}");
+        let parsed = parse_user_chords(&text);
+        assert_eq!(parsed.errors, []);
+        assert_eq!(parsed.chords, chords);
+        assert_eq!(write_chords(&parsed.chords).unwrap(), text);
+    }
+
+    #[test]
+    fn writing_no_chords_gives_an_empty_chord_file() {
+        let text = write_chords(&[]).unwrap();
+        assert_eq!(parse_user_chords(&text), ParsedChords::default());
+    }
+
+    #[test]
+    fn writing_two_chords_with_one_id_fails() {
+        let a = user("a", "A", "aa", &["1", "3"]);
+        let b = user("a", "B", "bb", &["1", "b3"]);
+        assert_eq!(
+            write_chords(&[a, b]),
+            Err(ChordError::DuplicateId("a".into()))
+        );
+    }
+
+    #[test]
+    fn a_duplicate_name_is_the_same_display_name() {
+        let error = write_chords(&[user("x", "  major SEVENTH ", "x", &["1", "3"])]).unwrap_err();
+        assert_eq!(error, ChordError::DuplicateName("  major SEVENTH ".into()));
+        assert_eq!(
+            error.to_string(),
+            "there is already a chord called \"  major SEVENTH \""
+        );
+        assert_eq!(
+            write_chords(&[
+                user("a", "Mine", "q1", &["1", "3"]),
+                user("b", "MINE", "q2", &["1", "b3"])
+            ]),
+            Err(ChordError::DuplicateName("MINE".into()))
+        );
+        // Replacing a built-in by id frees its name and its suffixes.
+        assert!(
+            write_chords(&[
+                user("maj7", "Not major seventh", "q1", &["1", "3"]),
+                user("mine", "Major seventh", "maj7", &["1", "3", "5", "7"]),
+            ])
+            .is_ok()
+        );
+    }
+
+    #[test]
+    fn a_suffix_may_mean_one_chord_only() {
+        // A built-in chord's symbol, alias or Jazz symbol.
+        for (symbol, owner) in [
+            ("m7", "Minor seventh"),
+            ("-7", "Minor seventh"),
+            ("ø", "Half-diminished seventh"),
+        ] {
+            let error = write_chords(&[user("x", "X", symbol, &["1", "3"])]).unwrap_err();
+            assert_eq!(
+                error,
+                ChordError::SymbolTaken {
+                    symbol: symbol.into(),
+                    chord: owner.into()
+                }
+            );
+        }
+        assert_eq!(
+            write_chords(&[user("x", "X", "m7", &["1", "3"])])
+                .unwrap_err()
+                .to_string(),
+            "the symbol \"m7\" already means the chord \"Minor seventh\""
+        );
+        // The Jazz symbol counts too, and so does another user chord.
+        assert_eq!(
+            write_chords(&[user_with("x", "X", "x", Some("°7"), &["1", "3"])]),
+            Err(ChordError::SymbolTaken {
+                symbol: "°7".into(),
+                chord: "Diminished seventh".into()
+            })
+        );
+        assert_eq!(
+            write_chords(&[
+                user("a", "A", "q", &["1", "3"]),
+                user_with("b", "B", "r", Some("q"), &["1", "b3"])
+            ]),
+            Err(ChordError::SymbolTaken {
+                symbol: "q".into(),
+                chord: "A".into()
+            })
+        );
+        // Only the major triad goes without a symbol.
+        let error = write_chords(&[user("x", "X", "", &["1", "3"])]).unwrap_err();
+        assert_eq!(error, ChordError::NoSymbol);
+        assert!(error.to_string().starts_with("a chord needs a symbol"));
+        // Case matters, as in the parser.
+        assert!(write_chords(&[user("x", "X", "M7b9", &["1", "3"])]).is_ok());
+    }
+
+    #[test]
+    fn a_suffix_must_read_back_after_a_root() {
+        for symbol in [
+            "b9", "#11", "blues", "♭9", "m7♭5x", "△9", "Ø7", "º7", "♯x", "−7x",
+        ] {
+            assert_eq!(
+                write_chords(&[user("x", "X", symbol, &["1", "3"])]),
+                Err(ChordError::UnreadableSymbol(symbol.into())),
+                "{symbol:?}"
+            );
+        }
+        assert_eq!(
+            write_chords(&[user_with("x", "X", "x", Some("b9"), &["1", "3"])]),
+            Err(ChordError::UnreadableSymbol("b9".into()))
+        );
+        let message = ChordError::UnreadableSymbol("b9".into()).to_string();
+        assert!(message.contains("\"Cb9\""), "{message}");
+        // Symbols the parser keeps as typed are fine: signs before a digit, slashes, other
+        // letters and signs, a Jazz symbol beside the symbol.
+        for symbol in [
+            "q7b9b13", "qadd2/4", "q(maj9)", "x7#11", "Δq", "ø9x", "°x", "qsus24",
+        ] {
+            assert!(
+                write_chords(&[user("x", "X", symbol, &["1", "3"])]).is_ok(),
+                "{symbol:?}"
+            );
+        }
+        assert!(write_chords(&[user_with("x", "X", "q7#9", Some("q7♯9x"), &["1", "3"])]).is_err());
+        assert!(write_chords(&[user_with("x", "X", "q7#9", Some("Q7#9"), &["1", "3"])]).is_ok());
+    }
+
+    #[test]
+    fn saved_user_chords_are_typeable_and_formatted_in_both_styles() {
+        let mine = user_with("mine", "Mine", "q7#9", Some("Q#9"), &["1", "3", "b7", "#9"]);
+        let plain = user("plain", "Plain", "qq", &["1", "4", "b7"]);
+        let text = write_chords(&[mine, plain]).unwrap();
+        let catalog = ChordCatalog::builtin().with_user_chords(parse_user_chords(&text).chords);
+        let root: NoteName = "Bb".parse().unwrap();
+        let mine = catalog.get("mine").unwrap();
+        assert_eq!(
+            format_symbol(root, mine, None, SymbolStyle::Standard),
+            "B♭q7♯9"
+        );
+        assert_eq!(format_symbol(root, mine, None, SymbolStyle::Jazz), "B♭Q♯9");
+        // Without a Jazz symbol both styles use the symbol.
+        let plain = catalog.get("plain").unwrap();
+        assert_eq!(format_symbol(root, plain, None, SymbolStyle::Jazz), "B♭qq");
+        for text in ["Bbq7#9", "B♭Q♯9", "bbq7(#9)", "Bbqq/D"] {
+            let found = catalog.parse_symbol(text).unwrap();
+            assert_eq!(found.root, root, "{text}");
+            assert!(
+                ["mine", "plain"].contains(&found.chord_id.as_str()),
+                "{text}"
+            );
+        }
+    }
+
+    #[test]
+    fn new_chord_ids_are_slugs_that_no_chord_has() {
+        let builtin = ChordCatalog::builtin();
+        assert_eq!(builtin.new_id("My 7♯9"), "my-7-9");
+        assert_eq!(builtin.new_id("♯♭"), "custom");
+        assert_eq!(builtin.new_id(&"x".repeat(100)).len(), 64);
+        // Built-in ids are never handed out, even when a user chord replaced one.
+        assert_eq!(builtin.new_id("maj7"), "maj7-2");
+        let replaced = builtin.with_user_chords([user("maj7", "Mine", "q", &["1", "3"])]);
+        assert_eq!(replaced.new_id("Maj7"), "maj7-2");
+        let catalog = builtin.with_user_chords([
+            user("mine", "Mine", "q1", &["1", "3"]),
+            user("mine-2", "Mine 2", "q2", &["1", "3"]),
+        ]);
+        assert_eq!(catalog.new_id("Mine"), "mine-3");
+    }
+
+    #[test]
+    fn the_editor_offers_the_labels_the_chords_use() {
+        let labels: Vec<String> = chord_interval_labels()
+            .iter()
+            .map(|label| label.map_or("-".to_owned(), |l| l.to_string()))
+            .collect();
+        assert_eq!(
+            labels.join(" "),
+            "1 b2 2 b3 3 4 b5 5 #5 6 b7 7 - b9 9 #9 - 11 #11 - b13 13 - -"
+        );
+        for (semitones, label) in chord_interval_labels().iter().enumerate() {
+            if let Some(label) = label {
+                assert_eq!(usize::from(label.semitones()), semitones);
+            }
+        }
     }
 }

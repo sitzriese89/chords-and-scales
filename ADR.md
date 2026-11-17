@@ -46,6 +46,7 @@ ADR-1 to ADR-13 come from the design interview behind [SPEC.md](SPEC.md) (decisi
 | 33 | [Chord names: the style is passed to one formatter call; typed symbols are read as you type](#adr-33-chord-names-the-style-is-passed-to-one-formatter-call-typed-symbols-are-read-as-you-type) | Accepted |
 | 34 | [The harmonize view: a row over the panel's seam, one chord size, clicks choose a degree](#adr-34-the-harmonize-view-a-row-over-the-panels-seam-one-chord-size-clicks-choose-a-degree) | Accepted |
 | 35 | [Voicings: a pruned search over one fret per string, a hand model, one score](#adr-35-voicings-a-pruned-search-over-one-fret-per-string-a-hand-model-one-score) | Accepted |
+| 36 | [Custom chords: the scale editor on two octaves, suffixes unique and readable, checks in the core](#adr-36-custom-chords-the-scale-editor-on-two-octaves-suffixes-unique-and-readable-checks-in-the-core) | Accepted |
 | 37 | [The voicing browser: diagrams from the core's result, saved constraints, one chosen shape on the neck](#adr-37-the-voicing-browser-diagrams-from-the-cores-result-saved-constraints-one-chosen-shape-on-the-neck) | Accepted |
 
 ---
@@ -1156,6 +1157,80 @@ the result.
   over the neck).
 - Extended chords with more required tones than a shape can hold, and rootless jazz voicings,
   are not found; dropping more tones would make the voicing read as another chord in lookup.
+
+## ADR-36: Custom chords: the scale editor on two octaves, suffixes unique and readable, checks in the core
+
+**Context.** M2.9 lets users make, edit and delete their own chords, saved to `chords.toml` and
+treated like the built-ins: listed in the chord panel, typeable (ADR-29), found by reverse
+lookup (ADR-31) and harmonize (ADR-30). The core already read user chord files (ADR-27); the
+app never loaded one, and nothing wrote one. The scale editor (ADR-26) set the pattern: the
+core checks and writes, ids are generated once, `UserCatalogs` tells the views. ADR-26 left the
+interval picker to one octave, while chords reach to `13`; and unlike a scale, a chord has
+suffixes that the symbol parser reads.
+
+**Decision.**
+- **The core checks and writes, as for scales.** `theory::write_chords(&[Chord])` writes the
+  `[[chord]]` format that `parse_user_chords` reads back unchanged (intervals as ASCII labels
+  kept as written; `family` always written; `aliases` and `jazz_symbol` only when there are
+  some; a property test checks the round trip). A Jazz symbol equal to the symbol is no special
+  form and is kept as none, so a `ChordInfo` (whose `jazzSymbol` falls back to the symbol) can
+  be passed back as it is. `ChordCatalog::new_id(name)` makes ids as `ScaleCatalog::new_id`
+  does (the code is now shared in `catalog_file`). The binding exports `writeChords(chords)`
+  (throws `“<name>”: <reason>`), `newChordId(name)` and `chordIntervalLabels()`.
+- **What saving refuses**, in the catalog the file gives (the built-ins merged with the user's
+  chords; a user chord that replaces a built-in by id frees the built-in's name and suffixes):
+  - two chords with one id, or one name (case and runs of white space ignored, as for scales);
+  - a suffix (symbol, alias or Jazz symbol) of a user chord that another chord has: the parser
+    matches exactly and would read it as only one of them. An empty symbol is the major
+    triad's, so it gets its own message ("a chord needs a symbol"). Built-ins clashing with
+    each other are not the user's problem and are left alone;
+  - a suffix that the symbol parser doesn't read back as that chord after the root `C`, both
+    as stored (`Cb9` is C♭ with `9`) and as the formatter shows it in either style. This one
+    rule catches a symbol starting with `#` or `b` and the look-alike characters the parser
+    normalises (`♭`, `△`, `Ø`), without listing them, and keeps the formatter's output always
+    readable (ADR-29's round trip, for user chords).
+  Reading a hand-edited file checks none of this (ADR-27: a user chord may still shadow a
+  built-in suffix there); only saving does, so such a file loads, and every save is refused
+  until it is fixed. Two chords with the same notes under two names are allowed: reverse
+  lookup lists both.
+- **One editor, two octaves.** `IntervalSetEditor` takes `labels`: per semitone from the root,
+  the label a chosen cell gets or `null` for no cell; the scale editor passes nothing and gets
+  one octave of the core's default labels as before. The picker is laid out in rows of an
+  octave, so a column is one note on the neck; at most one cell per column is chosen (picking
+  `9` takes out `2`), which is the core's no-repeated-pitch-class rule seen as layout, and a
+  click on the neck toggles the note's column (adding its first offered cell). A cell the
+  edited item has but the picker doesn't offer is still shown, so nothing is lost by opening
+  an editor. An `extra` snippet adds fields after the family; the chord editor
+  (`chords/ChordEditor.svelte`) puts the symbol and the Jazz symbol there.
+- **The chord labels are data.** `chord_interval_labels()` offers, per width from 0 to 23
+  semitones, the label the built-in chords use most (`♯5`, `♭9`, `♯9`, `11`, `♯11`, `♭13`,
+  `13`), the default label within the octave where no chord uses one (`♭2`), and no cell above
+  the octave where none does (`8`, `10`, `12`, `♭14`, `14`: chord tones an octave up, which a
+  chord writes within the octave). A new chord in the catalog with a new extension adds its
+  cell; nothing is listed in code.
+- **Where it lives.** `ChordState` holds `editing` (a new chord with preset intervals and an
+  optional root, or a user chord) with `newChord(intervals?, root?)`, `editChord(chord)` and
+  `closeEditor()`, so anything can open the editor: the panel's **New chord**, and reverse
+  lookup's "Save as chord" (M2.8) with the clicked notes. `ChordEditorDialog` is mounted once
+  in the panel, outside its collapsible body, and shows the modal while `editing` is set;
+  **New chord**, **Edit chord** and **Delete chord** (with a confirmation) sit under the chord
+  quality, the last two only for a user chord. Saving a new chord chooses it as root and
+  quality; deleting the chosen chord chooses the built-in it replaced, or none.
+- **Loading.** `UserCatalogs` gets a third document, `chords` (`chords.toml`), loaded at start
+  with the others, saved by `saveUserChords` with the same backup (`chords-backup.toml`) before
+  the first rewrite of a file with broken items, and its problems listed with the others.
+
+**Consequences.**
+- No TOML, no chord rule and no interval label in TypeScript; a hand-edited file and the
+  editor are checked by the same code, and the editor shows the core's message.
+- A saved chord is typeable in both display styles and reads back from what is shown.
+- Built-in suffixes now constrain user ones: a future built-in alias equal to a user's suffix
+  makes that user's next save fail until the user's chord is changed.
+- Suffixes only fall back to case folding and reordering when nothing matches exactly (ADR-29);
+  a user suffix such as `Maj7` can make a typed `MAJ7` ambiguous, which the parser then
+  reports instead of guessing.
+- The editor can't add aliases; they are kept when a chord is edited and can be written by
+  hand.
 
 ## ADR-37: The voicing browser: diagrams from the core's result, saved constraints, one chosen shape on the neck
 
