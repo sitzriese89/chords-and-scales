@@ -26,7 +26,13 @@ emphasized over the dimmed scale, or type a symbol such as `F#m7b5`, `CΔ7` or `
 symbol it can't read is marked where it goes wrong). **Harmonize**, next to the scale's
 notes, lists the chord on every degree of the scale with its Roman numeral (triads or 7th
 chords; "no chord" where none forms, as on most degrees of a pentatonic scale); click one to
-show it on the neck over the scale. **Chord names** switches every chord name between
+show it on the neck over the scale. **Select notes**, above the neck, works the other way
+round: click notes on the neck (click one again to take it out) and the chords they make
+(slash chords and chords without their 5th included, the lowest note as the bass) and the
+scales that contain them are listed, best first, as you click. Click a chord to show it in the
+Chords panel and on the neck, or a scale to make it the scale; **Save as scale** and **Save as
+chord** open the editors with your notes, on the lowest one; **Clear selection** starts again.
+**Chord names** switches every chord name between
 Standard (`Cmaj7`, `Cm7♭5`) and Jazz (`CΔ7`, `Cø`). **Strum** plays the chord. Under it,
 **Voicings** lists the best playable shapes of the chord on your instrument, tuning and capo
 as chord diagrams, best first; set the widest fret span and whether open strings, muted

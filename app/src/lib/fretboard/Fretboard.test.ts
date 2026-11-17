@@ -126,6 +126,36 @@ describe('Fretboard', () => {
     expect(screen.getByRole('gridcell', { name: 'String 3, fret 2' })).toBeInTheDocument();
   });
 
+  it('rings selected positions in the shape of their dot, and names them selected', () => {
+    const { container } = render(Fretboard, {
+      strings: 6,
+      frets: 24,
+      capo: 1,
+      dots,
+      selected: [
+        { string: 6, fret: 5 },
+        { string: 6, fret: 8 },
+        { string: 3, fret: 2 },
+        // Off the neck or below the capo: not drawn.
+        { string: 7, fret: 2 },
+        { string: 2, fret: 0 },
+      ],
+    });
+    const rings = [...container.querySelectorAll<SVGElement>('.selection')];
+    expect(rings.map((r) => [r.dataset.string, r.dataset.fret, r.tagName])).toEqual([
+      ['6', '5', 'rect'],
+      ['6', '8', 'circle'],
+      ['3', '2', 'circle'],
+    ]);
+    expect(
+      screen.getByRole('gridcell', { name: 'String 6, fret 5, A, root, selected' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('gridcell', { name: 'String 3, fret 2, selected' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('gridcell', { name: 'String 5, fret 7, E' })).toBeInTheDocument();
+  });
+
   it('emits the clicked position', async () => {
     const onactivate = vi.fn();
     render(Fretboard, { strings: 6, frets: 24, dots, onactivate });

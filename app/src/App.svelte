@@ -7,7 +7,13 @@
     setChordState,
     type Harmonizer,
   } from './lib/chords';
-  import { ScaleExplorer, ScalePicker, ViewControls } from './lib/explorer';
+  import {
+    ScaleEditorState,
+    ScaleExplorer,
+    ScalePicker,
+    ViewControls,
+    setScaleEditor,
+  } from './lib/explorer';
   import { InstrumentPanel } from './lib/instrument';
   import { SettingsStore, setSettings } from './lib/settings';
   import { createStorage, type Storage } from './lib/storage';
@@ -39,6 +45,8 @@
   // The chord chosen in the chord panel, drawn on the explorer's neck (ADR-32).
   // svelte-ignore state_referenced_locally
   setChordState(new ChordState(settings, harmonizer, catalogs));
+  // Whether the scale editor is open: the picker shows it, reverse lookup opens it too (ADR-38).
+  setScaleEditor(new ScaleEditorState());
 
   // The sound: no AudioContext exists until the first click or key press (ADR-28). Volume and
   // mute follow the settings. The engine is closed when the app goes, unless a test owns it.

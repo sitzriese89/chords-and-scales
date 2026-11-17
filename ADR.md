@@ -48,6 +48,7 @@ ADR-1 to ADR-13 come from the design interview behind [SPEC.md](SPEC.md) (decisi
 | 35 | [Voicings: a pruned search over one fret per string, a hand model, one score](#adr-35-voicings-a-pruned-search-over-one-fret-per-string-a-hand-model-one-score) | Accepted |
 | 36 | [Custom chords: the scale editor on two octaves, suffixes unique and readable, checks in the core](#adr-36-custom-chords-the-scale-editor-on-two-octaves-suffixes-unique-and-readable-checks-in-the-core) | Accepted |
 | 37 | [The voicing browser: diagrams from the core's result, saved constraints, one chosen shape on the neck](#adr-37-the-voicing-browser-diagrams-from-the-cores-result-saved-constraints-one-chosen-shape-on-the-neck) | Accepted |
+| 38 | [Reverse lookup on the neck: a select mode, the lowest pitch as the bass, results chosen through the existing inputs](#adr-38-reverse-lookup-on-the-neck-a-select-mode-the-lowest-pitch-as-the-bass-results-chosen-through-the-existing-inputs) | Accepted |
 
 ---
 
@@ -1301,3 +1302,69 @@ a chosen shape reaches the neck and when it goes away.
   end of its body and `App` gives it `VoicingBrowser`, and a shape's neck positions and pitches
   live in `chords/` (`shapePositions`, `shapePitches`), so `chords/` imports nothing from
   `voicings/`; the browser still reads `ChordState` itself.
+
+## ADR-38: Reverse lookup on the neck: a select mode, the lowest pitch as the bass, results chosen through the existing inputs
+
+**Context.** M2.8 puts reverse lookup and the scale finder (ADR-31) on the fretboard (SPEC
+§5.3 input mode 3, §5.4): click notes to select them, the lowest is the bass, list the chords
+and scales, show the one clicked, and hand the selection to the scale and chord editors. The
+explorer's neck already plays a clicked dot; the chord panel already has three inputs feeding
+`ChordState` (ADR-32, ADR-33); the chord editor already opens from anywhere through
+`ChordState.newChord` (ADR-36), while the scale editor's open state was local to the scale
+picker (ADR-26). Undecided were where the mode lives, what a click does in it, how a selection
+is drawn, how a found chord (a slash chord in particular) reaches the panel, and what the
+editors are given.
+
+**Decision.**
+- **Its own component, on the explorer's neck.** `FretboardLookup` (`app/src/lib/lookup/`) sits
+  between the Harmonize row and the neck, as `HarmonizeView` does (ADR-34): a **Select notes**
+  toggle, and while it is on **Clear selection**, **Save as scale**, **Save as chord**, the
+  selected notes and the results. There is no second neck: the explorer owns a `NoteSelection`
+  (positions and the select-mode flag, with the notes and results derived from them) and passes
+  it to the component, and its neck routes clicks to it.
+- **A click selects instead of only playing.** In select mode a click (or Enter/Space) toggles
+  the position and sounds the note when it adds one, as a click on a dot does outside the
+  mode; removing is silent. Any position can be selected, in the scale or not. Turning the mode
+  off hides the selection and keeps it; nothing about it is saved, like the chosen chord.
+- **Drawn as rings over what the neck shows.** The `Fretboard` takes `selected` positions and
+  draws a ring around each (square around a root square, a circle otherwise, so the shape is
+  kept), in a new theme token `--fretboard-selected` (3:1 on the wood in both themes, checked
+  with the others), and adds "selected" to the position's spoken name. The neck keeps showing
+  the scale or the chosen chord under the rings, so a clicked result is seen against the
+  selection; a selected note with no dot gets a plain dot named by its note (by name in every
+  label mode, since an interval would need a root the neck may not have).
+- **The core places the notes.** The selected notes' MIDI pitches, pitch classes and intervals
+  above the bass come from `fretboardPositions` (all twelve pitch classes, once on C and once
+  on the bass), names from `spellPitchClass` and `formatNote`. The bass is the lowest pitch,
+  the lower string on a tie; so a re-entrant tuning or a capo needs nothing extra. The pitch
+  classes and the bass go to `lookupChords` (default limit, 12) and `findScales` (limit 12, the
+  top of a long list); fewer than two different notes ask for nothing. Asked again on every
+  click and on every catalog change. No new binding.
+- **Results go through the existing inputs.** A chord is named by `chordSymbol` in the
+  display style (ADR-33). Clicking one calls `ChordState.chooseChord(root, chordId, bass)`:
+  without a bass it is root and quality; with one it is the typed-symbol input filled with the
+  Standard symbol the formatter writes (`C/E`), which the parser reads back with its bass, so
+  the slash is kept in the panel, the neck's name and the title bar without a fourth mode. A
+  symbol that doesn't read back as that chord (only possible for a hand-edited user suffix)
+  falls back to root and quality without the bass. A collapsed panel is expanded, as from the
+  Harmonize row. Clicking a scale writes the explorer's root and scale (the last view, so it is
+  saved like a pick in the picker) and clears a chosen chord, since a chord on the neck would
+  hide the scale just chosen. The chord or scale on show is marked `aria-pressed`.
+- **The editors get the bass as the root.** `ScaleEditorState`
+  (`explorer/scale-editor.svelte.ts`, a context set by `App`) holds what the scale editor is
+  open for, with `newScale(intervals, root)` mirroring `ChordState.newChord`; the scale picker
+  shows the dialog from it, and saving a new scale shows it on the root it was opened with. **Save as scale / chord** passes the
+  bass as the root and each other selected note once, as its interval above the bass within
+  the octave: the core's default label for a scale (`♭6`), the chord editor's offered label
+  for a chord (`chordIntervalLabels`: `♯5`). The bass is the documented rule (SPEC §5.4); a
+  chord whose root is not in the bass is found by lookup already and need not be saved.
+
+**Consequences.**
+- The neck has a third thing drawn on it (scale or chord, a chosen shape, the selection);
+  rings keep them apart without dimming either, at the price of a busier neck while selecting.
+- `chords/` still imports nothing from `lookup/` or `voicings/`; `lookup/` reads `ChordState`
+  and `ScaleEditorState` like any other view.
+- A selection with a 9th above the octave is saved as a `2`; the chord editor's two rows let
+  the user move it up, as a click on the editor's own neck would (ADR-36).
+- A slash chord chosen from the list leaves its text in the typed-symbol field, where the user
+  can edit it like any typed symbol.

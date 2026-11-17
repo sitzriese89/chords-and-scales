@@ -6,17 +6,21 @@
   can be searched by name, alias or id.
 
   The user's own scales are made, edited and deleted here (ADR-26): the editor opens in a
-  dialog with its own neck, and saves to `scales.toml` through `UserCatalogs`.
+  dialog with its own neck, and saves to `scales.toml` through `UserCatalogs`. The dialog is
+  open while `ScaleEditorState.editing` says so, so reverse lookup can open it too, with the
+  selected notes (ADR-38).
 -->
 <script lang="ts">
   import { IntervalSetEditor, editorNeck, type IntervalSetDraft, type Neck } from '../editor';
   import { DEFAULT_SETTINGS, getSettings } from '../settings';
-  import { getScale, listScales, newScaleId, type ScaleInfo, type ScaleInput } from '../theory';
+  import { getScale, listScales, newScaleId, type ScaleInput } from '../theory';
   import { getUserCatalogs } from '../user-catalogs.svelte';
+  import { getScaleEditor } from './scale-editor.svelte';
   import { displayRoot, rootChoices } from './view';
 
   const settings = getSettings();
   const catalogs = getUserCatalogs();
+  const scaleEditor = getScaleEditor();
   const roots = rootChoices();
   const families = $derived.by(() => {
     // Re-read the catalog when a user scale was saved or deleted (ADR-24).
@@ -29,8 +33,7 @@
   });
   const isMine = $derived(current !== undefined && !current.builtIn);
 
-  type Editing = { mode: 'new' } | { mode: 'edit'; scale: ScaleInfo };
-  let editing = $state<Editing | null>(null);
+  const editing = $derived(scaleEditor.editing);
   let confirmingDelete = $state(false);
   let editProblem = $state<string | null>(null);
 
@@ -39,23 +42,28 @@
     void catalogs.revision;
     return editorNeck(settings.current);
   });
+  /** The root the editor is shown on: the one it was opened with, else the explorer's. */
   const editorRoot = $derived(
-    displayRoot(settings.current.lastView.root) ?? displayRoot(DEFAULT_SETTINGS.lastView.root)!,
+    (editing?.mode === 'new' && editing.root ? displayRoot(editing.root) : undefined) ??
+      displayRoot(settings.current.lastView.root) ??
+      displayRoot(DEFAULT_SETTINGS.lastView.root)!,
   );
   const initial = $derived.by((): IntervalSetDraft => {
-    if (editing?.mode !== 'edit') return { name: '', family: '', intervals: ['1'] };
+    if (editing?.mode !== 'edit') {
+      return { name: '', family: '', intervals: editing?.intervals ?? ['1'] };
+    }
     const { name, family, intervals } = editing.scale;
     return { name, family, intervals };
   });
 
   function startNew() {
-    editing = { mode: 'new' };
+    scaleEditor.newScale();
     confirmingDelete = false;
     editProblem = null;
   }
 
   function startEdit() {
-    if (current && isMine) editing = { mode: 'edit', scale: current };
+    if (current && isMine) scaleEditor.editScale(current);
     confirmingDelete = false;
     editProblem = null;
   }
@@ -70,18 +78,24 @@
     };
   }
 
-  /** Saves the editor's scale (checked by the core) and shows it. */
+  /**
+   * Saves the editor's scale (checked by the core) and shows it: a new one opened on a root of
+   * its own (reverse lookup's bass) on that root.
+   */
   async function save(draft: IntervalSetDraft) {
-    if (editing?.mode === 'edit') {
-      const old = editing.scale;
+    const now = editing;
+    if (now?.mode === 'edit') {
+      const old = now.scale;
       const scale = input(old.id, draft, old.aliases);
       await catalogs.saveUserScales(catalogs.userScales.map((s) => (s.id === old.id ? scale : s)));
     } else {
+      const root = now?.root ? editorRoot : undefined;
       const scale = input(newScaleId(draft.name), draft);
       await catalogs.saveUserScales([...catalogs.userScales, scale]);
-      await settings.update({ lastView: { scale: scale.id } }).catch(reportEdit);
+      const lastView = root ? { scale: scale.id, root } : { scale: scale.id };
+      await settings.update({ lastView }).catch(reportEdit);
     }
-    editing = null;
+    scaleEditor.close();
   }
 
   /** Deletes the current user scale; the view falls back to the built-in it replaced or the default. */
@@ -108,7 +122,7 @@
   function onWindowKey(event: KeyboardEvent) {
     if (editing && event.key === 'Escape') {
       event.preventDefault();
-      editing = null;
+      scaleEditor.close();
     }
   }
 
@@ -250,7 +264,7 @@
         root={editorRoot}
         {neck}
         onsave={save}
-        oncancel={() => (editing = null)}
+        oncancel={() => scaleEditor.close()}
       />
     </div>
   </div>
