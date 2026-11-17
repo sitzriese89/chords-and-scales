@@ -20,10 +20,14 @@ import {
   type ScaleNote,
 } from '../theory';
 import type { UserCatalogs } from '../user-catalogs.svelte';
+import { chordSymbol } from './display';
 import { shapePositions, type ChordOnNeck } from './overlay';
 import type { ChordSize, Harmonizer } from './harmonize';
 
-/** Where the chord comes from (SPEC §5.3 input modes 1, 2 and 4). */
+/**
+ * Where the chord comes from (SPEC §5.3 input modes 1, 2 and 4). Reverse lookup (mode 3) chooses
+ * its chord as root and quality, or as a typed symbol for a slash chord (`chooseChord`).
+ */
 export type ChordMode = 'root' | 'degree' | 'symbol';
 
 /** Why the typed symbol could not be read. */
@@ -196,6 +200,28 @@ export class ChordState {
   chooseDegree(degree: number): void {
     this.mode = 'degree';
     this.degree = degree;
+  }
+
+  /**
+   * A chord found by reverse lookup (SPEC §5.4, ADR-38): `root` and catalog `chordId`, over
+   * `bass` for a slash chord. Without a bass it is chosen as root and quality; with one, as the
+   * typed symbol the formatter writes for it (`C/E`), which the parser reads back with the bass.
+   * A symbol that doesn't read back as the chord (a hand-edited user suffix) falls back to root
+   * and quality, without the bass.
+   */
+  chooseChord(root: string, chordId: string, bass?: string | null): void {
+    if (bass) {
+      const symbol = chordSymbol(root, { id: chordId }, 'standard', bass);
+      const parsed = parseChordSymbol(symbol);
+      if (parsed.ok && parsed.chordId === chordId && parsed.bass !== undefined) {
+        this.mode = 'symbol';
+        this.symbol = symbol;
+        return;
+      }
+    }
+    this.mode = 'root';
+    this.root = root;
+    this.chordId = chordId;
   }
 
   /**
