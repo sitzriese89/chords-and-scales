@@ -96,7 +96,8 @@ impl Default for VoicingOptions {
 pub struct VoicedNote {
     /// The fretboard string number: 1 = the highest string (ADR-18).
     pub string: u8,
-    /// The absolute fret: 0 = open, also with a capo (where the capo fret is the open string).
+    /// The absolute fret (ADR-18): 0 is the open string without a capo; with a capo the open
+    /// string is the capo fret, and no fret below it appears.
     pub fret: u8,
     /// The sounding note.
     pub note: Note,

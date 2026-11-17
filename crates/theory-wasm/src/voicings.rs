@@ -9,7 +9,7 @@
 //! JS `Error`; a chord no shape can play gives an empty list.
 
 use serde::{Deserialize, Serialize};
-use theory::voicings::{DEFAULT_MAX_SPAN, DEFAULT_VOICING_LIMIT, MAX_SPAN};
+use theory::voicings::MAX_SPAN;
 use theory::{Barre, Glyphs, VoicedNote, Voicing, VoicingOptions, voicings};
 use wasm_bindgen::prelude::*;
 
@@ -35,7 +35,10 @@ export interface VoicingOptions {
 export interface VoicedString {
   /** Fretboard string number: 1 = the highest string. */
   string: number;
-  /** Absolute fret: 0 = open, also with a capo (the capo fret is the open string). */
+  /**
+   * Absolute fret (ADR-18): 0 is the open string without a capo; with a capo the open string
+   * is the capo fret, and no fret below it appears.
+   */
   fret: number;
   /** The sounding note as a MIDI number. */
   midi: number;
@@ -101,16 +104,14 @@ impl OptionsRecord {
         let max_span = match self.max_span {
             Some(span) => u8::try_from(span)
                 .map_err(|_| format!("a fret span of {span}; the span is 1 to {MAX_SPAN} frets"))?,
-            None => DEFAULT_MAX_SPAN,
+            None => defaults.max_span,
         };
         Ok(VoicingOptions {
             max_span,
             open_strings: self.open_strings.unwrap_or(defaults.open_strings),
             muted_strings: self.muted_strings.unwrap_or(defaults.muted_strings),
             inversions: self.inversions.unwrap_or(defaults.inversions),
-            limit: self
-                .limit
-                .map_or(DEFAULT_VOICING_LIMIT, |limit| limit as usize),
+            limit: self.limit.map_or(defaults.limit, |limit| limit as usize),
         })
     }
 }
