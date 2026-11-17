@@ -9,3 +9,9 @@ export {
   rootChoices,
   type ExplorerView,
 } from './view';
+export {
+  getScaleEditor,
+  ScaleEditorState,
+  setScaleEditor,
+  type ScaleEditing,
+} from './scale-editor.svelte';

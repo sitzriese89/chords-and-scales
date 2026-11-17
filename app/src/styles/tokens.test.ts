@@ -35,6 +35,7 @@ const TOKENS = [
   '--fretboard-dim-text',
   '--fretboard-focus',
   '--fretboard-capo',
+  '--fretboard-selected',
   ...DEGREES,
 ];
 
@@ -168,6 +169,7 @@ const GRAPHIC_ON = [
     '--fretboard-root',
     '--fretboard-focus',
     '--fretboard-capo',
+    '--fretboard-selected',
     ...DEGREES,
   ].map((fg) => [fg, '--fretboard-wood']),
 ];

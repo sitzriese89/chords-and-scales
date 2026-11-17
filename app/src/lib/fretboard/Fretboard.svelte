@@ -14,6 +14,9 @@
     (left/right follow the drawing, so they are mirrored when left-handed), Home/End jump to
     the first/last fret, Enter or Space activate. Click activates too. Each cell has a name
     such as "String 2, fret 5, C, root".
+  - `selected` positions get a ring around their dot (around the empty position if there is
+    none), the shape of the dot, and "selected" in their name: the notes picked for reverse
+    lookup (ADR-38).
   - Colours come from the theme tokens `--fretboard-*` and `--degree-0` … `--degree-11`
     (ADR-11), with light-theme fallbacks.
 -->
@@ -33,6 +36,8 @@
      * position, the last wins.
      */
     dots?: FretboardDot[];
+    /** Positions marked as selected, with a ring; positions off the neck are not drawn. */
+    selected?: FretPosition[];
     /** Mirror the neck: nut on the right. */
     leftHanded?: boolean;
     /** Colour root and tone dots by `degree` (`--degree-<n>`) instead of the plain dot colours. */
@@ -48,6 +53,7 @@
     frets,
     capo = 0,
     dots = [],
+    selected = [],
     leftHanded = false,
     colorByDegree = false,
     ariaLabel = 'Fretboard',
@@ -90,6 +96,11 @@
   const dotAt = $derived(new Map(visibleDots.map((d) => [key(d.string, d.fret), d])));
   // One dot per position; for duplicates the last one wins.
   const drawnDots = $derived([...dotAt.values()]);
+  const selectedAt = $derived(
+    new Map(selected.filter(inRange).map((p) => [key(p.string, p.fret), p])),
+  );
+  /** Space between a dot's edge and its selection ring, in SVG units. */
+  const RING_GAP = 2;
 
   function clamp(p: FretPosition): FretPosition {
     return {
@@ -120,6 +131,7 @@
       else if (dot.role === 'dim') parts.push('dimmed');
       else if (!dot.label) parts.push('note');
     }
+    if (selectedAt.has(key(string, fret))) parts.push('selected');
     return parts.join(', ');
   }
 
@@ -306,6 +318,26 @@
     </g>
   {/each}
 
+  {#each [...selectedAt.values()] as mark (key(mark.string, mark.fret))}
+    {@const cx = layout.fretCenterX(mark.fret)}
+    {@const cy = layout.stringY(mark.string)}
+    {@const r = layout.dotRadius + RING_GAP}
+    {#if dotAt.get(key(mark.string, mark.fret))?.role === 'root'}
+      <rect
+        class="selection"
+        data-string={mark.string}
+        data-fret={mark.fret}
+        x={cx - r}
+        y={cy - r}
+        width={2 * r}
+        height={2 * r}
+        rx="4"
+      />
+    {:else}
+      <circle class="selection" data-string={mark.string} data-fret={mark.fret} {cx} {cy} {r} />
+    {/if}
+  {/each}
+
   {#each stringNumbers as s (s)}
     <g role="row" aria-rowindex={s}>
       {#each playableFrets as f, i (f)}
@@ -410,6 +442,13 @@
     fill: var(--fretboard-dim-text, #4a4640);
     font-size: calc(var(--label-size) * 0.75);
     font-weight: 500;
+  }
+
+  .selection {
+    fill: none;
+    stroke: var(--fretboard-selected, #a34a00);
+    stroke-width: 3;
+    pointer-events: none;
   }
 
   .cell {

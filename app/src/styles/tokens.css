@@ -39,6 +39,7 @@
   --fretboard-dim-text: #3b332b;
   --fretboard-focus: #1f5fae;
   --fretboard-capo: #2b2724;
+  --fretboard-selected: #a34a00;
 
   --degree-0: #c5365f;
   --degree-1: #832500;
@@ -85,6 +86,7 @@
     --fretboard-dim-text: #e6dccb;
     --fretboard-focus: #8ab4f8;
     --fretboard-capo: #b8b2a8;
+    --fretboard-selected: #ffb347;
 
     --degree-0: #f35f84;
     --degree-1: #e74c0e;
@@ -131,6 +133,7 @@
   --fretboard-dim-text: #e6dccb;
   --fretboard-focus: #8ab4f8;
   --fretboard-capo: #b8b2a8;
+  --fretboard-selected: #ffb347;
 
   --degree-0: #f35f84;
   --degree-1: #e74c0e;

@@ -5,12 +5,17 @@
   summary of the scale and its Harmonize row (ADR-34) above it, and under it the tab of one
   position with its controls (ADR-25); the position's notes are highlighted on the neck. Everything shown comes from the
   core (`explorerView`).
+
+  Reverse lookup (ADR-38) sits above the neck: in its select mode a click on the neck selects or
+  unselects the note there (playing it when it is added) instead of only playing it, and the
+  selected notes are ringed on the neck over what it shows.
 -->
 <script lang="ts">
   import { getAudio } from '../audio';
   import { getChordState } from '../chords';
   import { Fretboard, type FretPosition } from '../fretboard';
   import { HarmonizeView } from '../harmonize';
+  import { FretboardLookup, NoteSelection, withSelection } from '../lookup';
   import { getSettings } from '../settings';
   import { PositionControls, TabView } from '../tab';
   import { getUserCatalogs } from '../user-catalogs.svelte';
@@ -35,8 +40,23 @@
       : title,
   );
 
-  /** A click on a dot sounds it at its real pitch (tuning and fret, from the core). */
-  function playDot(position: FretPosition) {
+  /** The notes selected for reverse lookup; not saved. */
+  const selection = new NoteSelection(settings, catalogs);
+  const selecting = $derived(selection.selecting);
+  const dots = $derived(
+    selecting ? withSelection(view.dots, selection.notes, settings.current.labels) : view.dots,
+  );
+
+  /**
+   * A click on a dot sounds it at its real pitch (tuning and fret, from the core). In select mode
+   * a click selects or unselects the position instead, and sounds a note it adds.
+   */
+  function activate(position: FretPosition) {
+    if (selecting) {
+      const added = selection.toggle(position);
+      if (added) audio.playNote(added.midi);
+      return;
+    }
     const midi = view.pitches.get(positionKey(position));
     if (midi !== undefined) audio.playNote(midi);
   }
@@ -62,6 +82,8 @@
 
   <HarmonizeView />
 
+  <FretboardLookup {selection} />
+
   {#each view.fallbacks as fallback (fallback)}
     <p class="fallback">{fallback}</p>
   {/each}
@@ -71,10 +93,13 @@
       strings={view.tuning.notes.length}
       frets={view.frets}
       capo={view.capo}
-      dots={view.dots}
+      {dots}
+      selected={selecting ? selection.notes : []}
       leftHanded={settings.current.leftHanded}
-      ariaLabel="Fretboard: {neckTitle}, {view.tuning.name} tuning"
-      onactivate={playDot}
+      ariaLabel="Fretboard: {neckTitle}, {view.tuning.name} tuning{selecting
+        ? ', selecting notes'
+        : ''}"
+      onactivate={activate}
     />
   </div>
 

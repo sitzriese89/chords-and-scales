@@ -121,7 +121,9 @@ Files are hand-editable and shareable; the UI offers import/export of them.
   besides the root, and no two scales (built-in or the user's) may have the same name, case
   and extra spaces ignored. A new scale's id is made from its name (`my-scale`, then
   `my-scale-2`, …) and kept when it is renamed; deleting the selected scale shows the
-  built-in it replaced, or the default scale.
+  built-in it replaced, or the default scale. **Save as scale** in reverse lookup (§5.4)
+  opens the editor with the selected notes on the lowest one; saving shows the new scale on
+  that root.
 - Chords (ADR-36): **New chord** under the chord quality in the chord panel (§5.3) opens the
   same editor; a user chord that is chosen there can be edited or deleted. The picker has two
   rows of one octave each, labelled as the built-in chords write them: `1 ♭2 2 ♭3 3 4 ♭5 5 ♯5
@@ -136,9 +138,10 @@ Files are hand-editable and shareable; the UI offers import/export of them.
   has (only the major triad has an empty one), and every suffix must read back as the chord
   after a root (so it can't start with `#` or `b`, and is written `b5`, not `♭5`). A new
   chord's id is made from its name and kept when it is renamed; saving a new chord chooses it.
-  Deleting the chosen chord shows the built-in it replaced, or no chord. User chords are
-  typeable by their suffixes (§4.4), found by reverse lookup (§5.4) and used by harmonize
-  (§5.5) like built-in ones.
+  Deleting the chosen chord shows the built-in it replaced, or no chord. **Save as chord** in
+  reverse lookup (§5.4) opens the editor with the selected notes on the lowest one. User
+  chords are typeable by their suffixes (§4.4), found by reverse lookup (§5.4) and used by
+  harmonize (§5.5) like built-in ones.
 
 ---
 
@@ -291,7 +294,9 @@ intervals = ["1", "b3", "b5", "b7"]
   - Accessible palette; never rely on color alone (shape/label redundancy)
 - **Interaction:** click a position, or use the keyboard: Tab reaches the
   fretboard, arrow keys move between positions, Enter/Space activate. Every
-  position has a spoken name (string, fret, note). (ADR-18)
+  position has a spoken name (string, fret, note). (ADR-18) Activating a position plays its
+  note; in reverse lookup's select mode it selects or unselects it, and a selected position
+  is ringed and named "selected" (§5.4, ADR-38).
 - **Dot labels (toggle):** note names / intervals (scale degrees: 1, ♭3, 5…) / none.
 - **Scale explorer** (the main view, ADR-23): pick or type a root and pick a scale from a
   list grouped by family, with a search over names and aliases; the neck shows every note of
@@ -401,6 +406,9 @@ How the tab is shown (`app/src/lib/tab/`, ADR-25):
     if the symbol stops too early), with the parser's reason and the character's number. An
     empty field is no error. A slash chord's bass is written in the name (`Am7/G`, "Minor
     seventh, bass G"); the neck shows the chord's own tones and does not add the bass.
+  - **Reverse lookup** (ADR-38): **Select notes** above the explorer's neck; the chords the
+    selected notes make are listed there (§5.4). Clicking one chooses it in the panel: as root
+    and quality, or as a typed symbol for a slash chord (`C/E`), so the bass is kept.
   - **Chord names** (ADR-33): every chord name in the app, in the panel, its title bar and
     the neck's label, is written by the symbol formatter (§4.4) in the display style chosen
     in the panel: Standard (`Cmaj7`, `Cm7♭5`) or Jazz (`CΔ7`, `Cø`), each choice showing
@@ -430,6 +438,31 @@ The core does both searches (ADR-31). The input is a set of pitch classes with a
   scale. A scale that comes out the same on several roots (whole-tone) is listed once.
 - User chords and scales are searched like the built-in ones. Root and bass are spelled by
   the sharp/flat toggle (§4.1).
+
+**In the app** (ADR-38):
+
+- **Select notes**, a toggle above the explorer's neck, turns on select mode: a click (or
+  Enter/Space) on a position adds that note, or takes it out if it is selected, and sounds a
+  note it adds. Any position can be selected, in the scale or not. Selected positions are
+  ringed on the neck, over whatever it shows (the scale, or a chosen chord); a selected note
+  with no dot gets one, named by its note. The selected notes are listed with their octaves,
+  lowest first; the lowest by pitch (from the core's fretboard mapping, so a re-entrant tuning
+  or a capo needs no special case) is the **bass**. **Clear selection** empties the
+  selection. Turning select mode off hides the selection and the results and keeps the
+  selection for when it is turned on again; the selection is not saved.
+- **Results** are asked again on every click: the chords (up to 12) and the scales (up to 12)
+  that the core finds, best first. A chord is named in the display style (§4.4), with its
+  catalog name, the bass's degree for a slash chord (`3 in the bass`) and what is left out
+  (`without 5`); a scale shows its root and name and how many of its notes are not selected.
+  Fewer than two different notes find nothing. Clicking a chord shows it in the chord panel
+  (§5.3) and so on the neck; clicking a scale makes it the explorer's root and scale (saved,
+  like a pick in the scale picker) and clears a chosen chord, so the neck shows the scale. The
+  chord or scale on show is marked in the list.
+- **Save as scale** and **Save as chord** open the scale or chord editor (§3.3) with the
+  selection: the bass as the root, and each other note once, as its interval above the bass
+  within the octave (the editor's default label for a scale, the chord editor's offered label
+  for a chord: `♯5`, not `♭6`). Saving there works as for a new scale or chord; a new scale
+  is shown on that root.
 
 ### 5.5 Harmonize (Q18)
 
