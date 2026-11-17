@@ -1,5 +1,5 @@
-import { DEFAULT_SETTINGS, type Settings } from '../settings';
-import { getTuning } from '../theory';
+import { instrumentTuning } from '../instrument/tuning';
+import type { Settings } from '../settings';
 import type { Neck } from './intervals';
 
 /**
@@ -9,6 +9,6 @@ import type { Neck } from './intervals';
  */
 export function editorNeck(settings: Settings): Neck {
   const { instrument, leftHanded } = settings;
-  const tuning = getTuning(instrument.tuning) ?? getTuning(DEFAULT_SETTINGS.instrument.tuning)!;
+  const tuning = instrumentTuning(instrument);
   return { tuning, frets: instrument.frets, capo: instrument.capo, leftHanded };
 }

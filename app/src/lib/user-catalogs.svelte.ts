@@ -28,7 +28,6 @@ import {
   type ScaleInfo,
   type ScaleInput,
   type Tuning,
-  type UserFileReport,
 } from './theory';
 
 export const USER_SCALES_DOCUMENT = 'scales';
@@ -43,21 +42,34 @@ export const USER_TUNINGS_BACKUP_DOCUMENT = 'tunings-backup';
 
 type Kind = 'scales' | 'chords' | 'tunings';
 
-const documents: Record<Kind, { name: string; backup: string; load: typeof setUserScales }> = {
+interface UserDocument {
+  name: string;
+  backup: string;
+  /** Hands the document's text to the core's catalog. */
+  load: typeof setUserScales;
+  /** Keeps the items the core loaded (by id) as the user's items of this kind. */
+  keep: (catalogs: UserCatalogs, loaded: string[]) => void;
+}
+
+const documents: Record<Kind, UserDocument> = {
   scales: {
     name: USER_SCALES_DOCUMENT,
     backup: USER_SCALES_BACKUP_DOCUMENT,
     load: setUserScales,
+    keep: (catalogs, loaded) => (catalogs.userScales = loaded.flatMap((id) => getScale(id) ?? [])),
   },
   chords: {
     name: USER_CHORDS_DOCUMENT,
     backup: USER_CHORDS_BACKUP_DOCUMENT,
     load: setUserChords,
+    keep: (catalogs, loaded) => (catalogs.userChords = loaded.flatMap((id) => getChord(id) ?? [])),
   },
   tunings: {
     name: USER_TUNINGS_DOCUMENT,
     backup: USER_TUNINGS_BACKUP_DOCUMENT,
     load: setUserTunings,
+    keep: (catalogs, loaded) =>
+      (catalogs.userTunings = loaded.flatMap((id) => getTuning(id) ?? [])),
   },
 };
 const kinds: Kind[] = ['scales', 'chords', 'tunings'];
@@ -94,7 +106,7 @@ export class UserCatalogs {
   /** Loads the user documents into the core's catalogs. Never rejects. */
   async load(): Promise<void> {
     for (const kind of kinds) {
-      const { name, load } = documents[kind];
+      const { name, load, keep } = documents[kind];
       let text: string | null;
       try {
         text = await this.storage.read(name);
@@ -104,7 +116,7 @@ export class UserCatalogs {
       }
       const report = load(text ?? '');
       this.problemsBy[name] = report.errors.map((e) => `${name}.toml: ${e.message}`);
-      this.keep(kind, report);
+      keep(this, report.loaded);
       if (report.errors.length > 0 && text !== null) this.unsavedText[kind] = text;
       else delete this.unsavedText[kind];
     }
@@ -142,7 +154,7 @@ export class UserCatalogs {
 
   /** Writes `text` (made by the core) as the user's document of `kind` and loads it. */
   private async save(kind: Kind, text: string): Promise<void> {
-    const { name, backup, load } = documents[kind];
+    const { name, backup, load, keep } = documents[kind];
     const old = this.unsavedText[kind];
     if (old !== undefined) {
       await this.storage.write(backup, old);
@@ -153,15 +165,8 @@ export class UserCatalogs {
       ];
     }
     await this.storage.write(name, text);
-    this.keep(kind, load(text));
+    keep(this, load(text).loaded);
     this.revision += 1;
-  }
-
-  /** Keeps the user's items that `report` says are now in the catalog of `kind`. */
-  private keep(kind: Kind, report: UserFileReport) {
-    if (kind === 'scales') this.userScales = report.loaded.flatMap((id) => getScale(id) ?? []);
-    else if (kind === 'chords') this.userChords = report.loaded.flatMap((id) => getChord(id) ?? []);
-    else this.userTunings = report.loaded.flatMap((id) => getTuning(id) ?? []);
   }
 }
 

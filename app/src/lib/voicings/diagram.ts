@@ -90,10 +90,11 @@ export function stringIndex(string: number, strings: number): number {
 }
 
 /**
- * A shape as players write it, lowest string first: `x32010`; with a fret of 10 or more,
- * spaced: `x 10 12 12 11 x`.
+ * A shape as players write it, lowest string first, `x` for a muted string: `x32010`; with a
+ * fret of 10 or more, spaced: `x 10 12 12 11 x`. A `separator` joins the strings instead
+ * (`x,3,2,0,1,0`).
  */
-export function shapeText(voicing: ChordVoicing): string {
+export function shapeText(voicing: ChordVoicing, separator?: string): string {
   const parts = voicing.strings.map((s) => (s === null ? 'x' : String(s.fret)));
-  return parts.join(parts.some((p) => p.length > 1) ? ' ' : '');
+  return parts.join(separator ?? (parts.some((p) => p.length > 1) ? ' ' : ''));
 }

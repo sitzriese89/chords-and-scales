@@ -13,6 +13,7 @@
   import { createStorage, type Storage } from './lib/storage';
   import { version } from './lib/theory';
   import { setUserCatalogs, UserCatalogs } from './lib/user-catalogs.svelte';
+  import { VoicingBrowser } from './lib/voicings';
   import { applyTheme } from './styles/theme';
 
   // Tests pass their own storage, audio engine and harmonizer; the app picks Tauri files or
@@ -113,7 +114,9 @@
     </aside>
 
     <aside class="region chords" aria-label="Chords">
-      <ChordPanel />
+      <ChordPanel>
+        <VoicingBrowser />
+      </ChordPanel>
     </aside>
   {:else}
     <p class="muted loading">Loading…</p>

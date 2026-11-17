@@ -8,7 +8,14 @@
  * for the voicing generator (M2.11, ADR-8): it picks among the core's positions and does no
  * interval arithmetic itself.
  */
-import type { NotePosition } from '../theory';
+import type { ChordVoicing, NotePosition } from '../theory';
+
+/**
+ * The notes a voicing (ADR-35) plays, lowest string first, as MIDI numbers: what a chosen
+ * shape strums (ADR-37).
+ */
+export const shapePitches = (voicing: ChordVoicing): number[] =>
+  voicing.strings.flatMap((s) => (s === null ? [] : [s.midi]));
 
 /** The lower of two positions by pitch; on a tie, the one on the lower string. */
 const lower = (a: NotePosition, b: NotePosition): NotePosition =>

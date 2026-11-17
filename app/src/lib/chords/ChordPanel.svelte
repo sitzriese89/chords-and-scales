@@ -6,13 +6,18 @@
   marked. Chord names follow the Standard/Jazz style setting, chosen here. The chosen chord is
   drawn on the explorer's neck: alone for root and quality or a symbol, over the dimmed scale
   for a degree. The panel lists the chord's notes and strums it (lowest
-  string first, ADR-28). The user's own chords are made, edited and deleted in the root and
-  quality picker (ADR-36).
+  string first, ADR-28): the shape chosen in the voicing browser if there is one, else the
+  chord stacked up from its lowest root (ADR-32, ADR-37). The user's own chords are made, edited
+  and deleted in the root and quality picker (ADR-36).
+
+  `children` is placed at the end of the panel's body: the app puts the voicing browser there
+  (ADR-37), so this module does not depend on it.
 
   The panel can be collapsed to its title bar and resized by its top edge (drag, or the arrow
   keys when the edge has focus); both are saved in the settings.
 -->
 <script lang="ts">
+  import type { Snippet } from 'svelte';
   import { getAudio } from '../audio';
   import { rootChoices } from '../explorer/view';
   import {
@@ -23,13 +28,14 @@
   } from '../settings';
   import { listChords } from '../theory';
   import { getUserCatalogs } from '../user-catalogs.svelte';
-  import VoicingBrowser from '../voicings/VoicingBrowser.svelte';
   import ChordEditorDialog from './ChordEditorDialog.svelte';
   import { chordSymbol } from './display';
   import type { ChordSize } from './harmonize';
   import { getChordState } from './state.svelte';
   import UserChordButtons from './UserChordButtons.svelte';
   import { chordPanelView } from './view';
+
+  const { children }: { children?: Snippet } = $props();
 
   const settings = getSettings();
   const catalogs = getUserCatalogs();
@@ -60,7 +66,9 @@
   });
 
   const active = $derived(chordState.active);
-  const view = $derived(active ? chordPanelView(settings.current, active) : null);
+  const view = $derived(
+    active ? chordPanelView(settings.current, active, chordState.voicing) : null,
+  );
   const degreeAvailable = $derived(chordState.harmonizer !== null);
 
   /** The typed symbol split around the character the core could not read, and why. */
@@ -371,7 +379,7 @@
       {/if}
     </div>
 
-    <VoicingBrowser />
+    {@render children?.()}
   </div>
 
   <ChordEditorDialog />

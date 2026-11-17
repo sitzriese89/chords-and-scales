@@ -95,6 +95,13 @@ describe('shapeText', () => {
     expect(shapeText(openC)).toBe('x32010');
     expect(shapeText(voicing('x 10 12 12 11 x', ['1', '5', '1', '3']))).toBe('x 10 12 12 11 x');
   });
+
+  it('joins the strings with a separator when given one', () => {
+    expect(shapeText(openC, ',')).toBe('x,3,2,0,1,0');
+    expect(shapeText(voicing('x 10 12 12 11 x', ['1', '5', '1', '3']), ',')).toBe(
+      'x,10,12,12,11,x',
+    );
+  });
 });
 
 describe('ChordDiagram', () => {
@@ -134,18 +141,25 @@ describe('ChordDiagram', () => {
     expect(c.querySelector('.fret-label')?.textContent).toBe('3');
   });
 
-  it('draws nine strings from the core', () => {
-    const nine = getTuning('guitar-9-standard')!;
-    const [best] = chordVoicings(nine, 24, 0, 'major', 4, { limit: 1 });
+  it.each([
+    ['bass-5-standard', 5],
+    ['guitar-7-standard', 7],
+    ['guitar-8-standard', 8],
+    ['guitar-9-standard', 9],
+  ])('draws %s from the core: %i strings', (id, strings) => {
+    const tuning = getTuning(id)!;
+    const [best] = chordVoicings(tuning, 24, 0, 'major', 4, { limit: 1 });
     const c = draw(best);
-    expect(all(c, 'line.string')).toHaveLength(9);
+    expect(all(c, 'line.string')).toHaveLength(strings);
     const muted = best.strings.filter((s) => s === null).length;
     const open = best.strings.filter((s) => s?.fret === 0).length;
     expect(markers(c, 'muted')).toHaveLength(muted);
     expect(markers(c, 'open')).toHaveLength(open);
-    expect(dots(c)).toHaveLength(9 - muted - open);
+    expect(dots(c)).toHaveLength(strings - muted - open);
+    // One column per string: wider than a 6-string diagram with more strings, narrower with fewer.
     const width = Number(c.querySelector('svg')!.getAttribute('width'));
-    expect(width).toBeGreaterThan(Number(draw(openC).querySelector('svg')!.getAttribute('width')));
+    const sixWide = Number(draw(openC).querySelector('svg')!.getAttribute('width'));
+    expect(Math.sign(width - sixWide)).toBe(Math.sign(strings - 6));
   });
 
   it('draws the capo as the top edge and an open string at the capo fret as ○', () => {

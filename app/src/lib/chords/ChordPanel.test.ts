@@ -171,6 +171,28 @@ describe('chord panel', () => {
     expect(frequencies).toEqual([43, 47, 50, 65].map(midiToHz));
   });
 
+  it('strums the shape chosen in the voicing browser, and the stacked chord without one', async () => {
+    const { audio, gesture, frequencies } = audioSetup();
+    await startApp({ audio });
+    await pick('Chord quality', 'major');
+    gesture.happen();
+    const strum = async () => {
+      frequencies.length = 0;
+      await fireEvent.click(screen.getByRole('button', { name: 'Strum C' }));
+      return [...frequencies];
+    };
+    // No shape chosen: C3 E3 G3, stacked up from the lowest C on the neck (ADR-32).
+    expect(await strum()).toEqual([48, 52, 55].map(midiToHz));
+
+    const shape = screen.getByRole('button', { name: /^\d+\. x32010(,|$)/ });
+    await fireEvent.click(shape);
+    // x32010: C3 E3 G3 C4 E4, the shape's own notes lowest string first.
+    expect(await strum()).toEqual([48, 52, 55, 60, 64].map(midiToHz));
+
+    await fireEvent.click(shape);
+    expect(await strum()).toEqual([48, 52, 55].map(midiToHz));
+  });
+
   it('plays nothing while muted, and says so', async () => {
     const { audio, gesture, frequencies } = audioSetup();
     await startApp({ audio, change: (s) => (s.audio.muted = true) });

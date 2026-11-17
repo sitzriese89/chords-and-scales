@@ -6,6 +6,7 @@
 import { chordSymbol } from '../chords/display';
 import { chordOverlay, type ChordOnNeck } from '../chords/overlay';
 import type { FretboardDot } from '../fretboard';
+import { instrumentTuning } from '../instrument/tuning';
 import { DEFAULT_SETTINGS, type Settings } from '../settings';
 import {
   playingOrder,
@@ -20,7 +21,6 @@ import {
   formatNoteName,
   getChord,
   getScale,
-  getTuning,
   scaleNotes,
   spellPitchClass,
   type ScaleInfo,
@@ -130,12 +130,10 @@ type ViewSettings = Pick<
  * positions. The tab below the neck stays the scale's.
  */
 export function explorerView(settings: ViewSettings, chord?: ChordOnNeck | null): ExplorerView {
-  const defaults = DEFAULT_SETTINGS;
   const { root, scale, fallbacks } = resolveScale(settings);
 
-  let tuning = getTuning(settings.instrument.tuning);
-  if (!tuning) {
-    tuning = getTuning(defaults.instrument.tuning)!;
+  const tuning = instrumentTuning(settings.instrument);
+  if (tuning.id !== settings.instrument.tuning) {
     fallbacks.push(
       `There is no tuning “${settings.instrument.tuning}”; showing ${tuning.name} (${tuning.notes.length} strings).`,
     );
