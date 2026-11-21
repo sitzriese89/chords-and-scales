@@ -46,7 +46,7 @@ async function startApp(storage = new BrowserStorage(window.localStorage)) {
   return result;
 }
 
-const panel = () => within(screen.getByRole('complementary', { name: 'Instrument settings' }));
+const panel = () => within(screen.getByRole('complementary', { name: 'Settings' }));
 const tuningSelect = () => panel().getByRole('combobox', { name: 'Tuning' });
 const stringsSelect = () => panel().getByRole('combobox', { name: 'Strings' });
 const offered = () =>
@@ -80,7 +80,6 @@ describe('instrument panel', () => {
   afterEach(() => {
     cleanup();
     setUserTunings('');
-    delete document.documentElement.dataset.theme;
   });
 
   it('switches to a 5-string bass preset and updates the neck at once', async () => {
@@ -261,16 +260,6 @@ describe('instrument panel', () => {
     await fireEvent.click(panel().getByRole('checkbox', { name: /Left-handed/ }));
     expect(dotAt(6, 0)!.x).toBeGreaterThan(dotAt(6, 12)!.x);
     await expect.poll(() => storage.read(SETTINGS_DOCUMENT)).toMatch(/left_handed = true/);
-  });
-
-  it('applies and saves the theme', async () => {
-    await startApp(storage);
-    expect(panel().getByRole('radio', { name: 'System' })).toBeChecked();
-    await fireEvent.click(panel().getByRole('radio', { name: 'Dark' }));
-    expect(document.documentElement.dataset.theme).toBe('dark');
-    await expect.poll(() => storage.read(SETTINGS_DOCUMENT)).toMatch(/theme = "dark"/);
-    await fireEvent.click(panel().getByRole('radio', { name: 'System' }));
-    expect(document.documentElement.dataset.theme).toBeUndefined();
   });
 
   it('lists the user tunings under their own group with their kind', async () => {

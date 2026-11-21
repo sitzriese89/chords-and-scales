@@ -78,14 +78,33 @@ export function storageContract(label: string, makeFixture: () => StorageFixture
       expect(await reopened.list()).toEqual(['scales', 'settings']);
     });
 
-    it.each(['', 'Settings', 'settings.toml', '../settings', 'a/b', 'a\\b', 'con'])(
-      'rejects the invalid name %j everywhere and stores nothing',
-      async (name) => {
-        await expect(storage.read(name)).rejects.toBeInstanceOf(InvalidDocumentNameError);
-        await expect(storage.write(name, 'x')).rejects.toBeInstanceOf(InvalidDocumentNameError);
-        await expect(storage.delete(name)).rejects.toBeInstanceOf(InvalidDocumentNameError);
-        expect(await storage.list()).toEqual([]);
-      },
-    );
+    it('keeps a CSS document apart from the TOML document with the same stem (ADR-40)', async () => {
+      const css = '[data-scheme="light"] {\n  --surface: #ffffff;\n}\n';
+      await storage.write('theme-solar.css', css);
+      await storage.write('theme-solar', 'x = 1\n');
+      expect(await storage.read('theme-solar.css')).toBe(css);
+      expect(await storage.read('theme-solar')).toBe('x = 1\n');
+      expect(await fixture.open().list()).toEqual(['theme-solar', 'theme-solar.css']);
+      await storage.delete('theme-solar.css');
+      expect(await storage.read('theme-solar.css')).toBeNull();
+      expect(await storage.list()).toEqual(['theme-solar']);
+    });
+
+    it.each([
+      '',
+      'Settings',
+      'settings.toml',
+      '../settings',
+      'a/b',
+      'a\\b',
+      'con',
+      'theme.CSS',
+      'a.css.css',
+    ])('rejects the invalid name %j everywhere and stores nothing', async (name) => {
+      await expect(storage.read(name)).rejects.toBeInstanceOf(InvalidDocumentNameError);
+      await expect(storage.write(name, 'x')).rejects.toBeInstanceOf(InvalidDocumentNameError);
+      await expect(storage.delete(name)).rejects.toBeInstanceOf(InvalidDocumentNameError);
+      expect(await storage.list()).toEqual([]);
+    });
   });
 }

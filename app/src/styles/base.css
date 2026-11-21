@@ -1,4 +1,4 @@
-/* Element defaults for the app, built on the theme tokens in tokens.css. */
+/* Element defaults for the app, built on the theme tokens (docs/theme-tokens.md). */
 
 html {
   background: var(--surface);

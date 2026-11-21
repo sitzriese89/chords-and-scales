@@ -1,19 +1,12 @@
 <!--
   @component
   The instrument settings (SPEC §5.1, ADR-24): string count, tuning, the user's own tunings
-  (new, edit, delete), fret count, capo, left-handed and theme. Every change is a setting and
+  (new, edit, delete), fret count, capo and left-handed. Every change is a setting and
   is saved at once (ADR-17); the neck follows it. Custom tunings are saved to `tunings.toml`
   through `UserCatalogs`, which tells the rest of the app that the catalog changed.
 -->
 <script lang="ts">
-  import {
-    getSettings,
-    MAX_FRETS,
-    MAX_STRINGS,
-    MIN_FRETS,
-    MIN_STRINGS,
-    type Theme,
-  } from '../settings';
+  import { getSettings, MAX_FRETS, MAX_STRINGS, MIN_FRETS, MIN_STRINGS } from '../settings';
   import { formatNote, getTuning, newTuningId, type Tuning } from '../theory';
   import { getUserCatalogs } from '../user-catalogs.svelte';
   import { standardTuning, tuningsWithStrings, type TuningDraft } from './presets';
@@ -49,11 +42,6 @@
     { length: MAX_STRINGS - MIN_STRINGS + 1 },
     (_, i) => MIN_STRINGS + i,
   );
-  const themes: { value: Theme; text: string }[] = [
-    { value: 'system', text: 'System' },
-    { value: 'light', text: 'Light' },
-    { value: 'dark', text: 'Dark' },
-  ];
 
   type Editing = { mode: 'new'; initial: TuningDraft } | { mode: 'edit'; tuning: Tuning };
   let editing = $state<Editing | null>(null);
@@ -294,24 +282,6 @@
     />
     Left-handed (mirror the neck)
   </label>
-
-  <fieldset>
-    <legend>Theme</legend>
-    <div class="themes">
-      {#each themes as theme (theme.value)}
-        <label>
-          <input
-            type="radio"
-            name="instrument-theme"
-            value={theme.value}
-            checked={settings.current.theme === theme.value}
-            onchange={() => settings.update({ theme: theme.value }).catch(ignore)}
-          />
-          {theme.text}
-        </label>
-      {/each}
-    </div>
-  </fieldset>
 </div>
 
 <style>
@@ -334,8 +304,7 @@
     gap: 0.5rem;
   }
 
-  .field > label,
-  legend {
+  .field > label {
     font-weight: 600;
     font-size: 0.875rem;
   }
@@ -426,28 +395,10 @@
     color: var(--text-danger);
   }
 
-  .check,
-  .themes label {
+  .check {
     display: flex;
     align-items: center;
     gap: 0.375rem;
     font-size: 0.875rem;
-  }
-
-  fieldset {
-    margin: 0;
-    padding: 0;
-    border: 0;
-  }
-
-  legend {
-    padding: 0;
-    margin-bottom: 0.25rem;
-  }
-
-  .themes {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.25rem 0.75rem;
   }
 </style>

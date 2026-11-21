@@ -5,6 +5,8 @@
  * `audio` (volume and mute, ADR-28), `chord_panel` (collapsed and height, ADR-32) and
  * `voicings` (the voicing browser's constraints, ADR-37).
  * `display.chord_symbols` is the style chord names are written in (ADR-33).
+ * `display.theme` is the colour scheme (light, dark or the OS's) and `display.theme_id` the
+ * theme shown in it (ADR-40).
  * Adding a key or table whose absence means its default is not a format change: older files
  * load with the default, so the version stays.
  *
@@ -65,7 +67,13 @@ export interface Settings {
   accidentals: Accidentals;
   /** What fretboard dots show. */
   labels: LabelMode;
+  /** The colour scheme: follow the OS, or always light or dark (ADR-19, ADR-40). */
   theme: Theme;
+  /**
+   * The theme's id: a built-in (`default`, `high-contrast`, `print`) or a user theme file
+   * `theme-<id>.css`. One that names no theme shows the Default theme (ADR-40).
+   */
+  themeId: string;
   leftHanded: boolean;
   /** The style every chord name is written in (ADR-33). */
   chordSymbols: ChordSymbolStyle;
@@ -131,6 +139,7 @@ export const DEFAULT_SETTINGS: Readonly<Settings> = Object.freeze({
   accidentals: 'sharps',
   labels: 'notes',
   theme: 'system',
+  themeId: 'default',
   leftHanded: false,
   chordSymbols: 'standard',
   instrument: Object.freeze({
@@ -302,6 +311,7 @@ export function parseSettings(text: string): ParsedSettings {
   const accidentals = display.oneOf('accidentals', ACCIDENTALS, d.accidentals);
   const labels = display.oneOf('labels', LABEL_MODES, d.labels);
   const theme = display.oneOf('theme', THEMES, d.theme);
+  const themeId = display.text('theme_id', d.themeId);
   const leftHanded = display.boolean('left_handed', d.leftHanded);
   const chordSymbols = display.oneOf('chord_symbols', CHORD_SYMBOL_STYLES, d.chordSymbols);
   display.unknownKeys();
@@ -361,6 +371,7 @@ export function parseSettings(text: string): ParsedSettings {
       accidentals,
       labels,
       theme,
+      themeId,
       leftHanded,
       chordSymbols,
       instrument: { kind, strings, tuning, frets, capo },
@@ -386,6 +397,7 @@ export function serializeSettings(settings: Settings): string {
       accidentals: settings.accidentals,
       labels: settings.labels,
       theme: settings.theme,
+      theme_id: settings.themeId,
       left_handed: settings.leftHanded,
       chord_symbols: settings.chordSymbols,
     },

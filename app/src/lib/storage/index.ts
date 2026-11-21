@@ -14,7 +14,7 @@ export {
   type PickedFile,
   type UserFiles,
 } from './files';
-export { InvalidDocumentNameError, isDocumentName } from './names';
+export { CSS_EXTENSION, InvalidDocumentNameError, isDocumentName } from './names';
 export { StorageError, type Storage } from './storage';
 export { TauriStorage } from './tauri';
 

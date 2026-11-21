@@ -1,6 +1,7 @@
 /**
- * Everything the app stores goes through this interface (ADR-4): named TOML documents, kept
- * as text so files stay hand-editable. `createStorage()` in `./index.ts` picks the Tauri
+ * Everything the app stores goes through this interface (ADR-4): named TOML documents, and
+ * CSS documents for user themes (a name ending in `.css`, ADR-40), kept as text so files stay
+ * hand-editable. `createStorage()` in `./index.ts` picks the Tauri
  * implementation (files in the app-data folder) or the browser one (localStorage).
  *
  * Both implementations pass the same contract suite (`./contract.ts`). Every method rejects

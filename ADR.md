@@ -27,9 +27,9 @@ ADR-1 to ADR-13 come from the design interview behind [SPEC.md](SPEC.md) (decisi
 | 14 | [The WASM package is built by wasm-pack into the app's source tree](#adr-14-the-wasm-package-is-built-by-wasm-pack-into-the-apps-source-tree) | Accepted |
 | 15 | [Notes are MIDI numbers; intervals keep their degree labels](#adr-15-notes-are-midi-numbers-intervals-keep-their-degree-labels) | Accepted |
 | 16 | [Releases are unsigned drafts built by CI from a version tag](#adr-16-releases-are-unsigned-drafts-built-by-ci-from-a-version-tag) | Accepted |
-| 17 | [Stored documents: flat named TOML files, versioned settings, dialogs in Rust](#adr-17-stored-documents-flat-named-toml-files-versioned-settings-dialogs-in-rust) | Accepted |
+| 17 | [Stored documents: flat named TOML files, versioned settings, dialogs in Rust](#adr-17-stored-documents-flat-named-toml-files-versioned-settings-dialogs-in-rust) | Accepted; name rule extended by ADR-40 (`.css` documents) |
 | 18 | [The fretboard component: absolute frets, string 1 on top, one keyboard grid](#adr-18-the-fretboard-component-absolute-frets-string-1-on-top-one-keyboard-grid) | Accepted |
-| 19 | [Theme tokens are hand-written CSS, checked by tests](#adr-19-theme-tokens-are-hand-written-css-checked-by-tests) | Accepted |
+| 19 | [Theme tokens are hand-written CSS, checked by tests](#adr-19-theme-tokens-are-hand-written-css-checked-by-tests) | Accepted; file layout and theme selection superseded by ADR-40 |
 | 20 | [The scale catalog: one shared formula type, per-item errors, user ids replace built-ins](#adr-20-the-scale-catalog-one-shared-formula-type-per-item-errors-user-ids-replace-built-ins) | Accepted |
 | 21 | [Tunings list strings low to high; positions come out in fretboard coordinates](#adr-21-tunings-list-strings-low-to-high-positions-come-out-in-fretboard-coordinates) | Accepted; WASM tuning API superseded by ADR-23 |
 | 22 | [Scale positions filter the fretboard mapping; 3NPS patterns take the lowest octave that fits](#adr-22-scale-positions-filter-the-fretboard-mapping-3nps-patterns-take-the-lowest-octave-that-fits) | Accepted |
@@ -49,6 +49,7 @@ ADR-1 to ADR-13 come from the design interview behind [SPEC.md](SPEC.md) (decisi
 | 36 | [Custom chords: the scale editor on two octaves, suffixes unique and readable, checks in the core](#adr-36-custom-chords-the-scale-editor-on-two-octaves-suffixes-unique-and-readable-checks-in-the-core) | Accepted |
 | 37 | [The voicing browser: diagrams from the core's result, saved constraints, one chosen shape on the neck](#adr-37-the-voicing-browser-diagrams-from-the-cores-result-saved-constraints-one-chosen-shape-on-the-neck) | Accepted |
 | 38 | [Reverse lookup on the neck: a select mode, the lowest pitch as the bass, results chosen through the existing inputs](#adr-38-reverse-lookup-on-the-neck-a-select-mode-the-lowest-pitch-as-the-bass-results-chosen-through-the-existing-inputs) | Accepted |
+| 40 | [Themes: CSS files with a light and/or dark scheme, applied at runtime, user themes as CSS documents](#adr-40-themes-css-files-with-a-light-andor-dark-scheme-applied-at-runtime-user-themes-as-css-documents) | Accepted |
 
 ---
 
@@ -412,6 +413,11 @@ checks every token has a row in `docs/theme-tokens.md`. Names follow `--<area>[-
   test can resolve them.
 - jsdom ignores media queries, so the OS-preference path is checked structurally and by hand,
   not by a rendering test.
+
+*Superseded in part by ADR-40:* `tokens.css`, its `:root`/media-query/`data-theme` blocks and
+`styles/theme.ts` are replaced by theme files with `[data-scheme]` blocks, applied at runtime
+with `data-scheme` on the root element. The token contract, the value rules and the contrast
+test stay.
 
 ## ADR-20: The scale catalog: one shared formula type, per-item errors, user ids replace built-ins
 
@@ -1368,3 +1374,62 @@ editors are given.
   the user move it up, as a click on the editor's own neck would (ADR-36).
 - A slash chord chosen from the list leaves its text in the typed-symbol field, where the user
   can edit it like any typed symbol.
+
+## ADR-40: Themes: CSS files with a light and/or dark scheme, applied at runtime, user themes as CSS documents
+
+**Context.** M4.1 turns the two token blocks of ADR-19 into selectable themes: 3–4 built-ins
+(one print-friendly), a picker, and user theme files loaded through `Storage` (ADR-4). The
+existing setting `display.theme` is a light/dark/system choice, and the M4.2–M4.4 exports
+must be able to reuse a theme. Open questions: how a theme relates to light/dark, what a
+theme file looks like, where user files live given that `Storage` holds TOML documents, and
+what a user theme that misses tokens or contrast gets.
+
+**Decision.**
+- **A theme has a light scheme, a dark scheme or both; light/dark stays its own setting.**
+  `display.theme` keeps meaning `system | light | dark`, and a new key `display.theme_id`
+  (default `default`; missing means default, no version bump) names the theme. The scheme
+  shown is the one asked for (the OS's for `system`, followed as it changes), or the theme's
+  only scheme when it has one. So *Default*, *High contrast* (both schemes) and *Print* (light
+  only) all work with the existing setting, and switching themes keeps the light/dark choice.
+  The alternative, each theme a single scheme with "system" meaning a fixed light/dark pair,
+  would lose OS-following for every theme but one.
+- **One file format for built-in and user themes:** plain CSS with an optional
+  `:root { --theme-name: '…' }` and one `[data-scheme='light']` and/or
+  `[data-scheme='dark']` block of tokens; no other selectors, at-rules or nesting. Built-ins
+  are `app/src/styles/themes/*.css`, embedded with `?raw`; a user theme is copied from one.
+  A small hand-written parser reads them (not the DOM's CSS parser), so loading works without
+  a document, gives precise messages and doesn't silently drop rules.
+- **Applied at runtime.** The app turns the chosen theme into a stylesheet (`themeCss()`: one
+  `[data-scheme]` block per scheme, every token, plus `color-scheme`) in one `<style>` element
+  and sets `data-scheme` on the root element (`applyTheme()`, which returns a function that
+  stops following the OS). This replaces `tokens.css`, its duplicated dark block and
+  `data-theme` (ADR-19). Exports can put the same stylesheet in a sheet and set `data-scheme`
+  on its root; nothing in the format assumes the app's document.
+- **User themes are CSS documents in `Storage`.** The document name rule (ADR-17) gains an
+  optional `.css` suffix: `theme-solar.css` is the file `theme-solar.css` in the app-data
+  folder (and the localStorage entry with that name); a name without it is still `.toml`.
+  Rust and TypeScript check the same rule against the shared fixture; `list()` returns CSS
+  documents with their suffix; the contract suite covers a CSS document next to a TOML one.
+  The library reads every `theme-<id>.css` at start; id `<id>`. A user id equal to a
+  built-in's replaces it, as user catalog items do (ADR-20).
+- **Broken user themes degrade, never block.** A file that isn't a theme file (no scheme
+  block, unclosed or nested block, stray text) is left out. A missing or non-`#rrggbb` token
+  takes the Default theme's value in the same scheme. Unknown tokens, selectors and at-rules
+  are ignored. A failed contrast rule (the same checks as the built-ins, moved from the test to
+  `lib/themes/contrast.ts`) is reported but the colours are kept: the user chose them, and
+  rewriting them would be surprising. Everything is listed under the picker. A saved
+  `theme_id` that names no theme shows Default and says so, without overwriting the setting.
+- **Built-ins are held to every rule:** `tokens.test.ts` runs the contrast, graphics and
+  degree-palette checks for every scheme of every built-in, and that each defines exactly the
+  token contract.
+
+**Consequences.**
+- The light/dark radios do nothing for Print; they are disabled with a note rather than
+  hidden, so the choice is still visible for the next theme.
+- Without `prefers-color-scheme` in CSS the first paint depends on script: `main.ts` applies
+  the Default theme before the core loads, so the page is styled from the start, and the OS
+  path is testable in jsdom with an injected `matchMedia`.
+- `Storage` now holds one non-TOML kind of document. Import/export of user files (ADR-17)
+  still parses TOML, so a theme can't be imported through it yet; files are added by hand.
+- Theme files are read once at start; a new or edited file needs a restart.
+- A user theme may be less readable than the built-ins; the warning is the only guard.

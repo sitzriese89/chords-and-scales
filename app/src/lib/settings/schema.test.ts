@@ -13,6 +13,7 @@ const custom: Settings = {
   accidentals: 'flats',
   labels: 'intervals',
   theme: 'dark',
+  themeId: 'solar',
   leftHanded: true,
   chordSymbols: 'jazz',
   instrument: { kind: 'bass', strings: 5, tuning: 'bass-5-standard', frets: 21, capo: 3 },
@@ -64,6 +65,7 @@ describe('serializeSettings', () => {
         accidentals: 'flats',
         labels: 'intervals',
         theme: 'dark',
+        theme_id: 'solar',
         left_handed: true,
         chord_symbols: 'jazz',
       },
@@ -95,6 +97,18 @@ describe('parseSettings', () => {
     const result = parsed('version = 1\n[display]\ntheme = "dark"\n');
     expect(result.problems).toEqual([]);
     expect(result.settings).toEqual({ ...defaultSettings(), theme: 'dark' });
+  });
+
+  it('reads the theme id, the Default theme when it is missing (ADR-40)', () => {
+    expect(parsed('version = 1\n[display]\ntheme = "dark"\n').settings.themeId).toBe('default');
+    const result = parsed('version = 1\n[display]\ntheme_id = "print"\n');
+    expect(result.problems).toEqual([]);
+    expect(result.settings).toEqual({ ...defaultSettings(), themeId: 'print' });
+    const invalid = parsed('version = 1\n[display]\ntheme_id = 3\n');
+    expect(invalid.settings.themeId).toBe('default');
+    expect(invalid.problems).toEqual([
+      'display.theme_id should be a text of 1 to 64 characters, not 3',
+    ]);
   });
 
   it('falls back per value and names each invalid one', () => {
