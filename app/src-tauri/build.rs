@@ -7,6 +7,7 @@ const COMMANDS: &[&str] = &[
     "delete_document",
     "export_file",
     "import_file",
+    "print_sheet",
 ];
 
 fn main() {

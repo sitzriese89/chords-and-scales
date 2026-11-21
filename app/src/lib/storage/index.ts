@@ -13,6 +13,7 @@ export {
   importDocument,
   TauriUserFiles,
   type FileFormat,
+  type InvokeWithBody,
   type PickedFile,
   type SaveRequest,
   type UserFiles,

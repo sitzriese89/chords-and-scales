@@ -9,11 +9,23 @@
   (`Fretboard`, `TabView`, `ChordDiagram`) from what the item stored. The editing controls are
   outside it, so an export can take the subtree as it is (M4.3, M4.4).
 
-  Export: the whole sheet as SVG or HTML, each item as SVG, built from that subtree (ADR-44)
-  and saved through `files` (a save dialog in Tauri, a download in the browser).
+  Export: the whole sheet as SVG, PNG or HTML, each item as SVG or PNG, built from that subtree
+  (ADR-44, ADR-45) and saved through `files` (a save dialog in Tauri, a download in the
+  browser). A PNG is the SVG drawn by `rasterize` at the chosen scale. Print (and so PDF) goes
+  through `printer`; the print stylesheet at the end leaves only the sheet on the page.
 -->
 <script lang="ts">
-  import { exportFileName, itemSvg, sheetHtml, sheetSvg } from '../export';
+  import {
+    DEFAULT_PNG_SCALE,
+    exportFileName,
+    itemSvg,
+    PNG_SCALES,
+    sheetHtml,
+    sheetSvg,
+    type PngScale,
+    type Printer,
+    type Rasterize,
+  } from '../export';
   import { Fretboard } from '../fretboard';
   import type { FileFormat, UserFiles } from '../storage';
   import { TabView } from '../tab';
@@ -26,7 +38,11 @@
   import { getSheet } from './store.svelte';
   import { sheetItemView } from './view';
 
-  const { files }: { files: UserFiles } = $props();
+  const {
+    files,
+    rasterize,
+    printer,
+  }: { files: UserFiles; rasterize: Rasterize; printer: Printer } = $props();
 
   const sheet = getSheet();
   const library = getThemes();
@@ -68,28 +84,58 @@
   /** What the last export did; shown until the next one. */
   let exported = $state<string | null>(null);
 
-  async function save(format: FileFormat, suggestedName: string, build: () => string) {
+  /** Image pixels per CSS pixel of a PNG export. */
+  let pngScale = $state<PngScale>(DEFAULT_PNG_SCALE);
+
+  function reasonOf(error: unknown) {
+    return error instanceof Error ? error.message : String(error);
+  }
+
+  async function save(
+    format: FileFormat,
+    suggestedName: string,
+    build: () => string | Promise<string | Uint8Array>,
+  ) {
     exported = null;
     try {
-      const saved = await files.save({ suggestedName, format, content: build() });
+      const saved = await files.save({ suggestedName, format, content: await build() });
       if (saved) exported = `Exported ${suggestedName}.`;
     } catch (error) {
-      const reason = error instanceof Error ? error.message : String(error);
-      exported = `Could not export ${suggestedName}: ${reason}`;
+      exported = `Could not export ${suggestedName}: ${reasonOf(error)}`;
     }
   }
 
-  function exportSheet(format: 'svg' | 'html') {
+  /** What to build for `format` from the SVG an export of the sheet or an item draws. */
+  function builder(format: 'svg' | 'png', svg: () => string) {
+    if (format === 'svg') return svg;
+    const scale = pngScale;
+    return () => rasterize(svg(), scale);
+  }
+
+  function exportSheet(format: 'svg' | 'png' | 'html') {
     const root = article;
     if (!root) return;
-    const build = format === 'svg' ? () => sheetSvg(root) : () => sheetHtml(root);
+    const build = format === 'html' ? () => sheetHtml(root) : builder(format, () => sheetSvg(root));
     return save(format, exportFileName(sheet.title, format), build);
   }
 
-  function exportItem(index: number, title: string) {
+  function exportItem(index: number, title: string, format: 'svg' | 'png') {
     const figure = article?.querySelectorAll<HTMLElement>('figure[data-sheet-item]')[index];
     if (!figure) return;
-    return save('svg', exportFileName(title, 'svg'), () => itemSvg(figure));
+    return save(
+      format,
+      exportFileName(title, format),
+      builder(format, () => itemSvg(figure)),
+    );
+  }
+
+  async function print() {
+    exported = null;
+    try {
+      await printer.print();
+    } catch (error) {
+      exported = `Could not print the sheet: ${reasonOf(error)}`;
+    }
   }
 
   /** Puts the theme's stylesheet first in the sheet, kept up to date as the theme changes. */
@@ -194,7 +240,12 @@
           <button
             type="button"
             aria-label="Export {view.title} as SVG"
-            onclick={() => exportItem(index, view.title)}>Export SVG</button
+            onclick={() => exportItem(index, view.title, 'svg')}>Export SVG</button
+          >
+          <button
+            type="button"
+            aria-label="Export {view.title} as PNG"
+            onclick={() => exportItem(index, view.title, 'png')}>Export PNG</button
           >
         </li>
       {/each}
@@ -205,8 +256,24 @@
     <button type="button" disabled={views.length === 0} onclick={() => exportSheet('svg')}
       >Export sheet as SVG</button
     >
+    <button type="button" disabled={views.length === 0} onclick={() => exportSheet('png')}
+      >Export sheet as PNG</button
+    >
     <button type="button" disabled={views.length === 0} onclick={() => exportSheet('html')}
       >Export sheet as HTML</button
+    >
+    <label class="scale">
+      PNG scale
+      <select
+        value={pngScale}
+        onchange={(e) => (pngScale = Number(e.currentTarget.value) as PngScale)}
+      >
+        {#each PNG_SCALES as value (value)}
+          <option {value}>{value}×</option>
+        {/each}
+      </select>
+    </label>
+    <button type="button" disabled={views.length === 0} onclick={print}>Print or save as PDF</button
     >
     {#if exported}
       <p class="muted" role="status">{exported}</p>
@@ -391,6 +458,13 @@
     gap: 0.5rem;
   }
 
+  .scale {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.875rem;
+  }
+
   .preview {
     overflow-x: auto;
   }
@@ -440,5 +514,60 @@
     border: 1px dashed var(--border-strong);
     border-radius: 0.375rem;
     color: var(--text-muted);
+  }
+
+  /*
+    Printing (and so PDF, ADR-45): while the sheet is on the page, only the sheet prints, in
+    its own theme's colours, on the paper size the print dialog picks. Everything that neither
+    holds the sheet nor is in it is hidden; the elements that hold it lose their own boxes,
+    so the sheet starts at the page's top left. An item is never split across pages: one that
+    doesn't fit moves to the next page. Pages without the sheet print as they are.
+  */
+  @media print {
+    @page {
+      margin: 12mm;
+    }
+
+    :global(body:has([data-sheet]) :not(:has([data-sheet]), [data-sheet], [data-sheet] *)) {
+      display: none !important;
+    }
+
+    :global(body:has([data-sheet])),
+    :global(body:has([data-sheet]) :has([data-sheet])) {
+      display: block !important;
+      position: static !important;
+      width: auto !important;
+      height: auto !important;
+      min-height: 0 !important;
+      max-width: none !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      border: 0 !important;
+      overflow: visible !important;
+      background: none !important;
+      box-shadow: none !important;
+    }
+
+    .sheet {
+      display: block;
+      border: 0;
+      print-color-adjust: exact;
+      -webkit-print-color-adjust: exact;
+    }
+
+    .sheet-title {
+      break-after: avoid;
+    }
+
+    .sheet-item {
+      margin-top: 1.25rem;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    .sheet :global(svg) {
+      max-width: 100%;
+      height: auto;
+    }
   }
 </style>

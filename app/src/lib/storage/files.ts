@@ -1,7 +1,6 @@
 import { parse } from 'smol-toml';
 import { assertDocumentName, isDocumentName } from './names';
 import { StorageError, type Storage } from './storage';
-import type { Invoke } from './tauri';
 
 /** A file the user picked for import. */
 export interface PickedFile {
@@ -18,6 +17,7 @@ export const FILE_FORMATS = {
   toml: { name: 'TOML', extensions: ['toml'], mime: 'application/toml' },
   svg: { name: 'SVG image', extensions: ['svg'], mime: 'image/svg+xml' },
   html: { name: 'HTML page', extensions: ['html', 'htm'], mime: 'text/html' },
+  png: { name: 'PNG image', extensions: ['png'], mime: 'image/png' },
 } as const satisfies Record<string, { name: string; extensions: readonly string[]; mime: string }>;
 
 export type FileFormat = keyof typeof FILE_FORMATS;
@@ -27,8 +27,8 @@ export interface SaveRequest {
   /** File name offered in the dialog or used for the download, e.g. `scales.toml`. */
   suggestedName: string;
   format: FileFormat;
-  /** The file's text, written as UTF-8. */
-  content: string;
+  /** The file's text, written as UTF-8, or its bytes (a PNG), written as they are. */
+  content: string | Uint8Array;
 }
 
 /**
@@ -54,13 +54,39 @@ export class ImportError extends Error {
   }
 }
 
+/**
+ * `invoke` from `@tauri-apps/api/core` with what a binary export needs: bytes as the whole
+ * payload (sent as the raw request body) and request headers.
+ */
+export type InvokeWithBody = (
+  command: string,
+  args?: Record<string, unknown> | Uint8Array,
+  options?: { headers: Record<string, string> },
+) => Promise<unknown>;
+
+/**
+ * Headers naming a binary export (`NAME_HEADER`, `FORMAT_HEADER` in `user_files.rs`). The name
+ * is percent-encoded: header values are ASCII.
+ */
+export function exportHeaders(suggestedName: string, format: FileFormat): Record<string, string> {
+  return { 'x-export-name': encodeURIComponent(suggestedName), 'x-export-format': format };
+}
+
 /** Native dialogs through the Rust commands in `app/src-tauri/src/user_files.rs`. */
 export class TauriUserFiles implements UserFiles {
-  constructor(private readonly invoke: Invoke) {}
+  constructor(private readonly invoke: InvokeWithBody) {}
 
   async save({ suggestedName, format, content }: SaveRequest): Promise<boolean> {
     try {
-      return (await this.invoke('export_file', { suggestedName, format, content })) === true;
+      // Text goes as JSON arguments, bytes as the raw request body: a PNG isn't sent as a
+      // JSON array of numbers (ADR-45).
+      const saved =
+        typeof content === 'string'
+          ? await this.invoke('export_file', { suggestedName, format, content })
+          : await this.invoke('export_file', content, {
+              headers: exportHeaders(suggestedName, format),
+            });
+      return saved === true;
     } catch (cause) {
       throw new StorageError(String(cause), { cause });
     }
@@ -80,8 +106,12 @@ export class BrowserUserFiles implements UserFiles {
   constructor(private readonly doc: Document = document) {}
 
   async save({ suggestedName, format, content }: SaveRequest): Promise<boolean> {
-    const type = `${FILE_FORMATS[format].mime};charset=utf-8`;
-    const url = URL.createObjectURL(new Blob([content], { type }));
+    const { mime } = FILE_FORMATS[format];
+    const blob =
+      typeof content === 'string'
+        ? new Blob([content], { type: `${mime};charset=utf-8` })
+        : new Blob([content as Uint8Array<ArrayBuffer>], { type: mime });
+    const url = URL.createObjectURL(blob);
     const link = this.doc.createElement('a');
     link.href = url;
     link.download = suggestedName;

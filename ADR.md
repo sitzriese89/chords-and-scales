@@ -1741,3 +1741,69 @@ and M4.4 will add PNG bytes to it.
   from the screen in another program.
 - The export tests need the components' styles, which make jsdom slow, so they are a vitest
   project of their own (`*.styled.test.ts`) that loads them; the other tests run without.
+
+## ADR-45: PNG from the standalone SVG on a canvas, bytes as the raw IPC body, printing through Rust, no unconfirmed overwrite
+
+**Context.** M4.4 adds the last two export formats of SPEC §5.10: PNG ("crisp at 2×") and PDF
+through the webview's print. A PNG is bytes, and the save path (ADR-44) only carried text.
+`window.print()` does nothing in Tauri's macOS webview (WKWebView). The #74 review also found
+that `export_file` added the extension after the save dialog had returned, so typing `sheet`
+when `sheet.svg` existed replaced `sheet.svg` without the dialog ever asking about it.
+
+**Decision.**
+- **PNG is the standalone SVG rasterized in the webview** (`lib/export/png.ts`), for the sheet
+  and for each item, like the SVG buttons: no second renderer, so a PNG looks like the SVG and
+  the screen. The SVG's root `width` and `height` are multiplied by the scale (its `viewBox`
+  kept) before it is loaded as an `<img>` from a `data:` URL, and drawn 1:1 on a canvas of that
+  size, so the browser draws the vectors at the final resolution instead of stretching a 1×
+  bitmap. The SVG has no fonts, images or links (ADR-44), so the canvas isn't tainted and
+  `toBlob('image/png')` works. Scales 1×, 2×, 3×, 2× by default, picked next to the export
+  buttons and not stored. An image over 4096 × 4096 pixels (or 16384 a side) is refused with a
+  message: the smallest canvas limit among the webviews, past which a canvas is drawn blank.
+  The canvas and image loading are an injected `CanvasEnvironment`, and the app gets the
+  rasterizer as a prop, since jsdom has neither.
+- **Bytes cross the IPC as the raw request body.** `SaveRequest.content` is `string |
+  Uint8Array`. Text goes as before (JSON arguments). Bytes are passed to `invoke` as the whole
+  payload, which Tauri sends as the body of its custom-protocol request
+  (`application/octet-stream`, `InvokeBody::Raw` in Rust), with the name (percent-encoded,
+  since header values are ASCII) and the format key in `x-export-name` / `x-export-format`
+  headers. A `Vec<u8>` argument would have meant a JSON array of numbers, about 3–4 times the
+  PNG's size, and base64 a third more plus encoding on both sides. The command keeps its name
+  and takes a `tauri::ipc::Request`; `ExportRequest::from_ipc` reads either body, and also a
+  JSON array of numbers, which is what Tauri's `postMessage` fallback sends when the custom
+  protocol is blocked. `ExportFormat` gains `Png` (`PNG image`, `.png`); the browser download
+  is a Blob of type `image/png`.
+- **PDF is the webview's print, with a print stylesheet** in `SheetView.svelte`. While the
+  sheet is on the page (`body:has([data-sheet])`), everything that neither holds nor is in
+  `article[data-sheet]` is `display: none`, and its ancestors lose their boxes (no padding,
+  border, overflow or fixed height), so only the sheet prints, from the top left of the page.
+  The sheet keeps its theme's colours (`print-color-adjust: exact`, so a dark sheet prints
+  dark even with background graphics off), drawings shrink to the page width, an item is
+  `break-inside: avoid` (one that doesn't fit starts the next page) and the title stays with
+  the first item. `@page` sets a 12 mm margin and leaves the paper size to the print dialog
+  (A4 or Letter by locale). Other pages print as they are. "Save as PDF" is the system print
+  dialog's own destination; the app writes no PDF itself.
+- **Printing goes through Rust.** A `Printer` seam like `UserFiles`: in Tauri, the command
+  `print_sheet` (declared in `build.rs`, granted by `allow-print-sheet`) calls `print()` on the
+  calling webview; in a plain browser, `window.print()`. Tauri's doc comment says
+  `Webview::print` is "only supported on macOS", but wry 0.57 implements it on all three:
+  WebView2 (Windows) runs `window.print()`, WKWebView (macOS 11+) runs an `NSPrintOperation`
+  on the web view, WebKitGTK (Linux) runs a `WebKitPrintOperation` dialog. All three print the
+  page with its print stylesheet.
+- **No file is replaced without the dialog asking.** `save_target` decides from the path the
+  dialog returned: the picked path itself is written (the dialog asked before replacing it);
+  with the extension added, a path that doesn't exist is written; one that exists makes
+  `export_file` open the dialog again in that folder suggesting the full name (`sheet.svg`),
+  so the dialog's own overwrite confirmation covers it.
+
+**Consequences.**
+- PNG text is drawn with the system font the webview has, as in the SVG; the PNG of a sheet
+  made on one OS can differ slightly from another's.
+- A very long sheet at 3× is refused rather than drawn blank; 2× or 1× still works.
+- The print stylesheet relies on `:has()` (Chromium 105, Safari/WebKit 15.4, WebKitGTK 2.36).
+  An older Linux WebKitGTK would print the whole app page.
+- Printing on macOS and Linux can only be checked in the release builds on those systems; the
+  automated checks cover the stylesheet (jsdom) and the page breaks (headless Chromium's
+  print to PDF).
+- Typing a name without an extension over an existing file shows the save dialog twice, the
+  second time with the full name and the overwrite question.

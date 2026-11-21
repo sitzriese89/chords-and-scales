@@ -167,7 +167,7 @@ pub fn delete_document(dir: &Path, name: &str) -> Result<(), StorageError> {
 
 /// Writes `content` to `path` through a temporary file in the same folder, flushed to disk,
 /// then renamed over `path` (which replaces an existing file on every platform).
-pub fn write_atomic(path: &Path, content: &str) -> io::Result<()> {
+pub fn write_atomic(path: &Path, content: impl AsRef<[u8]>) -> io::Result<()> {
     static COUNTER: AtomicU64 = AtomicU64::new(0);
     let dir = path.parent().unwrap_or_else(|| Path::new("."));
     let file_name = path
@@ -181,7 +181,7 @@ pub fn write_atomic(path: &Path, content: &str) -> io::Result<()> {
     ));
     let result = (|| {
         let mut file = File::create(&tmp)?;
-        file.write_all(content.as_bytes())?;
+        file.write_all(content.as_ref())?;
         file.sync_all()?;
         drop(file);
         fs::rename(&tmp, path)

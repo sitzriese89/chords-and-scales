@@ -114,8 +114,10 @@ Files are hand-editable and shareable; the UI offers import/export of them.
   crashes on a bad file.
 - Export saves a document through a save dialog (a download in the browser); import picks a
   TOML file through an open dialog (an upload in the browser) and refuses files that aren't
-  valid TOML. The same save path writes the sheet's SVG and HTML exports (§5.10); the dialog's
-  filter follows the kind of file.
+  valid TOML. The same save path writes the sheet's SVG, PNG and HTML exports (§5.10); the
+  dialog's filter follows the kind of file. A file is never replaced unless the dialog asked:
+  a name typed without its extension that matches an existing file opens the dialog again
+  with the full name.
 
 ### 3.3 Custom items (Q12, Q17, Q32)
 
@@ -643,6 +645,15 @@ Algorithmic (works for any tuning and 4–9 strings; no static shape library).
     where they are on screen; an item's SVG is its caption and drawing on the sheet's paper
     colour. The HTML is one page with the sheet, its drawings as inline SVG and no scripts,
     links, fonts, images or other requests, so it opens offline.
+  - **PNG** (ADR-45): **Export sheet as PNG** and **Export PNG** next to each item, at the
+    **PNG scale** picked beside them (1×, 2× or 3×; 2× by default). The PNG is the SVG export
+    drawn at that scale (a 2× PNG is twice the sheet's on-screen width and height, drawn at
+    that resolution, not enlarged). An image over 4096 × 4096 pixels is refused with a
+    message; a smaller scale works.
+  - **PDF** (ADR-45): **Print or save as PDF** opens the system print dialog, where a PDF is a
+    destination. Only the sheet prints, in its own theme's colours, with a 12 mm margin on the
+    paper size picked in the dialog; drawings shrink to the page width, and an item that
+    doesn't fit on the page starts the next one, never split. Other pages print as they are.
 - **Themes:** selectable; see §5.11.
 
 ### 5.11 Theming (Q30)
