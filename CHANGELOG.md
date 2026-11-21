@@ -8,6 +8,11 @@ into its GitHub Release, and refuses to build a tag without one
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-21
+
+Moods and themes: filter scales and chords by how they sound, let the app pick one for you,
+and choose how the app looks.
+
 ### Added
 
 - **Mood tags and tag filters.** Every scale and chord shows its mood tags (dark, bright, sad,
@@ -15,6 +20,25 @@ into its GitHub Release, and refuses to build a tag without one
   Click tag chips above the scale list or the chord quality to list only the items with every
   tag you picked. Add tags or change the rules in `tags.toml` (see
   [docs/tag-rules.md](docs/tag-rules.md)).
+- **Random scale and Random chord.** A random root and scale, or root and chord, from what
+  your tag chips (and, for scales, the search) leave in the list: a practice prompt within the
+  mood you picked. Never the one already shown.
+- **Themes.** Choose Default, High contrast or Print under **Appearance**; light, dark or
+  following the system still works as before (Print is light only). Add your own as
+  `theme-<id>.css` files in the app-data folder (see
+  [docs/theme-tokens.md](docs/theme-tokens.md)); missing colours fall back to Default and
+  contrast problems are listed under the picker.
+
+### Changed
+
+- `settings.toml` has a new key `display.theme_id`. Files from 0.2.0 load unchanged.
+
+### Known limitations
+
+- The default tag weights are a first cut: a few scales and chords (Mixolydian ♭6, Hungarian
+  major, `7#5`) get no tag yet.
+- Changes to `tags.toml` and theme files take effect after a restart.
+- The installers are still not code-signed.
 
 ## [0.2.0] - 2026-11-17
 
@@ -91,6 +115,7 @@ folder.
   `.deb`). They are not code-signed yet, so Windows SmartScreen and macOS Gatekeeper will warn
   on first start.
 
-[Unreleased]: https://github.com/sitzriese89/chords-and-scales/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/sitzriese89/chords-and-scales/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/sitzriese89/chords-and-scales/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/sitzriese89/chords-and-scales/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/sitzriese89/chords-and-scales/releases/tag/v0.1.0
