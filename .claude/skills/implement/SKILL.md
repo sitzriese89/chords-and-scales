@@ -77,4 +77,7 @@ Done when: main is green, roadmap Status matches what merged, and the user has a
   (stopping the background task leaves it running) and any `rust-analyzer-proc-macro-srv`
   holding DLLs from the worktree's `target/`, run `git worktree remove`, then delete what's
   left with `cmd /c rd /s /q "\?\<full path>"` (`node_modules` paths exceed MAX_PATH), and
-  delete the local branches.
+  delete the local branches. Workers delete their own `CARGO_TARGET_DIR` after CI is green
+  ([WORKER.md](WORKER.md)); a worker sent back for fixes rebuilds into it. Delete the target
+  directories of the coordinator's own scratch combination checks after the merge, and never
+  one a running worker still uses or the main checkout's `target/`.
