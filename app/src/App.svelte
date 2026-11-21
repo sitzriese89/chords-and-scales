@@ -17,6 +17,7 @@
   import { InstrumentPanel } from './lib/instrument';
   import { SettingsStore, setSettings } from './lib/settings';
   import type { Random } from './lib/random';
+  import { setSheet, SheetStore, SheetView } from './lib/sheet';
   import { createStorage, type Storage } from './lib/storage';
   import { setTagFilters, TagFilters } from './lib/tags';
   import { applyTheme, setThemes, ThemeLibrary, ThemePicker } from './lib/themes';
@@ -57,6 +58,13 @@
   // svelte-ignore state_referenced_locally
   const themes = new ThemeLibrary(storage);
   setThemes(themes);
+  // The export sheet: the items the "Add … to sheet" buttons collect, saved as `sheet.toml`
+  // (ADR-43).
+  // svelte-ignore state_referenced_locally
+  const sheet = new SheetStore(storage);
+  setSheet(sheet);
+  /** Which page is shown: the explorer with its panels, or the export sheet. Not saved. */
+  let page = $state<'explorer' | 'sheet'>('explorer');
   // The chord chosen in the chord panel, drawn on the explorer's neck (ADR-32).
   // svelte-ignore state_referenced_locally
   setChordState(new ChordState(settings, harmonizer, catalogs));
@@ -76,7 +84,7 @@
   // The views wait for the settings and the user's scales and tunings, so the last view
   // appears at once instead of after a flash of the defaults.
   let ready = $state(false);
-  Promise.all([settings.load(), catalogs.load(), themes.load()]).then(() => {
+  Promise.all([settings.load(), catalogs.load(), themes.load(), sheet.load()]).then(() => {
     ready = true;
   });
   const fileProblems = $derived(catalogs.problems);
@@ -102,10 +110,23 @@
               (theme and light/dark; ADR-40). The view toggles stay in board.
   - chords:   the docked chord panel (SPEC §5.3, ADR-10, ADR-32): collapsible and resizable.
   On narrow windows the regions stack in that order.
+  The header's Explorer / Sheet buttons swap these regions for the export sheet (ADR-43).
 -->
 <div class="layout">
   <header class="title">
     <h1>Chords &amp; Scales</h1>
+    <nav class="pages" aria-label="Pages">
+      <button
+        type="button"
+        aria-current={page === 'explorer' ? 'page' : undefined}
+        onclick={() => (page = 'explorer')}>Explorer</button
+      >
+      <button
+        type="button"
+        aria-current={page === 'sheet' ? 'page' : undefined}
+        onclick={() => (page = 'sheet')}>Sheet ({sheet.items.length})</button
+      >
+    </nav>
     {#if fileProblems.length > 0}
       <details class="file-problems">
         <summary>
@@ -121,7 +142,11 @@
     {/if}
   </header>
 
-  {#if ready}
+  {#if ready && page === 'sheet'}
+    <main class="region sheet">
+      <SheetView />
+    </main>
+  {:else if ready}
     <nav class="region picker" aria-label="Scale picker">
       <ScalePicker {random} />
     </nav>
@@ -250,8 +275,27 @@
     background: var(--surface-sunken);
   }
 
-  .loading {
+  .loading,
+  .sheet {
     grid-column: 1 / -1;
+  }
+
+  .pages {
+    display: flex;
+    gap: 0.25rem;
+  }
+
+  .pages button {
+    color: var(--text);
+    background: var(--surface-raised);
+    border-color: var(--border-strong);
+    font-size: 0.875rem;
+  }
+
+  .pages button[aria-current='page'] {
+    color: var(--accent-text);
+    background: var(--accent);
+    border-color: var(--accent);
   }
 
   .footer {

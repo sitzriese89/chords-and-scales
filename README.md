@@ -51,9 +51,13 @@ again). The tags come from the intervals, so your own scales and chords get them
 For a practice prompt, **Random scale** (in the scale picker) and **Random chord** (with the
 chord quality) pick a random root and an item from what the tags let through: a random dark
 scale, a random jazzy chord.
+To collect things for printing or sharing, use **Add scale to sheet**, **Add tab to sheet**,
+**Add chord to sheet** and, with a voicing chosen, **Add shape to sheet**; **Sheet** at the
+top shows the sheet, where you set its title and its own theme (Print by default), and move
+or remove items. Each item is drawn as it was when you added it.
 Everything is saved and comes back at the next start. Your own scales, chords and tunings go
 in `scales.toml`, `chords.toml` and `tunings.toml` next to `settings.toml` in the app-data
-folder, in the format described in [SPEC.md](SPEC.md); your own tag rules go in `tags.toml`
+folder, in the format described in [SPEC.md](SPEC.md), and the sheet in `sheet.toml`; your own tag rules go in `tags.toml`
 ([docs/tag-rules.md](docs/tag-rules.md)). Your own themes go there too, as
 `theme-<name>.css` files; the format and the folder for each OS are in
 [docs/theme-tokens.md](docs/theme-tokens.md).

@@ -184,7 +184,7 @@ export type ParsedSettings =
       reason: string;
     };
 
-type Doc = Record<string, unknown>;
+export type Doc = Record<string, unknown>;
 
 /**
  * Upgrades a parsed file from version `n` (the key) to `n + 1`. When the format changes:
@@ -193,17 +193,26 @@ type Doc = Record<string, unknown>;
  */
 const MIGRATIONS: Record<number, (doc: Doc) => Doc> = {};
 
-function migrate(doc: Doc): { doc: Doc } | { reason: string } {
+/**
+ * Brings a parsed versioned document (`version` at the top) up to `current` through
+ * `migrations`, or says why it can't be used. Shared by the stored documents that have a
+ * version: the settings and the export sheet (ADR-17, ADR-43).
+ */
+export function migrateDocument(
+  doc: Doc,
+  current: number,
+  migrations: Record<number, (doc: Doc) => Doc>,
+): { doc: Doc } | { reason: string } {
   let version = doc.version;
   if (version === undefined) return { reason: 'it has no version' };
   if (typeof version !== 'number' || !Number.isInteger(version)) {
     return { reason: `its version ${JSON.stringify(version)} is not a whole number` };
   }
-  if (version > SETTINGS_VERSION) {
+  if (version > current) {
     return { reason: `it was written by a newer version of the app (format ${version})` };
   }
-  while (version < SETTINGS_VERSION) {
-    const step = MIGRATIONS[version];
+  while (version < current) {
+    const step = migrations[version];
     if (!step) return { reason: `its format ${version} is no longer supported` };
     doc = step(doc);
     version += 1;
@@ -211,12 +220,15 @@ function migrate(doc: Doc): { doc: Doc } | { reason: string } {
   return { doc };
 }
 
-function isTable(value: unknown): value is Doc {
+export function isTable(value: unknown): value is Doc {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-/** Reads typed values out of one table, recording what was wrong. */
-class TableReader {
+/**
+ * Reads typed values out of one table, recording what was wrong. The export sheet reads its
+ * items with it too (ADR-43).
+ */
+export class TableReader {
   private readonly seen = new Set<string>();
 
   constructor(
@@ -259,13 +271,18 @@ class TableReader {
     ) as number;
   }
 
-  text(key: string, fallback: string): string {
+  text(key: string, fallback: string, max = MAX_TEXT): string {
     return this.get(
       key,
       fallback,
-      `a text of 1 to ${MAX_TEXT} characters`,
-      (v) => typeof v === 'string' && v.trim().length > 0 && v.length <= MAX_TEXT,
+      `a text of 1 to ${max} characters`,
+      (v) => typeof v === 'string' && v.trim().length > 0 && v.length <= max,
     ) as string;
+  }
+
+  /** Whether the table has a value for `key` at all (a missing one reads as its default). */
+  has(key: string): boolean {
+    return this.table[key] !== undefined;
   }
 
   section(key: string): TableReader {
@@ -299,7 +316,7 @@ export function parseSettings(text: string): ParsedSettings {
     const detail = error instanceof Error ? error.message.split('\n')[0] : String(error);
     return { ok: false, reason: `it is not valid TOML (${detail})` };
   }
-  const migrated = migrate(doc);
+  const migrated = migrateDocument(doc, SETTINGS_VERSION, MIGRATIONS);
   if ('reason' in migrated) return { ok: false, reason: migrated.reason };
 
   const problems: string[] = [];

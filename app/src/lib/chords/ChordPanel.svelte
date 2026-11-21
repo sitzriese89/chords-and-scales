@@ -12,7 +12,8 @@
   tags and can be filtered by tag with the chips; a chosen chord the filter hides stays chosen
   (ADR-41). **Random chord**, in the same picker, chooses a root and a quality from what the
   chips let through, as if the user had picked them (SPEC §5.8, ADR-42); `random` is the number
-  source, tests pass a seeded one.
+  source, tests pass a seeded one. "Add chord to sheet" puts the chord, as the neck shows it
+  without a chosen shape, on the export sheet (ADR-43).
 
   `children` is placed at the end of the panel's body: the app puts the voicing browser there
   (ADR-37), so this module does not depend on it.
@@ -31,6 +32,8 @@
     type ChordSymbolStyle,
   } from '../settings';
   import { randomPick, rootPitchClass, spellRoot, type Random } from '../random';
+  import AddToSheet from '../sheet/AddToSheet.svelte';
+  import { chordItem } from '../sheet/capture';
   import { getTagFilters, HIDDEN_BY_TAGS, TagChips, tagList, withTags } from '../tags';
   import { getChord } from '../theory';
   import { getUserCatalogs } from '../user-catalogs.svelte';
@@ -180,6 +183,18 @@
       spellRoot(picked.pitchClass, settings.current.accidentals),
       picked.item.id,
     );
+  }
+
+  /** The chord as the neck shows it, for the export sheet: alone, or over the scale. */
+  function addChord() {
+    const shown = chordState.active;
+    if (!shown) return null;
+    return chordItem(settings.current, {
+      root: shown.root,
+      chordId: shown.chord.id,
+      fromScale: shown.fromScale,
+      bass: shown.bass,
+    });
   }
 
   function setDegree(event: Event & { currentTarget: HTMLSelectElement }) {
@@ -439,6 +454,7 @@
           </button>
           <button type="button" class="clear" onclick={() => chordState.clear()}>Clear chord</button
           >
+          <AddToSheet what="chord" make={addChord} />
           {#if settings.current.audio.muted}
             <span class="muted">Sound is muted.</span>
           {/if}
