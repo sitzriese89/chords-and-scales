@@ -89,6 +89,19 @@ describe('standalone exports', () => {
     ]);
   });
 
+  it('keeps the title as written, with runs of white space as one space', () => {
+    const article = sheet();
+    article.querySelector('h2')!.textContent = '  Scales   and\n\tchords ';
+    article.querySelector('figure[data-kind="missing"] .title')!.textContent = 'Bass\n  lines';
+    const svg = parse(sheetSvg(article));
+    expect(svg.querySelector('title')?.textContent).toBe('Scales and chords');
+    const figure = article.querySelector<HTMLElement>('figure[data-kind="missing"]')!;
+    expect(parse(itemSvg(figure)).querySelector('title')?.textContent).toBe('Bass lines');
+    expect(new DOMParser().parseFromString(sheetHtml(article), 'text/html').title).toBe(
+      'Scales and chords',
+    );
+  });
+
   it('writes the sheet as a page with nothing to load', () => {
     const html = sheetHtml(sheet());
     expect(html).not.toMatch(/https?:|\/\/|@import|url\(|<link|<script|var\(|svelte-|<!---->/);
