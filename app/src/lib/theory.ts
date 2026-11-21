@@ -119,6 +119,14 @@ export type {
 } from './wasm/theory_wasm.js';
 export { chordVoicings } from './wasm/theory_wasm.js';
 
+// Mood tags (crates/theory-wasm/src/tags.rs, ADR-39, docs/tag-rules.md): derived from a scale's
+// or chord's intervals by weighted rules, so user scales and chords get them too. `scaleTags` /
+// `chordTags` look the id up in the current catalogs. `setUserTagRules(toml)` merges a user
+// rules file over the built-in rules and returns a TagRulesReport (a bad file never throws; an
+// empty string clears it).
+export type { TagInfo, TagRuleError, TagRulesReport } from './wasm/theory_wasm.js';
+export { chordTags, listTags, scaleTags, setUserTagRules } from './wasm/theory_wasm.js';
+
 let ready: Promise<void> | undefined;
 
 /**

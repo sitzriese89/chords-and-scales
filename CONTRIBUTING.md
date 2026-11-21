@@ -92,8 +92,11 @@ full stack and let voicings leave tones out.
 
 ### Tune mood tags
 
-Weights and thresholds live in the tag rules TOML in `crates/theory/data/` (ADR-9). Say in the
-PR which scales/chords changed tags and why.
+Weights and thresholds live in `crates/theory/data/tags.toml` (ADR-9, ADR-39); the format and
+every feature are in [docs/tag-rules.md](docs/tag-rules.md). After a change, print every
+built-in item's tags with
+`cargo test -p theory print_builtin_tags -- --ignored --nocapture` and say in the PR which
+scales/chords changed tags and why.
 
 ### UI
 

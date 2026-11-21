@@ -13,6 +13,7 @@ mod positions;
 mod records;
 mod scales;
 mod symbols;
+mod tags;
 mod user_files;
 mod voicings;
 
@@ -36,4 +37,5 @@ pub use scales::{
     get_scale, list_scales, new_scale_id, scale_notes, set_user_scales, write_scales_toml,
 };
 pub use symbols::{SymbolStyle, format_chord_symbol, parse_chord_symbol};
+pub use tags::{chord_tags, list_tags, scale_tags, set_user_tag_rules};
 pub use voicings::chord_voicings;

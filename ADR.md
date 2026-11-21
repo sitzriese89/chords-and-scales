@@ -49,6 +49,7 @@ ADR-1 to ADR-13 come from the design interview behind [SPEC.md](SPEC.md) (decisi
 | 36 | [Custom chords: the scale editor on two octaves, suffixes unique and readable, checks in the core](#adr-36-custom-chords-the-scale-editor-on-two-octaves-suffixes-unique-and-readable-checks-in-the-core) | Accepted |
 | 37 | [The voicing browser: diagrams from the core's result, saved constraints, one chosen shape on the neck](#adr-37-the-voicing-browser-diagrams-from-the-cores-result-saved-constraints-one-chosen-shape-on-the-neck) | Accepted |
 | 38 | [Reverse lookup on the neck: a select mode, the lowest pitch as the bass, results chosen through the existing inputs](#adr-38-reverse-lookup-on-the-neck-a-select-mode-the-lowest-pitch-as-the-bass-results-chosen-through-the-existing-inputs) | Accepted |
+| 39 | [Mood tags: features from semitones, one weight table per tag, a threshold per kind, user rules merged per key](#adr-39-mood-tags-features-from-semitones-one-weight-table-per-tag-a-threshold-per-kind-user-rules-merged-per-key) | Accepted |
 
 ---
 
@@ -1368,3 +1369,66 @@ editors are given.
   the user move it up, as a click on the editor's own neck would (ADR-36).
 - A slash chord chosen from the list leaves its text in the typed-symbol field, where the user
   can edit it like any typed symbol.
+
+## ADR-39: Mood tags: features from semitones, one weight table per tag, a threshold per kind, user rules merged per key
+
+**Context.** M3.1 builds the rules engine of ADR-9: tags derived from interval features, a
+weighted rules file, a user override, bindings, and a documented format, for the tag filters of
+M3.2 to build on. The tags must work for any interval set, since user scales and chords are
+filtered like built-ins (ADR-5). The open questions were what a feature is read from, how one
+rule set serves seven-note scales and three-note chords, what a user file may change, and how the
+UI asks for tags.
+
+**Decision.**
+- **Features are read from semitones, never labels.** `theory::tags::Features::of(&Formula)`
+  computes 29 named features (`docs/tag-rules.md` lists them): notes above the root in any
+  octave (`b2` … `7`, `b9` counting as `b2`), what they do together (`minor`, `no-third`,
+  `sharp-4`, `flat-5`, `diminished`, `augmented`, `blue-notes`), the shape of the pitch-class
+  set (`semitone-pairs`, `tritone-pairs`, `augmented-seconds`, `wide-steps`, `symmetric`) and
+  chord extensions (`seventh`, `ninth`, `eleventh`, `thirteenth`, `extensions`,
+  `altered-extensions`). Labels would be truer to the catalog (`#4` in Lydian, `b5` in
+  Locrian) but the scale editor gives a new note its default label (ADR-26), so a user's Lydian
+  is written with `b5`. Two items that sound alike must get the same tags; the tritone's role
+  is decided from its neighbours instead (`sharp-4`: no perfect 4th; `flat-5`: no perfect 5th;
+  with neither, a minor 3rd makes it a ♭5). Tags are therefore root- and spelling-independent by
+  construction, and a property test checks it.
+- **One weight table per tag, a threshold per kind.** `crates/theory/data/tags.toml` has a
+  `[tag.<name>]` table with `scale-threshold`, `chord-threshold` (either may be left out: the
+  tag never applies to that kind) and `weights` (feature = whole number, negative allowed). An
+  item gets every tag whose score, the sum of feature × weight, reaches its kind's threshold.
+  Scales hold more of most features than chords, so a shared threshold would tag every scale or
+  no chord; separate weight tables per kind would double the file and make a user override
+  ambiguous. Weights are integers so scores compare exactly and the file stays readable.
+- **A user file merges per key.** `TagRules::with_user_rules(toml)` applies each
+  `[tag.<name>]` table over the tag of that name, or adds it: a given threshold or weight
+  replaces that one value, the rest stay, a weight of 0 removes the feature. The merged tag is
+  then checked (kebab-case name, a threshold, thresholds ≥ 1, a positive weight, known feature
+  names, no unknown keys); a table that fails is reported with the tag's name and skipped, the
+  rest still apply, as with catalog files (ADR-20). A file that isn't TOML is one error and the
+  built-ins stay. An empty file changes nothing (property-tested). Built-in tags can't be
+  deleted, only given unreachable thresholds; the format doesn't need a delete key yet.
+- **The core takes formulas; the binding takes ids.** The core API is
+  `TagRules::tags_for(&Formula, ItemKind)`, with `scale_tags(&Scale)` and `chord_tags(&Chord)`
+  on top, so anything with a formula can be tagged. The binding (`tags.rs`) keeps one current
+  rule set, like the catalogs (ADR-23): `setUserTagRules(toml)` returns a report (tags now in
+  use, errors with the tag or null), `listTags()` gives each tag with whether it applies to
+  scales and to chords, and `scaleTags(id)` / `chordTags(id)` look the id up in the current
+  scale and chord catalogs, so user items are tagged the same way. No interval-list entry point
+  yet: nothing in the UI has an untagged interval set, and the core already offers one.
+- **Twelve default tags.** happy, bright, sad, melancholic, dark, evil, dissonant, mysterious,
+  open, bluesy, exotic (scales only) and jazzy (chords only). Tests pin the anchors (Phrygian
+  and Locrian dark, Lydian bright, diminished chords dissonant), check that every tag lands on
+  some item of each kind it has a threshold for and on not every scale, and an ignored test
+  prints every built-in item's tags for tuning by eye.
+
+**Consequences.**
+- User scales and chords get tags with no extra work, and re-spelling a note never changes a
+  tag.
+- Some musical distinctions that live in spelling are approximated (a `dom7b5` reads as a
+  ♯11 without a 5th, so it is `bright`). The cyclic step features make all modes of one parent
+  share them, so every harmonic-minor mode is `exotic`.
+- A few built-ins get no tag at all (Mixolydian ♭6, Hungarian major, `7#5`); the weights are a
+  first cut and will need tuning (ADR-9). Changing the feature list is a format change and must
+  update `docs/tag-rules.md`.
+- M3.2 loads the user rules file from `Storage` and passes it to `setUserTagRules`; this item
+  ships no UI.
