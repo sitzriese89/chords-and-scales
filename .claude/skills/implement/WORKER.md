@@ -46,6 +46,10 @@ be done without them; if so, say so in your report. One-line `mod` / `pub use` a
   `🤖 Generated with [Claude Code](https://claude.com/claude-code)`.
 - After `gh pr create`, set the item's row in docs/roadmap.md to `Done (#<PR>)` in a follow-up
   commit and push. Wait for CI (`gh pr checks <PR> --watch`) and fix what fails.
+- Last step before the report, once CI is green and nothing is left to fix: delete your build
+  cache with `rm -rf "$CARGO_TARGET_DIR"` (`C:\t\c<n>`). Not earlier: a CI fix needs a rebuild.
+  Only your own `C:\t\c<n>`: never another worker's target directory, never the main
+  checkout's `target/`.
 
 **Report** (short): PR URL, CI result, design choices, how you verified, what is left open or
 questionable, and anything worth trying by hand in the app.
