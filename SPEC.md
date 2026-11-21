@@ -547,10 +547,17 @@ Algorithmic (works for any tuning and 4–9 strings; no static shape library).
 - Rules are **weighted scores** defined in a TOML file: each interval feature
   contributes a weight per tag (e.g. ♭2 → +evil, ♭3 → +sad, ♯4 → +bright,
   tritone → +dissonant, 7th/9th extensions → +jazzy). A tag applies when its
-  score exceeds a threshold.
+  score reaches its threshold; scales and chords have separate thresholds, and a
+  tag can be for one kind only (exotic is for scales, jazzy for chords).
+- Features are read from the semitones, not the labels, so a note's spelling never
+  changes a tag, and user scales and chords are tagged exactly like built-in ones.
+- Built-in tags: happy, bright, sad, melancholic, dark, evil, dissonant, mysterious,
+  open, bluesy, exotic, jazzy (`crates/theory/data/tags.toml`).
 - **Multiple tags per item.**
 - Users can **override weights and add new tags** via a user rules file in the
-  app-data directory (§3.2). No in-app rule editor; the format is documented.
+  app-data directory (§3.2), merged over the built-in rules. No in-app rule editor;
+  the format, the features and the merge rules are documented in
+  [docs/tag-rules.md](docs/tag-rules.md).
 - Scales and chords can be **filtered by tag**.
 
 ### 5.8 Random (Q21)

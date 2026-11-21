@@ -1,0 +1,125 @@
+# Built-in mood-tag rules (SPEC §5.7, ADR-9, ADR-39). Embedded into the binary at build time.
+# The format, every feature and how a user rules file is merged over this one are described in
+# docs/tag-rules.md.
+#
+# One [tag.<name>] table per tag:
+#   scale-threshold  the score a scale needs for the tag (leave out: never on scales)
+#   chord-threshold  the score a chord needs for the tag (leave out: never on chords)
+#   weights          feature = weight (whole numbers, negative ones count against the tag)
+#
+# An item's score for a tag is the sum of each feature's value times its weight; the item gets
+# every tag whose threshold its score reaches. Features are read from semitones, so labels
+# don't matter (b5 and #4 are one note; which one it acts as is the sharp-4 / flat-5 feature).
+#
+# `cargo test -p theory` checks this file (builtin_tag_rules_are_valid) and the anchors
+# (Phrygian and Locrian dark, Lydian bright, diminished chords dissonant).
+
+[tag.happy]
+scale-threshold = 4
+chord-threshold = 4
+[tag.happy.weights]
+3 = 4
+6 = 1
+7 = 1
+b2 = -2
+b3 = -2
+b6 = -2
+flat-5 = -2
+
+[tag.bright]
+scale-threshold = 4
+chord-threshold = 4
+[tag.bright.weights]
+sharp-4 = 3
+3 = 1
+7 = 1
+b2 = -2
+b3 = -2
+
+[tag.sad]
+scale-threshold = 3
+chord-threshold = 3
+[tag.sad.weights]
+minor = 3
+
+[tag.melancholic]
+scale-threshold = 5
+chord-threshold = 5
+[tag.melancholic.weights]
+minor = 3
+b6 = 2
+6 = 2
+7 = 2
+3 = -2
+b2 = -2
+flat-5 = -2
+
+[tag.dark]
+scale-threshold = 3
+chord-threshold = 3
+[tag.dark.weights]
+b2 = 2
+flat-5 = 2
+b6 = 1
+minor = 1
+
+[tag.evil]
+scale-threshold = 5
+chord-threshold = 5
+[tag.evil.weights]
+b2 = 2
+flat-5 = 2
+diminished = 1
+tritone-pairs = 1
+
+[tag.dissonant]
+scale-threshold = 15
+chord-threshold = 6
+[tag.dissonant.weights]
+semitone-pairs = 1
+tritone-pairs = 2
+b2 = 3
+diminished = 4
+
+[tag.mysterious]
+scale-threshold = 3
+chord-threshold = 3
+[tag.mysterious.weights]
+symmetric = 3
+augmented = 1
+
+[tag.open]
+scale-threshold = 3
+chord-threshold = 3
+[tag.open.weights]
+no-third = 3
+b2 = -3
+tritone = -3
+
+[tag.bluesy]
+scale-threshold = 4
+chord-threshold = 4
+[tag.bluesy.weights]
+blue-notes = 3
+b3 = 1
+b7 = 1
+b2 = -2
+sharp-4 = -2
+symmetric = -3
+
+[tag.exotic]
+scale-threshold = 3
+[tag.exotic.weights]
+augmented-seconds = 3
+wide-steps = 3
+
+[tag.jazzy]
+chord-threshold = 3
+[tag.jazzy.weights]
+seventh = 2
+7 = 1
+6 = 1
+ninth = 2
+eleventh = 1
+thirteenth = 2
+altered-extensions = 1

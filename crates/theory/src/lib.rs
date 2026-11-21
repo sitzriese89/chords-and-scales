@@ -12,6 +12,7 @@ pub mod lookup;
 pub mod notes;
 pub mod scale_positions;
 pub mod scales;
+pub mod tags;
 pub mod tuning;
 pub mod voicings;
 
@@ -39,6 +40,7 @@ pub use scales::{
     CUSTOM_FAMILY, ParsedScales, Scale, ScaleCatalog, ScaleError, ScaleFamily, ScaleNote, Source,
     parse_user_scales, write_scales,
 };
+pub use tags::{Feature, Features, ItemKind, ParsedTagRules, TagRule, TagRuleError, TagRules};
 pub use tuning::{
     InstrumentKind, ParsedTunings, Tuning, TuningCatalog, TuningError, TuningFileError,
     TuningItemError, builtin_tunings, parse_tunings, write_tunings,

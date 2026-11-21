@@ -23,8 +23,8 @@ each PR names its issue with `Fixes #n`.
 
 1. **M0** (alone: every other item builds on the scaffold).
 2. **M1**, then release **v0.1.0** (released 2026-11-15).
-3. **M2**, voicings (M2.11, M2.12) last, then release **v0.2.0**. **Now**
-4. **M3**, then release **v0.3.0**.
+3. **M2**, voicings (M2.11, M2.12) last, then release **v0.2.0** (released 2026-11-17).
+4. **M3**, with M4.1 (themes) pulled forward, then release **v0.3.0**. **Now**
 5. **M4**, then release **v0.4.0**.
 
 Items whose dependencies are done can run in parallel. The coordinator groups them into waves
@@ -87,7 +87,7 @@ Filter by mood tags derived from interval rules; random picks that respect filte
 
 | Item | Issue | Depends on | Status |
 |---|---|---|---|
-| M3.1 Mood tag rules engine | [#26][26] | M2.1 | Open |
+| M3.1 Mood tag rules engine | [#26][26] | M2.1 | Done (#66) |
 | M3.2 Tag filters | [#27][27] | M3.1, M2.5, M1.7 | Open |
 | M3.3 Random scale or chord | [#28][28] | M3.2 | Open |
 
