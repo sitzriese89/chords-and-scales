@@ -48,6 +48,9 @@ symbol, and can be edited and deleted there. Every scale and chord in the lists 
 mood tags (`Phrygian — dark, …`); click the tag chips above the scale list or above the chord
 quality to list only the items with every tag you picked (**Clear tags** shows them all
 again). The tags come from the intervals, so your own scales and chords get them too.
+For a practice prompt, **Random scale** (in the scale picker) and **Random chord** (with the
+chord quality) pick a random root and an item from what the tags let through: a random dark
+scale, a random jazzy chord.
 Everything is saved and comes back at the next start. Your own scales, chords and tunings go
 in `scales.toml`, `chords.toml` and `tunings.toml` next to `settings.toml` in the app-data
 folder, in the format described in [SPEC.md](SPEC.md); your own tag rules go in `tags.toml`

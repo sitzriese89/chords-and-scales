@@ -10,7 +10,9 @@
   chord stacked up from its lowest root (ADR-32, ADR-37). The user's own chords are made, edited
   and deleted in the root and quality picker (ADR-36). That picker's qualities show their mood
   tags and can be filtered by tag with the chips; a chosen chord the filter hides stays chosen
-  (ADR-41).
+  (ADR-41). **Random chord**, in the same picker, chooses a root and a quality from what the
+  chips let through, as if the user had picked them (SPEC §5.8, ADR-42); `random` is the number
+  source, tests pass a seeded one.
 
   `children` is placed at the end of the panel's body: the app puts the voicing browser there
   (ADR-37), so this module does not depend on it.
@@ -28,6 +30,7 @@
     MIN_PANEL_HEIGHT,
     type ChordSymbolStyle,
   } from '../settings';
+  import { randomPick, rootPitchClass, spellRoot, type Random } from '../random';
   import { getTagFilters, HIDDEN_BY_TAGS, TagChips, tagList, withTags } from '../tags';
   import { getChord } from '../theory';
   import { getUserCatalogs } from '../user-catalogs.svelte';
@@ -38,7 +41,7 @@
   import UserChordButtons from './UserChordButtons.svelte';
   import { chordPanelView } from './view';
 
-  const { children }: { children?: Snippet } = $props();
+  const { children, random = Math.random }: { children?: Snippet; random?: Random } = $props();
 
   const settings = getSettings();
   const catalogs = getUserCatalogs();
@@ -158,6 +161,25 @@
 
   function setStyle(style: ChordSymbolStyle) {
     settings.update({ chordSymbols: style }).catch(ignore);
+  }
+
+  /** What Random chord draws from: the qualities the chips let through, never a kept one. */
+  const randomSet = $derived(tagFilter.items);
+
+  /**
+   * A random root, spelled by the sharp/flat preference, and quality from `randomSet`, chosen as
+   * root and quality; never the chord shown now while there is another pair.
+   */
+  function pickRandom() {
+    const current = active
+      ? { id: active.chord.id, pitchClass: rootPitchClass(active.root) }
+      : null;
+    const picked = randomPick(randomSet, current, random);
+    if (!picked) return;
+    chordState.chooseChord(
+      spellRoot(picked.pitchClass, settings.current.accidentals),
+      picked.item.id,
+    );
   }
 
   function setDegree(event: Event & { currentTarget: HTMLSelectElement }) {
@@ -284,13 +306,21 @@
             {/each}
           </select>
           {#if families.length === 0}
-            <p class="muted" role="status">{emptyMessage}</p>
+            <p id="chord-empty" class="muted" role="status">{emptyMessage}</p>
           {/if}
           {#if hiddenByTags && pickedChord}
             <p id="chord-hidden" class="muted">
               {pickedChord.name} stays chosen, but it doesn’t have every tag you picked.
             </p>
           {/if}
+        </div>
+        <div>
+          <button
+            type="button"
+            disabled={randomSet.length === 0}
+            aria-describedby={randomSet.length === 0 ? 'chord-empty' : undefined}
+            onclick={pickRandom}>Random chord</button
+          >
         </div>
         <UserChordButtons />
       {:else if chordState.mode === 'symbol'}

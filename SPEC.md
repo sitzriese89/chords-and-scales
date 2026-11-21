@@ -578,8 +578,19 @@ Algorithmic (works for any tuning and 4–9 strings; no static shape library).
 
 ### 5.8 Random (Q21)
 
-- Picks a random root + scale **or** chord, depending on the active view.
-- **Respects active tag filters** (e.g. "random sad scale").
+- Two buttons (ADR-42), one per picker: **Random scale** in the scale picker, under its tag
+  chips, and **Random chord** in the chord panel's root and quality input, under the quality.
+  Each picks a random root (one of the 12 pitch classes, spelled by the sharp/flat preference,
+  §4.1) and an item, and applies them exactly as if the user had picked them: the scale and
+  root are saved as the last view; the chord is chosen as root and quality.
+- **Respects active tag filters** (e.g. "random sad scale"): the item comes from what the
+  picker's chips let through. Random scale also keeps to the scale search, so it draws from
+  exactly the scales the list shows. A current item kept in its list only because it is
+  chosen (“(hidden by tags)”, §5.7) is never picked.
+- It never repeats what is shown: every other root and item of the set is equally likely, but
+  not the root (by pitch class) and item on screen. With one item, only the root changes.
+- When nothing matches, the button is disabled, and the picker's message (“No scale has all
+  of the tags dark and happy.”) says why; it is the button's accessible description too.
 
 ### 5.9 Audio (Q22)
 

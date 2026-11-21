@@ -16,6 +16,7 @@
   } from './lib/explorer';
   import { InstrumentPanel } from './lib/instrument';
   import { SettingsStore, setSettings } from './lib/settings';
+  import type { Random } from './lib/random';
   import { createStorage, type Storage } from './lib/storage';
   import { setTagFilters, TagFilters } from './lib/tags';
   import { applyTheme, setThemes, ThemeLibrary, ThemePicker } from './lib/themes';
@@ -23,13 +24,20 @@
   import { setUserCatalogs, UserCatalogs } from './lib/user-catalogs.svelte';
   import { VoicingBrowser } from './lib/voicings';
 
-  // Tests pass their own storage, audio engine and harmonizer; the app picks Tauri files or
-  // localStorage (ADR-4), the Web Audio engine (ADR-28) and the core's harmonize (ADR-32).
+  // Tests pass their own storage, audio engine, harmonizer and random numbers; the app picks
+  // Tauri files or localStorage (ADR-4), the Web Audio engine (ADR-28), the core's harmonize
+  // (ADR-32) and `Math.random` for the random pick (ADR-42).
   const {
     storage = createStorage(),
     audio: injectedAudio,
     harmonizer = coreHarmonizer,
-  }: { storage?: Storage; audio?: AudioEngine; harmonizer?: Harmonizer | null } = $props();
+    random = Math.random,
+  }: {
+    storage?: Storage;
+    audio?: AudioEngine;
+    harmonizer?: Harmonizer | null;
+    random?: Random;
+  } = $props();
 
   const coreVersion = version();
 
@@ -115,7 +123,7 @@
 
   {#if ready}
     <nav class="region picker" aria-label="Scale picker">
-      <ScalePicker />
+      <ScalePicker {random} />
     </nav>
 
     <main class="region board">
@@ -133,7 +141,7 @@
     </aside>
 
     <aside class="region chords" aria-label="Chords">
-      <ChordPanel>
+      <ChordPanel {random}>
         <VoicingBrowser />
       </ChordPanel>
     </aside>
