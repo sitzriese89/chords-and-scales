@@ -8,6 +8,14 @@ into its GitHub Release, and refuses to build a tag without one
 
 ## [Unreleased]
 
+### Added
+
+- **Mood tags and tag filters.** Every scale and chord shows its mood tags (dark, bright, sad,
+  jazzy, exotic, …), derived from its intervals, so your own scales and chords get them too.
+  Click tag chips above the scale list or the chord quality to list only the items with every
+  tag you picked. Add tags or change the rules in `tags.toml` (see
+  [docs/tag-rules.md](docs/tag-rules.md)).
+
 ## [0.2.0] - 2026-11-17
 
 Chords: pick, type, harmonize or find them on the neck, see playable shapes for any tuning,

@@ -10,6 +10,10 @@
  * read `revision` in the same `$derived` so they re-read it (ADR-24). The tuning editor saves
  * through `saveUserTunings`, the scale editor through `saveUserScales` and the chord editor
  * through `saveUserChords`; all write only what the core checked and wrote.
+ *
+ * The mood-tag rules file `tags` (`tags.toml`, docs/tag-rules.md) is read at start too and merged
+ * over the built-in rules (ADR-39, ADR-41). The app never writes it; a table that isn't a valid
+ * tag is skipped and listed with the other problems. Tags change with the revision too.
  */
 import { createContext } from 'svelte';
 import type { Storage } from './storage';
@@ -19,6 +23,7 @@ import {
   getTuning,
   setUserChords,
   setUserScales,
+  setUserTagRules,
   setUserTunings,
   writeChords,
   writeScales,
@@ -33,6 +38,8 @@ import {
 export const USER_SCALES_DOCUMENT = 'scales';
 export const USER_CHORDS_DOCUMENT = 'chords';
 export const USER_TUNINGS_DOCUMENT = 'tunings';
+/** The user's mood-tag rules, merged over the built-in ones (docs/tag-rules.md). */
+export const USER_TAG_RULES_DOCUMENT = 'tags';
 /** Where `scales.toml` is kept before the app first rewrites a file with broken items. */
 export const USER_SCALES_BACKUP_DOCUMENT = 'scales-backup';
 /** Where `chords.toml` is kept before the app first rewrites a file with broken items. */
@@ -100,7 +107,9 @@ export class UserCatalogs {
 
   /** Every problem from loading or saving the user files, prefixed with the file name. */
   get problems(): string[] {
-    return kinds.flatMap((kind) => this.problemsBy[documents[kind].name] ?? []);
+    return [...kinds.map((kind) => documents[kind].name), USER_TAG_RULES_DOCUMENT].flatMap(
+      (name) => this.problemsBy[name] ?? [],
+    );
   }
 
   /** Loads the user documents into the core's catalogs. Never rejects. */
@@ -120,7 +129,23 @@ export class UserCatalogs {
       if (report.errors.length > 0 && text !== null) this.unsavedText[kind] = text;
       else delete this.unsavedText[kind];
     }
+    await this.loadTagRules();
     this.revision += 1;
+  }
+
+  /** Hands `tags.toml` to the core's tag rules; a missing file means none. */
+  private async loadTagRules(): Promise<void> {
+    const name = USER_TAG_RULES_DOCUMENT;
+    let text: string | null;
+    try {
+      text = await this.storage.read(name);
+    } catch (error) {
+      setUserTagRules('');
+      this.problemsBy[name] = [`${name}.toml could not be read: ${message(error)}`];
+      return;
+    }
+    const report = setUserTagRules(text ?? '');
+    this.problemsBy[name] = report.errors.map((e) => `${name}.toml: ${e.message}`);
   }
 
   /**

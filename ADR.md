@@ -51,6 +51,7 @@ ADR-1 to ADR-13 come from the design interview behind [SPEC.md](SPEC.md) (decisi
 | 38 | [Reverse lookup on the neck: a select mode, the lowest pitch as the bass, results chosen through the existing inputs](#adr-38-reverse-lookup-on-the-neck-a-select-mode-the-lowest-pitch-as-the-bass-results-chosen-through-the-existing-inputs) | Accepted |
 | 39 | [Mood tags: features from semitones, one weight table per tag, a threshold per kind, user rules merged per key](#adr-39-mood-tags-features-from-semitones-one-weight-table-per-tag-a-threshold-per-kind-user-rules-merged-per-key) | Accepted |
 | 40 | [Themes: CSS files with a light and/or dark scheme, applied at runtime, user themes as CSS documents](#adr-40-themes-css-files-with-a-light-andor-dark-scheme-applied-at-runtime-user-themes-as-css-documents) | Accepted |
+| 41 | [Tag filters: chips per picker, AND, the choice never jumps, `tags.toml` read with the user catalogs](#adr-41-tag-filters-chips-per-picker-and-the-choice-never-jumps-tagstoml-read-with-the-user-catalogs) | Accepted |
 
 ---
 
@@ -1496,3 +1497,64 @@ what a user theme that misses tokens or contrast gets.
   still parses TOML, so a theme can't be imported through it yet; files are added by hand.
 - Theme files are read once at start; a new or edited file needs a restart.
 - A user theme may be less readable than the built-ins; the warning is the only guard.
+
+## ADR-41: Tag filters: chips per picker, AND, the choice never jumps, `tags.toml` read with the user catalogs
+
+**Context.** M3.2 puts the mood tags of ADR-39 into the UI: tag chips on the scale and chord
+pickers, a multi-select filter, the tags shown on each item, and the user rules file loaded
+from `Storage` (ADR-4). The open questions were where the filter lives (M3.3's random pick must
+draw from the same filtered set), how tags fit into the pickers, which are native `<select>`
+lists, what happens to a current item the filter hides or a filter that matches nothing,
+whether the chips are saved, and how the rules file is loaded and its errors shown.
+
+**Decision.**
+- **One `TagFilter` per picker, in the app's context.** `lib/tags/filter.svelte.ts` has a
+  `TagFilter` (the chips that are on, the tags offered, the catalog by family with every item's
+  tags, the filtered families and the flat `items`), and `TagFilters` holds one for scales and
+  one for chords; `App` puts it in the context. Tags come from the core by id (`scaleTags`,
+  `chordTags`, `listTags`); the filter only checks membership, so no tag rule is in TypeScript
+  (ADR-2). Every derived value reads `UserCatalogs.revision` (ADR-24), so user items and new
+  rules show up. M3.3 picks from `getTagFilters().scales.items` / `.chords.items`.
+- **Chips: only the tags of the kind, combined with AND.** A tag is offered in a picker when it
+  has a threshold for that kind (`exotic` only for scales, `jazzy` only for chords). Chips are
+  toggle buttons (`aria-pressed`) in a labelled group, plus **Clear tags** while any is on. An
+  item is listed when it has every chip that is on; empty families are dropped. AND is what
+  "a sad, jazzy chord" means and narrows as chips are added; OR would grow the list instead.
+  In the scale picker the chips combine with the search; the chord chips sit in the root and
+  quality input, the only one that lists chords.
+- **Tags on the item are written after its name** in the option text (`Phrygian — dark, …`):
+  an `<option>` can't hold styled chips, and replacing the native lists with custom listboxes
+  would cost their keyboard and screen-reader behaviour for little gain. The current scale's
+  tags are also under the scale list, and the chosen chord's in the panel. The plain name is on
+  the option as `data-name`.
+- **Filtering never changes the choice.** A current scale or chord without the chips' tags
+  stays chosen and on the neck. It stays in its list too, in its family and marked
+  `(hidden by tags)`, so the select keeps showing it instead of going blank; every other item
+  without the tags is left out, and a note under the list says why it is there. Jumping to
+  the first match would replace what the user was looking at because of a click meant to
+  browse. The kept item is a display matter only: `TagFilter.items` (what M3.3 draws from)
+  never contains it, and the picker adds it with `TagFilter.keeping()`. The scale search
+  still hides the current scale as before.
+- **A filter that matches nothing says so**, naming the tags (“No scale has all of the tags
+  dark and happy.”); the chips and **Clear tags** stay to get out of it.
+- **The chips are not saved.** Every start shows the whole catalog: a filter left on and
+  forgotten would look like missing scales. Saving them later is a new settings key with a
+  default, no version bump (ADR-17).
+- **The rules file is the document `tags`** (`tags.toml` in the app-data folder,
+  localStorage entry `chords-and-scales:document:tags`), read by `UserCatalogs.load()` after
+  the catalogs and passed to `setUserTagRules`; a missing file means the built-ins, a file
+  that can't be read gives the built-ins and a problem. Its errors join the user-file problems
+  (`tags.toml: tag "dark": …`) in the note at the top of the window. The app never writes the
+  file (there is no rule editor, ADR-9), so it needs no backup. Like the other user files, it
+  is read at start; an edit takes effect after a restart. The generic import of ADR-17 already
+  stores a picked `tags.toml` under this name; there is no import/export UI yet.
+- No new binding: every listed item has a catalog id, and the editors don't preview tags.
+
+**Consequences.**
+- Every catalog change re-reads the tags of every scale and chord through WASM (one call per
+  item); the catalogs are small enough for this to be instant.
+- Option texts are longer; tests that read names use `data-name`.
+- The note at the top now counts problems ("2 problems with your files: some items or tag
+  rules were not used"), since a skipped tag table is not an item.
+- Reloading the rules without a restart (a file watcher or a "reload" button) is not there;
+  `UserCatalogs.load()` is the place for it if wanted.

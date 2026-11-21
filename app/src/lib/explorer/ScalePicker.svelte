@@ -3,7 +3,8 @@
   Root and scale picker of the scale explorer. Writes the choice to the settings' last view,
   which saves it (ADR-17). The root can be picked from the list or typed (`Db`, `f#`, `E♭`);
   it is checked by the core and keeps its spelling (ADR-6). Scales are grouped by family and
-  can be searched by name, alias or id.
+  can be searched by name, alias or id, and filtered by mood tag with the chips (ADR-41); each
+  shows its tags. A current scale the filter hides stays the current scale.
 
   The user's own scales are made, edited and deleted here (ADR-26): the editor opens in a
   dialog with its own neck, and saves to `scales.toml` through `UserCatalogs`. The dialog is
@@ -13,13 +14,15 @@
 <script lang="ts">
   import { IntervalSetEditor, editorNeck, type IntervalSetDraft, type Neck } from '../editor';
   import { DEFAULT_SETTINGS, getSettings } from '../settings';
-  import { getScale, listScales, newScaleId, type ScaleInput } from '../theory';
+  import { getTagFilters, HIDDEN_BY_TAGS, TagChips, tagList, withTags } from '../tags';
+  import { getScale, listScales, newScaleId, type ScaleInfo, type ScaleInput } from '../theory';
   import { getUserCatalogs } from '../user-catalogs.svelte';
   import { getScaleEditor } from './scale-editor.svelte';
   import { displayRoot, rootChoices } from './view';
 
   const settings = getSettings();
   const catalogs = getUserCatalogs();
+  const tagFilter = getTagFilters().scales;
   const scaleEditor = getScaleEditor();
   const roots = rootChoices();
   const families = $derived.by(() => {
@@ -132,20 +135,43 @@
   const currentRoot = $derived(displayRoot(settings.current.lastView.root) ?? '');
   const currentScale = $derived(settings.current.lastView.scale);
 
-  const shown = $derived.by(() => {
+  /** Whether the search matches a scale by name, id or alias (everything while it is empty). */
+  const searchMatches = $derived.by(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return families;
     const matches = (text: string) => text.toLowerCase().includes(q);
-    return families
+    return (s: ScaleInfo) => !q || matches(s.name) || matches(s.id) || s.aliases.some(matches);
+  });
+  /** The scales the tag chips let through, then those the search matches. */
+  const shown = $derived(
+    tagFilter.families
       .map((family) => ({
         ...family,
-        scales: family.scales.filter(
-          (s) => matches(s.name) || matches(s.id) || s.aliases.some(matches),
-        ),
+        items: family.items.filter(({ item }) => searchMatches(item)),
       }))
-      .filter((family) => family.scales.length > 0);
+      .filter((family) => family.items.length > 0),
+  );
+  const shownCount = $derived(shown.reduce((n, family) => n + family.items.length, 0));
+  const activeTags = $derived(tagFilter.active);
+  const currentTags = $derived(current ? tagFilter.tagsOf(current.id) : []);
+  /** The current scale stays chosen when the chips hide it; the list says so. */
+  const hiddenByTags = $derived(
+    current !== undefined && activeTags.length > 0 && !tagFilter.matches(current.id),
+  );
+  /**
+   * What the list shows: `shown`, plus the current scale in its family when only the chips
+   * hide it, so the list keeps it selected (ADR-41).
+   */
+  const listed = $derived(
+    current && hiddenByTags && searchMatches(current)
+      ? tagFilter.keeping(shown, current.id)
+      : shown,
+  );
+  const emptyMessage = $derived.by(() => {
+    const tags = tagList(activeTags);
+    if (activeTags.length === 0) return `No scale matches “${query}”.`;
+    const tagged = activeTags.length === 1 ? `the tag ${tags}` : `all of the tags ${tags}`;
+    return query.trim() ? `No scale with ${tagged} matches “${query}”.` : `No scale has ${tagged}.`;
   });
-  const shownCount = $derived(shown.reduce((n, family) => n + family.scales.length, 0));
 
   function report(error: unknown) {
     rootError = error instanceof Error ? error.message : String(error);
@@ -206,19 +232,42 @@
     />
   </div>
 
+  <div class="field">
+    <span class="label">Filter by tag</span>
+    <TagChips filter={tagFilter} label="Filter scales by tag" />
+  </div>
+
   <div class="field grow">
     <label for="scale-list">Scale</label>
-    <select id="scale-list" size="14" value={currentScale} onchange={setScale}>
-      {#each shown as family (family.name)}
+    <select
+      id="scale-list"
+      size="14"
+      value={currentScale}
+      aria-describedby={hiddenByTags ? 'scale-hidden' : undefined}
+      onchange={setScale}
+    >
+      {#each listed as family (family.name)}
         <optgroup label={family.name}>
-          {#each family.scales as scale (scale.id)}
-            <option value={scale.id}>{scale.name}</option>
+          {#each family.items as { item: scale, tags } (scale.id)}
+            {@const kept = hiddenByTags && scale.id === current?.id}
+            <option value={scale.id} data-name={scale.name} data-hidden={kept ? '' : undefined}
+              >{withTags(scale.name, tags)}{kept ? ` ${HIDDEN_BY_TAGS}` : ''}</option
+            >
           {/each}
         </optgroup>
       {/each}
     </select>
     {#if shownCount === 0}
-      <p class="hint" role="status">No scale matches “{query}”.</p>
+      <p class="hint" role="status">{emptyMessage}</p>
+    {/if}
+    {#if hiddenByTags && current}
+      <p id="scale-hidden" class="hint">
+        {current.name} stays selected, but it doesn’t have every tag you picked.
+      </p>
+    {:else if current}
+      <p class="hint current-tags">
+        Tags of {current.name}: {currentTags.length > 0 ? currentTags.join(', ') : 'none'}
+      </p>
     {/if}
   </div>
 
@@ -283,7 +332,8 @@
     gap: 0.25rem;
   }
 
-  label {
+  label,
+  .label {
     font-weight: 600;
     font-size: 0.875rem;
   }

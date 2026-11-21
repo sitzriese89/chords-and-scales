@@ -99,6 +99,9 @@ Files are hand-editable and shareable; the UI offers import/export of them.
   load, the old file is first kept as `tunings-backup.toml`, `scales-backup.toml` or
   `chords-backup.toml` (ADR-24, ADR-26, ADR-36).
 - User themes are `theme-<id>.css` files, read at start (§5.11, ADR-40).
+- The user's tag rules are `tags.toml` (§5.7, [docs/tag-rules.md](docs/tag-rules.md)), read at
+  start and merged over the built-in rules; a table that isn't a valid tag is skipped and listed
+  in the same note as broken catalog items. The app never writes it (ADR-41).
 - A value the app doesn't understand falls back to its default and the app shows a warning
   naming it. A file that can't be used at all (not TOML, missing or unsupported version) is
   kept as `settings-backup.toml`, the defaults are used, and the app says so. It never
@@ -558,7 +561,20 @@ Algorithmic (works for any tuning and 4–9 strings; no static shape library).
   app-data directory (§3.2), merged over the built-in rules. No in-app rule editor;
   the format, the features and the merge rules are documented in
   [docs/tag-rules.md](docs/tag-rules.md).
-- Scales and chords can be **filtered by tag**.
+- Scales and chords can be **filtered by tag** (ADR-41). The scale picker and the chord
+  picker (root and quality) each have a row of tag chips: only the tags that can apply to that
+  kind, so `exotic` is offered for scales and `jazzy` for chords. Chips that are on combine
+  with AND: an item is listed when it has every one; **Clear tags** turns them off. In the
+  scale picker the chips combine with the search. Every item in both lists shows its tags
+  after its name (`Phrygian — dark, …`), the current scale's tags are shown under the list
+  and the chosen chord's in the panel.
+- Filtering never changes the choice: a current scale or chord without the tags stays shown
+  on the neck and stays in its list, in its family, marked “(hidden by tags)”; the picker says
+  why. No other item without the tags is listed. A filter that matches nothing
+  says so (“No scale has all of the tags dark and happy.”).
+- The chips start off at every start (they are not saved).
+- The user rules file is `tags.toml` (§3.2), read at start; editing it changes the tags after
+  a restart.
 
 ### 5.8 Random (Q21)
 

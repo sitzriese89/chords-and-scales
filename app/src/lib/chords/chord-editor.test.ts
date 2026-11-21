@@ -45,7 +45,7 @@ const closed = () => waitFor(() => expect(screen.queryByRole('dialog')).toBeNull
 /** The chord names in the quality list's group `family`. */
 function listed(family: string): string[] {
   const group = quality().querySelector(`optgroup[label="${family}"]`);
-  return [...(group?.querySelectorAll('option') ?? [])].map((o) => o.textContent ?? '');
+  return [...(group?.querySelectorAll('option') ?? [])].map((o) => o.dataset.name ?? '');
 }
 
 /** Opens the editor and makes 1 3 ♭7 ♯9 called `name` with the symbol `symbol`. */
@@ -171,7 +171,9 @@ describe('Broken chord files', () => {
       '[[chord]]\nid = "bad"\nname = "Bad"\nsymbol = "bad"\nintervals = ["1"]\n',
     );
     await startApp(storage);
-    expect(screen.getByText('One item in your files could not be loaded')).toBeInTheDocument();
+    expect(
+      screen.getByText('One problem with your files: some items or tag rules were not used'),
+    ).toBeInTheDocument();
     expect(
       screen.getByText(
         'chords.toml: chord 1 ("bad"): a chord needs at least one note besides the root',
