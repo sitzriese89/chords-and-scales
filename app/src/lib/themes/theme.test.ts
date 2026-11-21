@@ -136,6 +136,13 @@ describe('themeCss', () => {
     expect(themeCss(print)).not.toContain("[data-scheme='dark']");
   });
 
+  it('scopes every block to a selector when asked, for a sheet inside the app (ADR-43)', () => {
+    const css = themeCss(DEFAULT_THEME, '[data-sheet]');
+    expect(css).toContain("[data-sheet][data-scheme='light'] {\n  color-scheme: light;");
+    expect(css).toContain("[data-sheet][data-scheme='dark'] {\n  color-scheme: dark;");
+    expect(css).not.toMatch(/^\[data-scheme/m);
+  });
+
   it('reads back as the same theme', () => {
     for (const theme of BUILT_IN_THEMES) {
       const again = buildTheme(theme.id, usable(themeCss(theme)), null);

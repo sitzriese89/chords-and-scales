@@ -53,6 +53,7 @@ ADR-1 to ADR-13 come from the design interview behind [SPEC.md](SPEC.md) (decisi
 | 40 | [Themes: CSS files with a light and/or dark scheme, applied at runtime, user themes as CSS documents](#adr-40-themes-css-files-with-a-light-andor-dark-scheme-applied-at-runtime-user-themes-as-css-documents) | Accepted |
 | 41 | [Tag filters: chips per picker, AND, the choice never jumps, `tags.toml` read with the user catalogs](#adr-41-tag-filters-chips-per-picker-and-the-choice-never-jumps-tagstoml-read-with-the-user-catalogs) | Accepted |
 | 42 | [Random pick: a button per picker, from what the picker shows, never the pair on screen](#adr-42-random-pick-a-button-per-picker-from-what-the-picker-shows-never-the-pair-on-screen) | Accepted |
+| 43 | [The export sheet: items store their inputs, one `sheet.toml`, its own scoped theme](#adr-43-the-export-sheet-items-store-their-inputs-one-sheettoml-its-own-scoped-theme) | Accepted |
 
 ---
 
@@ -1602,3 +1603,73 @@ nothing matches, and how tests control the randomness.
   quality, where the chord chips are too.
 - Picks are not saved or listed (no history, no undo beyond picking again).
 - Weighting the pick (e.g. by tag score) would only change `randomPick`.
+
+## ADR-43: The export sheet: items store their inputs, one `sheet.toml`, its own scoped theme
+
+**Context.** M4.2 collects scales, tabs, chords and voicings onto one export sheet that is
+saved, can be reordered and titled, and is drawn in a chosen theme (SPEC §5.10). M4.3 and M4.4
+will turn the sheet, or one item, into SVG, HTML, PNG and PDF. Open were what an item stores
+(a drawing, or what produced it), how the sheet is stored, how it gets a theme other than the
+app's while it is shown inside the app, and what happens to an item whose user scale, chord or
+tuning is gone.
+
+**Decision.**
+- **An item stores its inputs, not a rendering.** Each item has a kind (`scale`: the scale on
+  the neck; `tab`: one position as tab; `chord`: a chord on the neck, alone or over the dimmed
+  scale for a degree; `voicing`: one shape as a chord diagram), the root as typed, the scale or
+  chord id, a slash chord's bass, a shape's frets (`x,3,2,0,1,0`, the voicing browser's
+  `shapeKey`), and a copy of the settings it was drawn with: sharps/flats, dot labels,
+  left-handed, chord-name style, the instrument (tuning, string count, frets, capo), the tab
+  position and the voicing constraints. The sheet draws every item again with the app's own
+  view models (`explorerView`, `voicingList`) and components (`Fretboard`, `TabView`,
+  `ChordDiagram`), so an item looks as it did on screen (ADR-3) and an export taken later
+  matches the app. A stored SVG would go stale with every theme or rendering fix and could not
+  be re-themed.
+- **What was on screen, not what was stored.** "Add … to sheet" copies the settings as the app
+  drew them: a stored scale or tuning the app couldn't use is replaced by the one it showed
+  (ADR-23), and a tab keeps the 3NPS pattern it showed rather than the stored one that didn't
+  fit (ADR-25). The chord panel adds the chord's whole-neck view; a shape chosen in the voicing
+  browser is added from there, as a diagram.
+- **A shape is found again by the core.** A voicing item keeps only its frets; the sheet asks
+  `chordVoicings` again under the stored constraints, with a limit of 1000 instead of 50, and
+  takes the shape with the same frets. This needs no new binding. If the ranking or the chord
+  changes so that the shape is no longer generated, the item shows as missing; a core function
+  that describes a given shape would remove that case if it ever matters.
+- **Missing items degrade.** When an item is drawn and its tuning, scale, chord, root or shape
+  can't be found (a user item deleted, a hand edit), it is a "Missing: …" placeholder with the
+  reason and the rest of the sheet is drawn. The item stays in the file, so it comes back with
+  the user item.
+- **One sheet, the document `sheet`** (`sheet.toml`, localStorage entry
+  `chords-and-scales:document:sheet`), versioned like the settings (ADR-17): `version = 1`,
+  `title`, `theme_id`, `theme` (`light` or `dark`) and one `[[item]]` per item with sub-tables
+  `display`, `instrument`, `scale`, `tab`, `chord`, `voicings`; an item writes only the tables
+  its kind reads. Reading reuses the settings' `TableReader` and migration step
+  (`migrateDocument`): a missing value is its default and an invalid one falls back with a
+  warning. An item that can't be drawn at all (no or an unknown kind, no root or id, a
+  malformed shape) is dropped and named in the warning; the others load. A file that isn't
+  TOML or has no usable version is kept as `sheet-backup.toml` and the sheet starts empty. A
+  missing file is an empty sheet, written on the first change; every change is saved.
+- **The sheet has its own theme**, default *Print* (light), independent of the app's theme and
+  light/dark setting, so a dark app still prints on white. Its picker offers the same built-in
+  and user themes (ADR-40); a theme with one scheme shows it and the light/dark radios are
+  disabled. A `theme_id` that names no theme shows Print and says so, keeping the setting.
+  There is no "system" choice: a sheet is a document, not a window.
+- **Scoped stylesheet, self-contained subtree.** `themeCss(theme, '[data-sheet]')` writes the
+  sheet theme's blocks as `[data-sheet][data-scheme='…']`, which outweighs the app's unscoped
+  `[data-scheme='…']` blocks, and the sheet view puts it in a `<style>` as the first child of
+  `article[data-sheet]`, which carries `data-scheme` and `data-theme-id`. Inside it are the
+  title and one `figure[data-sheet-item]` (with `data-kind`) per item holding that item's SVG.
+  The editing controls (title, theme, Move up/down, Remove) are outside the article, so M4.3 and
+  M4.4 can serialize or print the subtree as it is.
+- **A page of its own.** "Explorer" and "Sheet (n)" in the header switch between the explorer
+  and the sheet; which one is shown is not saved.
+
+**Consequences.**
+- The file is larger than a list of pictures would be, but hand-editable and re-themable, and
+  every item is redrawn on each change of the user catalogs (`revision`, ADR-24).
+- An item made with a user scale, chord or tuning depends on that file; deleting the user item
+  turns the sheet item into a placeholder rather than a frozen copy.
+- Switching to the sheet unmounts the explorer, so its unsaved state (the reverse-lookup
+  selection) is cleared; the chord panel's chord lives in `ChordState` and stays.
+- More than one sheet would need either several documents (`sheet-<id>`) or a list in this one;
+  either is a new version or a new name rule, not a change to the items.

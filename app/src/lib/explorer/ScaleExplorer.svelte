@@ -4,7 +4,8 @@
   the current instrument (tuning, fret count, capo, left-handed from the settings), with a
   summary of the scale and its Harmonize row (ADR-34) above it, and under it the tab of one
   position with its controls (ADR-25); the position's notes are highlighted on the neck. Everything shown comes from the
-  core (`explorerView`).
+  core (`explorerView`). "Add scale to sheet" and "Add tab to sheet" put the neck or the tab, as
+  shown, on the export sheet (ADR-43).
 
   Reverse lookup (ADR-38) sits above the neck: in its select mode a click on the neck selects or
   unselects the note there (playing it when it is added) instead of only playing it, and the
@@ -17,6 +18,8 @@
   import { HarmonizeView } from '../harmonize';
   import { FretboardLookup, NoteSelection, withSelection } from '../lookup';
   import { getSettings } from '../settings';
+  import AddToSheet from '../sheet/AddToSheet.svelte';
+  import { scaleItem, tabItem } from '../sheet/capture';
   import { PositionControls, TabView } from '../tab';
   import { getUserCatalogs } from '../user-catalogs.svelte';
   import { explorerView, positionKey } from './view';
@@ -78,6 +81,7 @@
         </div>
       {/each}
     </dl>
+    <AddToSheet what="scale" make={() => scaleItem(settings.current)} />
   </div>
 
   <HarmonizeView />
@@ -115,6 +119,11 @@
       >
         <span aria-hidden="true">▶</span> Play
       </button>
+      <AddToSheet
+        what="tab"
+        disabled={view.tabNotes.length === 0}
+        make={() => tabItem(settings.current, view.position.pattern)}
+      />
       {#if settings.current.audio.muted}
         <span class="muted-note">Sound is muted.</span>
       {/if}

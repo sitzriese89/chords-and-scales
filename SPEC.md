@@ -99,6 +99,12 @@ Files are hand-editable and shareable; the UI offers import/export of them.
   load, the old file is first kept as `tunings-backup.toml`, `scales-backup.toml` or
   `chords-backup.toml` (ADR-24, ADR-26, ADR-36).
 - User themes are `theme-<id>.css` files, read at start (§5.11, ADR-40).
+- The export sheet is `sheet.toml` (§5.10, ADR-43): `version = 1`, `title`, `theme_id`,
+  `theme` (`light` | `dark`) and one `[[item]]` per item (`kind` = `scale` | `tab` | `chord` |
+  `voicing`, with `display`, `instrument`, `scale`, `tab`, `chord` and `voicings` tables as the
+  kind needs). Read at start and saved on every change. A bad value falls back to its default
+  with a warning; an item that can't be read is dropped with a warning and the others load; a
+  file that can't be used at all is kept as `sheet-backup.toml` and the sheet starts empty.
 - The user's tag rules are `tags.toml` (§5.7, [docs/tag-rules.md](docs/tag-rules.md)), read at
   start and merged over the built-in rules; a table that isn't a valid tag is skipped and listed
   in the same note as broken catalog items. The app never writes it (ADR-41).
@@ -607,7 +613,22 @@ Algorithmic (works for any tuning and 4–9 strings; no static shape library).
 
 ### 5.10 Export (Q23)
 
-- **Sheet builder:** collect multiple scales/chords onto an export sheet.
+- **Sheet builder:** collect multiple scales/chords onto an export sheet (ADR-43).
+  - **Add scale to sheet** (by the scale's notes), **Add tab to sheet** (by **Play**), **Add
+    chord to sheet** (in the chord panel, by **Clear chord**) and, while a shape is chosen in
+    the voicing browser, **Add shape to sheet** add what is shown: the scale on the neck with
+    the tab position highlighted as on screen, the tab of the position shown, the chord on the
+    neck (alone, or over the dimmed scale for a degree), or the shape as a chord diagram.
+  - An item keeps what it was made from: root as typed, scale or chord id, the shape's frets,
+    and the instrument and display settings at that moment (tuning, capo, frets, left-handed,
+    dot labels, sharps/flats, chord-name style, tab position). Later changes in the app leave
+    it as it was; it is drawn again with the app's own fretboard, tab and diagram.
+  - **Sheet (n)** in the header shows the sheet page (**Explorer** goes back): a title, the
+    sheet's own theme and light/dark (default *Print*, independent of the app's), the items
+    with **Move up**, **Move down** and **Remove**, and the sheet itself.
+  - An item whose user scale, chord or tuning no longer exists (or whose shape is no longer
+    generated) shows "Missing: …" with the reason; the rest of the sheet is drawn.
+  - Saved as `sheet.toml` (§3.2) on every change; one sheet for now.
 - **Formats:** PDF (via webview print), PNG, SVG, standalone HTML.
 - **Themes:** selectable; see §5.11.
 

@@ -100,7 +100,7 @@ Collect scales and chords on a themed sheet and export it to PDF, PNG, SVG or HT
 | Item | Issue | Depends on | Status |
 |---|---|---|---|
 | M4.1 Theme system and theme picker | [#29][29] | M1.6 | Done (#67) |
-| M4.2 Export sheet builder | [#30][30] | M4.1, M2.5, M1.10 | Open |
+| M4.2 Export sheet builder | [#30][30] | M4.1, M2.5, M1.10 | Done (#73) |
 | M4.3 Export to SVG and standalone HTML | [#31][31] | M4.2 | Open |
 | M4.4 Export to PNG and PDF | [#32][32] | M4.2, M4.3 | Open |
 

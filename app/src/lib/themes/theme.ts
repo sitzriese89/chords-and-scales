@@ -201,14 +201,18 @@ export function resolveScheme(
  * The theme as a stylesheet: one `[data-scheme='…']` block per scheme, with `color-scheme`
  * so native controls match. Put `data-scheme` on the element to style (the root element in
  * the app, the sheet's root in an export).
+ *
+ * `scope` is a selector put before each block (`[data-sheet]` gives
+ * `[data-sheet][data-scheme='light']`): the export sheet shows its own theme inside the app,
+ * and the extra attribute outweighs the app's own unscoped blocks (ADR-43).
  */
-export function themeCss(theme: Theme): string {
+export function themeCss(theme: Theme, scope = ''): string {
   const blocks = schemesOf(theme).map((scheme) => {
     const tokens = theme.schemes[scheme]!;
     const lines = TOKENS.filter((token) => tokens[token] !== undefined).map(
       (token) => `  ${token}: ${tokens[token]};`,
     );
-    return `[data-scheme='${scheme}'] {\n  color-scheme: ${scheme};\n${lines.join('\n')}\n}\n`;
+    return `${scope}[data-scheme='${scheme}'] {\n  color-scheme: ${scheme};\n${lines.join('\n')}\n}\n`;
   });
   return `/* Theme: ${theme.name.replace(/\*\//g, '* /')} */\n${blocks.join('\n')}`;
 }

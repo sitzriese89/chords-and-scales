@@ -5,7 +5,8 @@
   of the panel's chord on the current instrument, tuning, fret count and capo, best first, each
   as a chord diagram. Choosing a shape shows only its positions on the explorer's neck and
   strums it; choosing it again shows every position of the chord again. Nothing is shown while
-  no chord is chosen.
+  no chord is chosen. "Add shape to sheet", while a shape is chosen, puts its diagram on the
+  export sheet (ADR-43).
 
   The shapes are the chord's own: a slash chord's bass (`Am7/G`) is not voiced, so the list is
   headed by the chord without it and says so.
@@ -16,6 +17,8 @@
   import { getChordState } from '../chords/state.svelte';
   import { shapePitches } from '../chords/strum';
   import { getSettings, MAX_VOICING_SPAN, type Settings } from '../settings';
+  import AddToSheet from '../sheet/AddToSheet.svelte';
+  import { voicingItem } from '../sheet/capture';
   import type { ChordVoicing } from '../theory';
   import { getUserCatalogs } from '../user-catalogs.svelte';
   import ChordDiagram from './ChordDiagram.svelte';
@@ -64,6 +67,13 @@
     audio.strum(shapePitches(voicing));
   }
 
+  /** The chosen shape as a chord diagram on the export sheet (ADR-43). */
+  function addShape() {
+    const voicing = chordState.voicing;
+    if (!voicing || !chord) return null;
+    return voicingItem(settings.current, chord, shapeKey(voicing));
+  }
+
   /** What a shape is called: `x32010`, with its bass and left-out tones. */
   function describe(voicing: ChordVoicing): string {
     const parts = [shapeText(voicing)];
@@ -88,6 +98,7 @@
         <button type="button" onclick={() => (chordState.voicing = null)}>
           Show all positions
         </button>
+        <AddToSheet what="shape" make={addShape} />
       {/if}
     </div>
     {#if active.bass}

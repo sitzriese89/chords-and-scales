@@ -22,8 +22,15 @@ export interface VoicedChord {
   chordId: string;
 }
 
-/** The best shapes of `chord`, best first; the core's default of at most 50. */
-export function voicingList(settings: ListSettings, chord: VoicedChord): ChordVoicing[] {
+/**
+ * The best shapes of `chord`, best first; at most `limit`, by default the core's 50. The export
+ * sheet asks for more to find a stored shape again (ADR-43).
+ */
+export function voicingList(
+  settings: ListSettings,
+  chord: VoicedChord,
+  limit?: number,
+): ChordVoicing[] {
   const { instrument, voicings } = settings;
   return chordVoicings(
     instrumentTuning(instrument),
@@ -36,6 +43,7 @@ export function voicingList(settings: ListSettings, chord: VoicedChord): ChordVo
       openStrings: voicings.openStrings,
       mutedStrings: voicings.mutedStrings,
       inversions: voicings.inversions,
+      ...(limit === undefined ? {} : { limit }),
     },
   );
 }
