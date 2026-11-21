@@ -1,17 +1,18 @@
 /*
- * Theme tokens (ADR-11, ADR-19). What each token is for: docs/theme-tokens.md.
+ * Default theme (ADR-11, ADR-19, ADR-40). What each token is for: docs/theme-tokens.md.
  *
- * The token names are a contract: export and user themes set them. Values are opaque
- * #rrggbb, and tokens.test.ts checks their contrast in both themes.
+ * A theme file sets the theme tokens for a light scheme, a dark scheme or both, each in its
+ * own [data-scheme] block; --theme-name is the name shown in the theme picker. Values are
+ * opaque #rrggbb. tokens.test.ts checks every built-in theme's contrast.
  *
- * Light is the default. The OS dark preference selects dark unless data-theme="light" is
- * set on the root element; data-theme="dark" selects dark regardless of the OS. The dark
- * block appears twice (OS preference and data-theme); the test keeps the copies identical.
+ * This theme is also the fallback: a user theme's missing tokens take their values from here.
  */
 
 :root {
-  color-scheme: light;
+  --theme-name: 'Default';
+}
 
+[data-scheme='light'] {
   --surface: #f7f6f3;
   --surface-raised: #ffffff;
   --surface-sunken: #eceae5;
@@ -55,57 +56,7 @@
   --degree-11: #8a3b73;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    color-scheme: dark;
-
-    --surface: #171615;
-    --surface-raised: #211f1d;
-    --surface-sunken: #100f0e;
-    --border: #35322e;
-    --border-strong: #79736a;
-    --text: #eceae6;
-    --text-muted: #aaa49b;
-    --text-link: #8ab4f8;
-    --text-danger: #f28b82;
-    --accent: #8ab4f8;
-    --accent-hover: #a8c7fa;
-    --accent-text: #0b1d36;
-    --focus-ring: #8ab4f8;
-
-    --fretboard-wood: #2b1f18;
-    --fretboard-nut: #e6dccb;
-    --fretboard-fret: #9a9286;
-    --fretboard-string: #c9c1b4;
-    --fretboard-inlay: #4a3a2e;
-    --fretboard-dot: #c3d3e8;
-    --fretboard-dot-text: #15120f;
-    --fretboard-root: #f35f84;
-    --fretboard-root-text: #15120f;
-    --fretboard-dim: #4f453c;
-    --fretboard-dim-text: #e6dccb;
-    --fretboard-focus: #8ab4f8;
-    --fretboard-capo: #b8b2a8;
-    --fretboard-selected: #ffb347;
-
-    --degree-0: #f35f84;
-    --degree-1: #e74c0e;
-    --degree-2: #ffb96b;
-    --degree-3: #bbaa5a;
-    --degree-4: #679a51;
-    --degree-5: #66d6a0;
-    --degree-6: #85eaf7;
-    --degree-7: #3e95ef;
-    --degree-8: #a0affb;
-    --degree-9: #8f6afd;
-    --degree-10: #a47fb9;
-    --degree-11: #dd97c5;
-  }
-}
-
-:root[data-theme='dark'] {
-  color-scheme: dark;
-
+[data-scheme='dark'] {
   --surface: #171615;
   --surface-raised: #211f1d;
   --surface-sunken: #100f0e;

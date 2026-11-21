@@ -79,13 +79,14 @@ Stored as plain TOML files in the OS app-data directory:
 - Custom scales, chords, tunings
 - Saved presets
 - Tag-rule overrides (see §6)
+- User themes, the one kind of file that is CSS, not TOML (§5.11)
 
 Files are hand-editable and shareable; the UI offers import/export of them.
 
 - One file per document, directly in the app-data folder (e.g. `settings.toml`). In a plain
   browser (development) the same documents live in localStorage (ADR-4, ADR-17).
-- `settings.toml` holds the display preferences (sharps/flats, dot labels, theme,
-  left-handed), the last instrument (kind, string count, tuning, fret count, capo) and the
+- `settings.toml` holds the display preferences (sharps/flats, dot labels, theme and
+  light/dark, left-handed), the last instrument (kind, string count, tuning, fret count, capo) and the
   last view (root, scale) and the tab view's position (system, 3NPS pattern, fret window,
   direction, highlight; ADR-25), the sound (volume 0–100, mute; ADR-28) and the voicing
   browser's constraints (`[voicings]`; ADR-37). It is created with
@@ -97,6 +98,7 @@ Files are hand-editable and shareable; the UI offers import/export of them.
   `chords.toml` when they save (comments are not kept); if the file had items that didn't
   load, the old file is first kept as `tunings-backup.toml`, `scales-backup.toml` or
   `chords-backup.toml` (ADR-24, ADR-26, ADR-36).
+- User themes are `theme-<id>.css` files, read at start (§5.11, ADR-40).
 - A value the app doesn't understand falls back to its default and the app shows a warning
   naming it. A file that can't be used at all (not TOML, missing or unsupported version) is
   kept as `settings-backup.toml`, the defaults are used, and the app says so. It never
@@ -309,7 +311,8 @@ intervals = ["1", "b3", "b5", "b7"]
 - **Instrument panel** (the `settings` region, ADR-24): string count 4–9, the tuning presets
   for that count grouped by kind (guitar, bass) with the user's own tunings in a group of
   their own, fret count (12–27), capo (below the last fret; a shorter neck moves it down),
-  left-handed and theme. Changing the string count picks that count's standard preset.
+  left-handed. The same region holds the sound and the appearance (theme, light/dark;
+  §5.11). Changing the string count picks that count's standard preset.
   Every change is saved and the neck follows at once.
   - **Custom tunings:** "New tuning" opens an editor seeded with the selected tuning: a name,
     guitar or bass, and a note and octave per string (string 1, the highest, first). Saving
@@ -584,8 +587,21 @@ Algorithmic (works for any tuning and 4–9 strings; no static shape library).
 ### 5.11 Theming (Q30)
 
 - One shared **CSS theme system** used for both the app UI and exports.
-- Light/dark, following the OS by default; a setting can force either one.
-- Tokens and their contrast rules: [docs/theme-tokens.md](docs/theme-tokens.md) (ADR-19).
+- A **theme** is a CSS file setting the tokens for a light scheme, a dark scheme or both
+  (ADR-40). Built-in: **Default** (light and dark), **High contrast** (light and dark) and
+  **Print** (light only: white paper, black ink, a white fingerboard).
+- **Appearance** in the settings region: a theme picker (built-in themes, then the user's
+  under *Your themes*) and light/dark/system. System follows the OS as it changes; a theme
+  with one scheme always shows it. Both are saved in `settings.toml` (`display.theme_id`,
+  `display.theme`); a missing `theme_id` is the Default theme.
+- **User themes** are `theme-<id>.css` files in the app-data folder, in the same format as
+  the built-ins, read at start. A missing or invalid token takes the Default theme's value;
+  a failed contrast rule is listed as a warning but the theme is shown as written; a file
+  that isn't a theme file is left out and listed. A user theme with a built-in's id replaces
+  it. A saved theme that no longer exists shows the Default theme.
+- Format, file locations, tokens and their contrast rules:
+  [docs/theme-tokens.md](docs/theme-tokens.md) (ADR-19, ADR-40). Every built-in theme passes
+  every contrast rule in every scheme.
 - An export looks like what is on screen in the chosen theme.
 
 ---

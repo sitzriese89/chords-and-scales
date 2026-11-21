@@ -1,0 +1,97 @@
+/*
+ * High contrast theme (ADR-40): black on white and white on black, with stronger outlines and
+ * a yellow focus ring in the dark scheme. The degree palette is the Default theme's, which
+ * gains contrast on the plainer fingerboards. Format: docs/theme-tokens.md.
+ */
+
+:root {
+  --theme-name: 'High contrast';
+}
+
+[data-scheme='light'] {
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-sunken: #f0f0f0;
+  --border: #767676;
+  --border-strong: #000000;
+  --text: #000000;
+  --text-muted: #333333;
+  --text-link: #0039a6;
+  --text-danger: #a30000;
+  --accent: #0039a6;
+  --accent-hover: #002a7a;
+  --accent-text: #ffffff;
+  --focus-ring: #0039a6;
+
+  --fretboard-wood: #fff8e8;
+  --fretboard-nut: #000000;
+  --fretboard-fret: #444444;
+  --fretboard-string: #222222;
+  --fretboard-inlay: #e3d6b8;
+  --fretboard-dot: #1a2a40;
+  --fretboard-dot-text: #ffffff;
+  --fretboard-root: #c5365f;
+  --fretboard-root-text: #ffffff;
+  --fretboard-dim: #c8c8c8;
+  --fretboard-dim-text: #000000;
+  --fretboard-focus: #0039a6;
+  --fretboard-capo: #000000;
+  --fretboard-selected: #a34a00;
+
+  --degree-0: #c5365f;
+  --degree-1: #832500;
+  --degree-2: #a36400;
+  --degree-3: #6c5d00;
+  --degree-4: #294d18;
+  --degree-5: #1b6c49;
+  --degree-6: #007f8b;
+  --degree-7: #0062b1;
+  --degree-8: #3014ba;
+  --degree-9: #7450d6;
+  --degree-10: #58356b;
+  --degree-11: #8a3b73;
+}
+
+[data-scheme='dark'] {
+  --surface: #000000;
+  --surface-raised: #0f0f0f;
+  --surface-sunken: #000000;
+  --border: #5c5c5c;
+  --border-strong: #c0c0c0;
+  --text: #ffffff;
+  --text-muted: #d4d4d4;
+  --text-link: #9cc3ff;
+  --text-danger: #ff9e94;
+  --accent: #9cc3ff;
+  --accent-hover: #c4dcff;
+  --accent-text: #000000;
+  --focus-ring: #ffd400;
+
+  --fretboard-wood: #0a0a0a;
+  --fretboard-nut: #ffffff;
+  --fretboard-fret: #b4b4b4;
+  --fretboard-string: #e6e6e6;
+  --fretboard-inlay: #303030;
+  --fretboard-dot: #d6e4f5;
+  --fretboard-dot-text: #000000;
+  --fretboard-root: #f35f84;
+  --fretboard-root-text: #000000;
+  --fretboard-dim: #4a4a4a;
+  --fretboard-dim-text: #ffffff;
+  --fretboard-focus: #ffd400;
+  --fretboard-capo: #d0d0d0;
+  --fretboard-selected: #ffb347;
+
+  --degree-0: #f35f84;
+  --degree-1: #e74c0e;
+  --degree-2: #ffb96b;
+  --degree-3: #bbaa5a;
+  --degree-4: #679a51;
+  --degree-5: #66d6a0;
+  --degree-6: #85eaf7;
+  --degree-7: #3e95ef;
+  --degree-8: #a0affb;
+  --degree-9: #8f6afd;
+  --degree-10: #a47fb9;
+  --degree-11: #dd97c5;
+}

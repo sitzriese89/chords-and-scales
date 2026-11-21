@@ -1,0 +1,54 @@
+/*
+ * Print theme (ADR-40): white paper, black ink, a white fingerboard and thin grey lines, so a
+ * printed sheet spends ink only on the notes. Light only: with this theme the light/dark
+ * setting has no effect. The degree palette is the Default light one. Format:
+ * docs/theme-tokens.md.
+ */
+
+:root {
+  --theme-name: 'Print';
+}
+
+[data-scheme='light'] {
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-sunken: #f4f4f4;
+  --border: #d0d0d0;
+  --border-strong: #767676;
+  --text: #000000;
+  --text-muted: #4d4d4d;
+  --text-link: #1f4f8f;
+  --text-danger: #a30000;
+  --accent: #333333;
+  --accent-hover: #000000;
+  --accent-text: #ffffff;
+  --focus-ring: #1f4f8f;
+
+  --fretboard-wood: #ffffff;
+  --fretboard-nut: #000000;
+  --fretboard-fret: #8c8c8c;
+  --fretboard-string: #595959;
+  --fretboard-inlay: #e6e6e6;
+  --fretboard-dot: #222222;
+  --fretboard-dot-text: #ffffff;
+  --fretboard-root: #c5365f;
+  --fretboard-root-text: #ffffff;
+  --fretboard-dim: #dcdcdc;
+  --fretboard-dim-text: #222222;
+  --fretboard-focus: #1f4f8f;
+  --fretboard-capo: #333333;
+  --fretboard-selected: #a34a00;
+
+  --degree-0: #c5365f;
+  --degree-1: #832500;
+  --degree-2: #a36400;
+  --degree-3: #6c5d00;
+  --degree-4: #294d18;
+  --degree-5: #1b6c49;
+  --degree-6: #007f8b;
+  --degree-7: #0062b1;
+  --degree-8: #3014ba;
+  --degree-9: #7450d6;
+  --degree-10: #58356b;
+  --degree-11: #8a3b73;
+}

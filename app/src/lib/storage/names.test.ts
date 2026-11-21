@@ -21,4 +21,9 @@ describe('document names', () => {
     expect(isDocumentName('a'.repeat(MAX_DOCUMENT_NAME_LENGTH))).toBe(true);
     expect(isDocumentName('a'.repeat(MAX_DOCUMENT_NAME_LENGTH + 1))).toBe(false);
   });
+
+  it(`allows at most ${MAX_DOCUMENT_NAME_LENGTH} characters before .css`, () => {
+    expect(isDocumentName(`${'a'.repeat(MAX_DOCUMENT_NAME_LENGTH)}.css`)).toBe(true);
+    expect(isDocumentName(`${'a'.repeat(MAX_DOCUMENT_NAME_LENGTH + 1)}.css`)).toBe(false);
+  });
 });

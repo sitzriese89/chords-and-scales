@@ -11,7 +11,10 @@
     "preset-2",
     "console",
     "nul1",
-    "com10"
+    "com10",
+    "theme-solar.css",
+    "a.css",
+    "css"
   ],
   "invalid": [
     "",
@@ -37,6 +40,16 @@
     "com1",
     "lpt9",
     "aux",
-    "prn"
+    "prn",
+    ".css",
+    "theme.CSS",
+    "Theme.css",
+    "a.css.css",
+    "a.toml.css",
+    "../theme.css",
+    "a/b.css",
+    "theme.txt",
+    "con.css",
+    "theme.css "
   ]
 }

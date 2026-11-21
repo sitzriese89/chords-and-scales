@@ -17,10 +17,10 @@
   import { InstrumentPanel } from './lib/instrument';
   import { SettingsStore, setSettings } from './lib/settings';
   import { createStorage, type Storage } from './lib/storage';
+  import { applyTheme, setThemes, ThemeLibrary, ThemePicker } from './lib/themes';
   import { version } from './lib/theory';
   import { setUserCatalogs, UserCatalogs } from './lib/user-catalogs.svelte';
   import { VoicingBrowser } from './lib/voicings';
-  import { applyTheme } from './styles/theme';
 
   // Tests pass their own storage, audio engine and harmonizer; the app picks Tauri files or
   // localStorage (ADR-4), the Web Audio engine (ADR-28) and the core's harmonize (ADR-32).
@@ -42,6 +42,10 @@
   // svelte-ignore state_referenced_locally
   const catalogs = new UserCatalogs(storage);
   setUserCatalogs(catalogs);
+  // The built-in themes and the user's theme files (ADR-40).
+  // svelte-ignore state_referenced_locally
+  const themes = new ThemeLibrary(storage);
+  setThemes(themes);
   // The chord chosen in the chord panel, drawn on the explorer's neck (ADR-32).
   // svelte-ignore state_referenced_locally
   setChordState(new ChordState(settings, harmonizer, catalogs));
@@ -61,12 +65,14 @@
   // The views wait for the settings and the user's scales and tunings, so the last view
   // appears at once instead of after a flash of the defaults.
   let ready = $state(false);
-  Promise.all([settings.load(), catalogs.load()]).then(() => {
+  Promise.all([settings.load(), catalogs.load(), themes.load()]).then(() => {
     ready = true;
   });
   const fileProblems = $derived(catalogs.problems);
 
-  $effect(() => applyTheme(settings.current.theme));
+  // The chosen theme in the chosen scheme; with "System" it follows the OS until either
+  // changes (ADR-40).
+  $effect(() => applyTheme(themes.get(settings.current.themeId), settings.current.theme));
 </script>
 
 {#if settings.warning}
@@ -81,8 +87,8 @@
   - picker:   root and scale picker.
   - board:    the view toggles (labels, sharps/flats) and the fretboard.
   - settings: the instrument panel (strings, tuning and custom tunings, frets, capo,
-              left-handed, theme; ADR-24) and the sound (volume, mute; ADR-28). The view
-              toggles stay in board.
+              left-handed; ADR-24), the sound (volume, mute; ADR-28) and the appearance
+              (theme and light/dark; ADR-40). The view toggles stay in board.
   - chords:   the docked chord panel (SPEC §5.3, ADR-10, ADR-32): collapsible and resizable.
   On narrow windows the regions stack in that order.
 -->
@@ -114,11 +120,13 @@
       <ScaleExplorer />
     </main>
 
-    <aside class="region settings" aria-label="Instrument settings">
+    <aside class="region settings" aria-label="Settings">
       <h2>Instrument</h2>
       <InstrumentPanel />
-      <h2 class="sound">Sound</h2>
+      <h2 class="section">Sound</h2>
       <AudioControls />
+      <h2 class="section">Appearance</h2>
+      <ThemePicker />
     </aside>
 
     <aside class="region chords" aria-label="Chords">
@@ -199,7 +207,7 @@
     font-size: 1rem;
   }
 
-  h2.sound {
+  h2.section {
     margin-top: 1rem;
   }
 

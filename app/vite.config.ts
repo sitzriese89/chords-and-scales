@@ -22,5 +22,7 @@ export default defineConfig({
     environment: 'jsdom',
     include: ['src/**/*.test.ts'],
     setupFiles: ['src/test-setup.ts'],
+    // Vitest empties CSS by default; the theme files are read as text (`?raw`, ADR-40).
+    css: { include: [/src\/styles\/themes\/.*\.css/] },
   },
 });

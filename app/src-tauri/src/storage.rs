@@ -1,7 +1,8 @@
 //! Named TOML documents in the app-data folder: the Tauri side of the `Storage` interface
-//! (ADR-4, ADR-17).
+//! (ADR-4, ADR-17). Theme files are CSS documents (ADR-40).
 //!
-//! A document `settings` is the file `<app-data>/settings.toml`. Names are checked before any
+//! A document `settings` is the file `<app-data>/settings.toml`; a name ending in `.css`, such
+//! as `theme-solar.css`, is that file as it is. Names are checked before any
 //! path is built, so a name can never point outside the folder. Writes are atomic: the content
 //! goes to a temporary file in the same folder, which then replaces the document by rename, so
 //! a crash leaves either the old or the new file, never half of one.
@@ -15,8 +16,11 @@ use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 
-/// File extension of every stored document.
+/// File extension of a stored document whose name has none.
 pub const EXTENSION: &str = "toml";
+
+/// The one extension a document name may carry: CSS documents such as user themes (ADR-40).
+pub const CSS_EXTENSION: &str = "css";
 
 /// Longest accepted document name, in characters.
 pub const MAX_NAME_LEN: usize = 64;
@@ -42,7 +46,7 @@ impl fmt::Display for StorageError {
             Self::InvalidName(name) => write!(
                 f,
                 "invalid document name {name:?}: use 1-{MAX_NAME_LEN} lowercase letters, digits, \
-                 '-' or '_', starting with a letter or digit"
+                 '-' or '_', starting with a letter or digit, optionally followed by .css"
             ),
             Self::Io { context, source } => write!(f, "{context}: {source}"),
         }
@@ -65,18 +69,20 @@ fn io_error(context: impl Into<String>) -> impl FnOnce(io::Error) -> StorageErro
     }
 }
 
-/// Checks a document name: 1–64 characters from `a-z`, `0-9`, `-`, `_`, starting with a letter
-/// or digit, and not a Windows device name. Lowercase only, so names can't collide on
-/// case-insensitive filesystems. The same rule is enforced in TypeScript
-/// (`app/src/lib/storage/names.ts`); both test against `names.fixture.json`.
+/// Checks a document name: a stem of 1–64 characters from `a-z`, `0-9`, `-`, `_`, starting
+/// with a letter or digit, and not a Windows device name, optionally followed by `.css`.
+/// Lowercase only, so names can't collide on case-insensitive filesystems. The same rule is
+/// enforced in TypeScript (`app/src/lib/storage/names.ts`); both test against
+/// `names.fixture.json`.
 pub fn validate_name(name: &str) -> Result<(), StorageError> {
-    let mut chars = name.chars();
-    let valid = name.len() <= MAX_NAME_LEN
+    let (stem, _) = split_name(name);
+    let mut chars = stem.chars();
+    let valid = stem.len() <= MAX_NAME_LEN
         && chars
             .next()
             .is_some_and(|c| c.is_ascii_lowercase() || c.is_ascii_digit())
         && chars.all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-' || c == '_')
-        && !RESERVED_ON_WINDOWS.contains(&name);
+        && !RESERVED_ON_WINDOWS.contains(&stem);
     if valid {
         Ok(())
     } else {
@@ -84,10 +90,20 @@ pub fn validate_name(name: &str) -> Result<(), StorageError> {
     }
 }
 
+/// A name's stem and its file extension: `theme-x.css` is (`theme-x`, `css`), `settings` is
+/// (`settings`, `toml`).
+fn split_name(name: &str) -> (&str, &'static str) {
+    match name.strip_suffix(".css") {
+        Some(stem) => (stem, CSS_EXTENSION),
+        None => (name, EXTENSION),
+    }
+}
+
 /// The file that holds document `name` in `dir`, after checking the name.
 pub fn document_path(dir: &Path, name: &str) -> Result<PathBuf, StorageError> {
     validate_name(name)?;
-    Ok(dir.join(format!("{name}.{EXTENSION}")))
+    let (stem, extension) = split_name(name);
+    Ok(dir.join(format!("{stem}.{extension}")))
 }
 
 /// Reads document `name`; `None` if it doesn't exist.
@@ -119,13 +135,20 @@ pub fn list_documents(dir: &Path) -> Result<Vec<String>, StorageError> {
     for entry in entries {
         let entry = entry.map_err(io_error("could not list the app-data folder"))?;
         let path = entry.path();
-        if !path.is_file() || path.extension().and_then(|e| e.to_str()) != Some(EXTENSION) {
+        if !path.is_file() {
             continue;
         }
-        if let Some(stem) = path.file_stem().and_then(|s| s.to_str())
-            && validate_name(stem).is_ok()
-        {
-            names.push(stem.to_owned());
+        let Some(file_name) = path.file_name().and_then(|n| n.to_str()) else {
+            continue;
+        };
+        // `x.toml` is the document `x`, `x.css` the document `x.css`.
+        let name = match file_name.strip_suffix(".toml") {
+            Some(stem) => stem,
+            None if file_name.ends_with(".css") => file_name,
+            None => continue,
+        };
+        if validate_name(name).is_ok() {
+            names.push(name.to_owned());
         }
     }
     names.sort();
@@ -252,6 +275,38 @@ mod tests {
         }
         assert!(validate_name(&"a".repeat(MAX_NAME_LEN)).is_ok());
         assert!(validate_name(&"a".repeat(MAX_NAME_LEN + 1)).is_err());
+        assert!(validate_name(&format!("{}.css", "a".repeat(MAX_NAME_LEN))).is_ok());
+        assert!(validate_name(&format!("{}.css", "a".repeat(MAX_NAME_LEN + 1))).is_err());
+    }
+
+    #[test]
+    fn css_documents_are_css_files_beside_the_toml_ones() {
+        let dir = TempDir::new();
+        let css = "[data-scheme=\"light\"] {\n  --surface: #ffffff;\n}\n";
+        write_document(&dir.0, "theme-solar.css", css).unwrap();
+        write_document(&dir.0, "theme-solar", "x = 1\n").unwrap();
+        assert_eq!(
+            fs::read_to_string(dir.0.join("theme-solar.css")).unwrap(),
+            css
+        );
+        assert_eq!(
+            read_document(&dir.0, "theme-solar.css").unwrap().as_deref(),
+            Some(css)
+        );
+        assert_eq!(
+            read_document(&dir.0, "theme-solar").unwrap().as_deref(),
+            Some("x = 1\n")
+        );
+        fs::write(dir.0.join("Upper.css"), "invalid name").unwrap();
+        fs::write(dir.0.join("style.css.bak"), "other extension").unwrap();
+        fs::write(dir.0.join("x.toml.css"), "two extensions").unwrap();
+        assert_eq!(
+            list_documents(&dir.0).unwrap(),
+            vec!["theme-solar", "theme-solar.css"]
+        );
+        delete_document(&dir.0, "theme-solar.css").unwrap();
+        assert!(!dir.0.join("theme-solar.css").exists());
+        assert!(dir.0.join("theme-solar.toml").exists());
     }
 
     #[test]

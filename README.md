@@ -14,7 +14,8 @@ give it a name and, if you like, a family. Your scales are listed with the other
 switch the dot labels between note names, intervals and none, and the spelling between
 sharps and flats (the root keeps the spelling you chose). On the right, pick the number of
 strings (4–9) and a tuning, set the fret count and a capo, mirror the neck for left-handed
-playing and choose a light, dark or system theme. Under the neck, the scale is shown as tab
+playing; under **Appearance**, pick a theme (Default, High contrast, Print or your own) and
+light, dark or follow the system. Under the neck, the scale is shown as tab
 in one position: a 3-notes-per-string pattern (those that fit the neck) or a fret window you
 set with a start fret and a width, played up, down or up and back down; the position's notes
 are highlighted on the neck. **New tuning** makes your own tuning, a note and octave per
@@ -46,7 +47,8 @@ listed with the others (under *Custom* unless you named a family), can be typed 
 symbol, and can be edited and deleted there. Everything is saved and comes back at the next
 start. Your own scales, chords and tunings go in `scales.toml`, `chords.toml` and
 `tunings.toml` next to `settings.toml` in the app-data folder, in the format described in
-[SPEC.md](SPEC.md).
+[SPEC.md](SPEC.md). Your own themes go there too, as `theme-<name>.css` files; the format and
+the folder for each OS are in [docs/theme-tokens.md](docs/theme-tokens.md).
 
 ## Install
 
