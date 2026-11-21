@@ -8,6 +8,11 @@ into its GitHub Release, and refuses to build a tag without one
 
 ## [Unreleased]
 
+### Fixed
+
+- **PNG export in the installed app.** Every PNG export failed with "the SVG could not be
+  drawn": the app's content security policy blocked the image the export draws from.
+
 ## [0.4.0] - 2026-11-21
 
 Export: collect scales, tabs, chords and shapes on a sheet, and save it as SVG, HTML, PNG or
