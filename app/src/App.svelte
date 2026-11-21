@@ -14,6 +14,7 @@
     ViewControls,
     setScaleEditor,
   } from './lib/explorer';
+  import { createPrinter, svgToPng, type Printer, type Rasterize } from './lib/export';
   import { InstrumentPanel } from './lib/instrument';
   import { SettingsStore, setSettings } from './lib/settings';
   import type { Random } from './lib/random';
@@ -25,22 +26,27 @@
   import { setUserCatalogs, UserCatalogs } from './lib/user-catalogs.svelte';
   import { VoicingBrowser } from './lib/voicings';
 
-  // Tests pass their own storage, audio engine, harmonizer, random numbers and user files; the
-  // app picks Tauri files or localStorage (ADR-4), the Web Audio engine (ADR-28), the core's
-  // harmonize (ADR-32), `Math.random` for the random pick (ADR-42) and save dialogs or
-  // downloads for exports (ADR-17, ADR-44).
+  // Tests pass their own storage, audio engine, harmonizer, random numbers, user files, PNG
+  // rasterizer and printer; the app picks Tauri files or localStorage (ADR-4), the Web Audio
+  // engine (ADR-28), the core's harmonize (ADR-32), `Math.random` for the random pick
+  // (ADR-42), save dialogs or downloads for exports (ADR-17, ADR-44), a canvas for PNGs and
+  // the webview's print dialog (ADR-45).
   const {
     storage = createStorage(),
     audio: injectedAudio,
     harmonizer = coreHarmonizer,
     random = Math.random,
     files = createUserFiles(),
+    rasterize = (svg: string, scale: number) => svgToPng(svg, scale),
+    printer = createPrinter(),
   }: {
     storage?: Storage;
     audio?: AudioEngine;
     harmonizer?: Harmonizer | null;
     random?: Random;
     files?: UserFiles;
+    rasterize?: Rasterize;
+    printer?: Printer;
   } = $props();
 
   const coreVersion = version();
@@ -147,7 +153,7 @@
 
   {#if ready && page === 'sheet'}
     <main class="region sheet">
-      <SheetView {files} />
+      <SheetView {files} {rasterize} {printer} />
     </main>
   {:else if ready}
     <nav class="region picker" aria-label="Scale picker">

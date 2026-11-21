@@ -102,7 +102,7 @@ Collect scales and chords on a themed sheet and export it to PDF, PNG, SVG or HT
 | M4.1 Theme system and theme picker | [#29][29] | M1.6 | Done (#67) |
 | M4.2 Export sheet builder | [#30][30] | M4.1, M2.5, M1.10 | Done (#73) |
 | M4.3 Export to SVG and standalone HTML | [#31][31] | M4.2 | Done (#74) |
-| M4.4 Export to PNG and PDF | [#32][32] | M4.2, M4.3 | Open |
+| M4.4 Export to PNG and PDF | [#32][32] | M4.2, M4.3 | Done (#75) |
 
 Suggested waves: (1) M4.1 → (2) M4.2 → (3) M4.3 → (4) M4.4. PNG rasterizes M4.3's standalone
 SVG, and both rework the same save path (`user_files.rs`, `files.ts`), so M4.4 follows M4.3.

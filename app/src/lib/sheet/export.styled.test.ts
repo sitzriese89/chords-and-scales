@@ -1,22 +1,31 @@
-// Exporting the sheet to SVG and HTML in the real app (SPEC §5.10, ADR-44), with the
-// components' own styles loaded (the `styled` test project), real WASM core and storage.
+// Exporting the sheet to SVG, PNG and HTML and printing it in the real app (SPEC §5.10,
+// ADR-44, ADR-45), with the components' own styles loaded (the `styled` test project), real
+// WASM core and storage.
 import '../../styles/base.css';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '../../App.svelte';
 import { cMajorHarmonizer } from '../chords/fixture-harmonizer';
+import { PNG_SIGNATURE, type Printer } from '../export';
 import { defaultSettings, SETTINGS_DOCUMENT, serializeSettings } from '../settings';
 import { BrowserStorage, type SaveRequest, type UserFiles } from '../storage';
 import { BUILT_IN_THEMES, schemesOf, THEME_STYLE_ID } from '../themes';
 import type { Scheme } from '../themes/tokens';
 
-/** Records what the app saves; `answer` says whether the user kept the file. */
+type TextFile = SaveRequest & { content: string };
+
+/**
+ * Records what the app saves (text files in `saved`, binary ones in `images`); `answer` says
+ * whether the user kept the file.
+ */
 class RecordingFiles implements UserFiles {
-  saved: SaveRequest[] = [];
+  saved: TextFile[] = [];
+  images: SaveRequest[] = [];
   answer: boolean | Error = true;
   async save(file: SaveRequest) {
     if (this.answer instanceof Error) throw this.answer;
-    this.saved.push(file);
+    if (typeof file.content === 'string') this.saved.push(file as TextFile);
+    else this.images.push(file);
     return this.answer;
   }
   async open() {
@@ -68,8 +77,13 @@ describe('sheet export', () => {
   });
 
   /** Starts the app, adds a scale, its tab, a chord and a voicing, and opens the sheet. */
-  async function sheetWithEveryKind() {
-    render(App, { storage, harmonizer: cMajorHarmonizer, files });
+  async function sheetWithEveryKind(
+    props: {
+      rasterize?: (svg: string, scale: number) => Promise<Uint8Array>;
+      printer?: Printer;
+    } = {},
+  ) {
+    render(App, { storage, harmonizer: cMajorHarmonizer, files, ...props });
     await screen.findByRole('grid', { name: /^Fretboard/ });
     await click('Add scale to sheet');
     await click('Add tab to sheet');
@@ -248,7 +262,142 @@ describe('sheet export', () => {
     await click(/^Sheet \(\d+\)$/);
     expect(screen.getByRole('button', { name: 'Export sheet as SVG' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Export sheet as HTML' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Export sheet as PNG' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Print or save as PDF' })).toBeDisabled();
     const article = document.querySelector<HTMLElement>('article[data-sheet]')!;
     expect(within(article).queryAllByRole('button')).toHaveLength(0);
+    expect(within(article).queryAllByRole('combobox')).toHaveLength(0);
+  });
+
+  /** Stands in for the canvas (jsdom has none): records what it is asked to draw. */
+  function recordingRasterizer() {
+    const calls: { svg: string; scale: number }[] = [];
+    const png = new Uint8Array([...PNG_SIGNATURE, 0, 0, 0, 13]);
+    const rasterize = async (svg: string, scale: number) => {
+      calls.push({ svg, scale });
+      return png;
+    };
+    return { calls, png, rasterize };
+  }
+
+  it('exports the sheet as PNG from its SVG, at 2× unless another scale is picked', async () => {
+    const { calls, png, rasterize } = recordingRasterizer();
+    await sheetWithEveryKind({ rasterize });
+    await click('Export sheet as SVG');
+    await click('Export sheet as PNG');
+
+    expect(calls).toEqual([{ svg: files.saved[0].content, scale: 2 }]);
+    expect(files.images).toEqual([
+      { suggestedName: 'dorian-practice.png', format: 'png', content: png },
+    ]);
+    expect(screen.getByRole('status')).toHaveTextContent('Exported dorian-practice.png.');
+
+    expect(screen.getByRole('combobox', { name: 'PNG scale' })).toHaveValue('2');
+    const options = within(screen.getByRole('combobox', { name: 'PNG scale' })).getAllByRole(
+      'option',
+    );
+    expect(options.map((o) => o.textContent)).toEqual(['1×', '2×', '3×']);
+    await pick('PNG scale', '3');
+    await click('Export sheet as PNG');
+    expect(calls[1].scale).toBe(3);
+  });
+
+  it('exports one item as PNG from its own SVG', async () => {
+    const { calls, rasterize } = recordingRasterizer();
+    await sheetWithEveryKind({ rasterize });
+    await pick('PNG scale', '1');
+    await click('Export C: x32010 as SVG');
+    await click('Export C: x32010 as PNG');
+    expect(calls).toEqual([{ svg: files.saved[0].content, scale: 1 }]);
+    expect(files.images.map((f) => [f.suggestedName, f.format])).toEqual([['c-x32010.png', 'png']]);
+  });
+
+  it('says when a PNG could not be made', async () => {
+    await sheetWithEveryKind({
+      rasterize: async () => {
+        throw new Error('the image would be 5000 × 9000 pixels, too large at 3×');
+      },
+    });
+    await click('Export sheet as PNG');
+    expect(files.images).toEqual([]);
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Could not export dorian-practice.png: the image would be 5000 × 9000 pixels',
+    );
+  });
+
+  it('prints the sheet through the printer, and says when it could not', async () => {
+    const printer = { print: vi.fn(async () => {}) };
+    await sheetWithEveryKind({ printer });
+    await click('Print or save as PDF');
+    expect(printer.print).toHaveBeenCalledOnce();
+    expect(screen.queryByRole('status')).toBeNull();
+    printer.print.mockRejectedValueOnce(new Error('no printer'));
+    await click('Print or save as PDF');
+    expect(screen.getByRole('status')).toHaveTextContent('Could not print the sheet: no printer');
+  });
+
+  /** The style rules inside `@media print` in the document's stylesheets. */
+  function printRules(): CSSStyleRule[] {
+    const rules: CSSStyleRule[] = [];
+    const walk = (list: CSSRuleList, printing: boolean) => {
+      for (const rule of list) {
+        if (rule instanceof CSSMediaRule) {
+          walk(rule.cssRules, printing || /\bprint\b/.test(rule.media.mediaText));
+        } else if (rule instanceof CSSStyleRule && printing) {
+          rules.push(rule);
+        }
+      }
+    };
+    for (const sheet of document.styleSheets) walk(sheet.cssRules, false);
+    return rules;
+  }
+
+  it('prints only the sheet, in its colours, with no item split across pages', async () => {
+    await sheetWithEveryKind();
+    const rules = printRules();
+    const hiding = rules.filter((r) => r.style.getPropertyValue('display') === 'none');
+    expect(hiding.length).toBeGreaterThan(0);
+    const hidden = (element: Element) => {
+      for (let e: Element | null = element; e; e = e.parentElement) {
+        if (hiding.some((r) => e!.matches(r.selectorText))) return true;
+      }
+      return false;
+    };
+    const article = document.querySelector<HTMLElement>('article[data-sheet]')!;
+    // The sheet and everything in it prints, and so do the elements around it.
+    for (const element of [article, ...article.querySelectorAll('*')]) {
+      expect(hidden(element), element.outerHTML.slice(0, 60)).toBe(false);
+    }
+    // The app's header, navigation, the sheet's controls and its export buttons don't.
+    const shown = [...document.body.querySelectorAll('*')].filter(
+      (e) => !hidden(e) && !article.contains(e) && !e.contains(article),
+    );
+    expect(shown.map((e) => e.outerHTML.slice(0, 60))).toEqual([]);
+    for (const name of ['Export sheet as PNG', 'Print or save as PDF', /^Sheet \(\d+\)$/]) {
+      expect(hidden(screen.getByRole('button', { name }))).toBe(true);
+    }
+    expect(hidden(screen.getByRole('textbox', { name: 'Title' }))).toBe(true);
+
+    const on = (element: Element, property: string) =>
+      rules
+        .filter((r) => element.matches(r.selectorText))
+        .map((r) => r.style.getPropertyValue(property))
+        .filter(Boolean);
+    expect(on(article, 'print-color-adjust')).toEqual(['exact']);
+    for (const item of article.querySelectorAll('figure[data-sheet-item]')) {
+      expect(on(item, 'break-inside')).toEqual(['avoid']);
+    }
+  });
+
+  it('prints pages without the sheet as they are', async () => {
+    await sheetWithEveryKind();
+    await click('Explorer');
+    await screen.findByRole('grid', { name: /^Fretboard/ });
+    expect(document.querySelector('[data-sheet]')).toBeNull();
+    const hiding = printRules().filter((r) => r.style.getPropertyValue('display') === 'none');
+    const hidden = [...document.body.querySelectorAll('*')].filter((e) =>
+      hiding.some((r) => e.matches(r.selectorText)),
+    );
+    expect(hidden).toEqual([]);
   });
 });

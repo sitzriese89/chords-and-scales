@@ -394,7 +394,7 @@ function boxAttributes(box: Box): Record<string, number> {
 function titleOf(element: Element): string {
   const heading =
     element.querySelector('h2, figcaption .title') ?? element.querySelector('figcaption');
-  return (heading?.textContent ?? '').replace(/s+/g, ' ').trim();
+  return (heading?.textContent ?? '').replace(/\s+/g, ' ').trim();
 }
 
 /** The whole sheet (`article[data-sheet]`) as an SVG document: title, items, captions. */

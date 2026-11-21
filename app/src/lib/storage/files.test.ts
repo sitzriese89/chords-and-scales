@@ -8,13 +8,16 @@ import {
   importDocument,
   MAX_IMPORT_BYTES,
   TauriUserFiles,
+  type InvokeWithBody,
   type PickedFile,
   type SaveRequest,
   type UserFiles,
 } from './files';
 import { InvalidDocumentNameError } from './names';
 import { StorageError } from './storage';
-import type { Invoke } from './tauri';
+
+/** The first bytes of a PNG file and its first chunk's length. */
+const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13]);
 
 /** Records saves and hands out a prepared pick. */
 class FakeUserFiles implements UserFiles {
@@ -93,7 +96,7 @@ describe('importDocument', () => {
 describe('TauriUserFiles', () => {
   it('calls the export and import commands', async () => {
     const calls: [string, unknown][] = [];
-    const invoke: Invoke = async (command, args) => {
+    const invoke: InvokeWithBody = async (command, args) => {
       calls.push([command, args]);
       return command === 'export_file' ? true : { fileName: 'a.toml', content: 'x = 1' };
     };
@@ -110,6 +113,26 @@ describe('TauriUserFiles', () => {
       ['export_file', { suggestedName: 'sheet.svg', format: 'svg', content: '<svg/>' }],
       ['import_file', undefined],
     ]);
+  });
+
+  it('sends bytes as the raw body, with the name and format in headers', async () => {
+    const calls: unknown[][] = [];
+    const files = new TauriUserFiles(async (...call) => {
+      calls.push(call);
+      return true;
+    });
+    expect(await files.save({ suggestedName: 'c♯ dorian.png', format: 'png', content: PNG })).toBe(
+      true,
+    );
+    expect(calls).toEqual([
+      [
+        'export_file',
+        PNG,
+        { headers: { 'x-export-name': 'c%E2%99%AF%20dorian.png', 'x-export-format': 'png' } },
+      ],
+    ]);
+    // The very bytes, not a copy turned into numbers.
+    expect(calls[0][1]).toBe(PNG);
   });
 
   it('reports cancelled dialogs', async () => {
@@ -175,12 +198,26 @@ describe('BrowserUserFiles', () => {
     expect(await created[0].text()).toBe(content);
   });
 
+  it('downloads PNG bytes as an image/png Blob', async () => {
+    const { created, clicked } = recordDownloads();
+    expect(
+      await new BrowserUserFiles().save({
+        suggestedName: 'sheet.png',
+        format: 'png',
+        content: PNG,
+      }),
+    ).toBe(true);
+    expect(clicked[0].download).toBe('sheet.png');
+    expect(created[0].type).toBe('image/png');
+    expect(new Uint8Array(await created[0].arrayBuffer())).toEqual(PNG);
+  });
+
   it('knows a MIME type and an extension for every format', () => {
     for (const format of Object.values(FILE_FORMATS)) {
       expect(format.mime).toMatch(/^[a-z]+\/[a-z+.-]+$/);
       expect(format.extensions.length).toBeGreaterThan(0);
     }
-    expect(Object.keys(FILE_FORMATS).sort()).toEqual(['html', 'svg', 'toml']);
+    expect(Object.keys(FILE_FORMATS).sort()).toEqual(['html', 'png', 'svg', 'toml']);
   });
 
   /** Makes the next file input "pick" `files` (or cancel when `null`) as soon as it opens. */
