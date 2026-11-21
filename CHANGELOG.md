@@ -8,6 +8,40 @@ into its GitHub Release, and refuses to build a tag without one
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-21
+
+Export: collect scales, tabs, chords and shapes on a sheet, and save it as SVG, HTML, PNG or
+PDF in the theme you choose.
+
+### Added
+
+- **Export sheet.** "Add … to sheet" next to the scale, the tab, the chord and a chosen shape
+  puts what you see on a sheet. **Sheet** in the header opens it: give it a title, move items
+  up or down, remove them. Each item keeps the tuning, capo and display settings it was added
+  with, and the sheet is saved in `sheet.toml` in the app-data folder. An item whose custom
+  scale, chord or tuning you later delete shows as missing instead of breaking the sheet.
+- **A theme for the sheet.** The sheet has its own theme and light/dark choice, Print by
+  default, independent of the app's.
+- **Export to SVG and HTML.** The whole sheet or one item as an SVG, or the whole sheet as one
+  HTML page. Both files are self-contained: the theme's colours are written into them, so they
+  look the same in a browser or an editor such as Inkscape, and the HTML opens offline.
+- **Export to PNG** at 1×, 2× or 3×, for the whole sheet or one item.
+- **Print or save as PDF.** Only the sheet prints, in its theme's colours, and an item is never
+  split across pages.
+
+### Fixed
+
+- Saving an export under a name without its extension no longer replaces an existing file of
+  that name with the extension without asking.
+
+### Known limitations
+
+- SVG files are large (about 135 KB for four items), because every element carries its own
+  style. Text that wraps on screen stays on one line in the SVG.
+- Very large sheets can't be exported as PNG at 3×; use 2×.
+- Printing on Linux needs WebKitGTK 2.36 or newer, or the whole window prints.
+- The installers are still not code-signed.
+
 ## [0.3.0] - 2026-11-21
 
 Moods and themes: filter scales and chords by how they sound, let the app pick one for you,
@@ -115,7 +149,8 @@ folder.
   `.deb`). They are not code-signed yet, so Windows SmartScreen and macOS Gatekeeper will warn
   on first start.
 
-[Unreleased]: https://github.com/sitzriese89/chords-and-scales/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/sitzriese89/chords-and-scales/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/sitzriese89/chords-and-scales/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/sitzriese89/chords-and-scales/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/sitzriese89/chords-and-scales/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/sitzriese89/chords-and-scales/releases/tag/v0.1.0
