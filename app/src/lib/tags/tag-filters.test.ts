@@ -7,9 +7,9 @@ import App from '../../App.svelte';
 import { defaultSettings, SETTINGS_DOCUMENT, serializeSettings } from '../settings';
 import { BrowserStorage, TauriStorage, type Storage } from '../storage';
 import { fakeCommands } from '../storage/fake-commands';
-import { chordTags, listChords, listScales, scaleTags, setUserTagRules } from '../theory';
-import { USER_TAG_RULES_DOCUMENT } from '../user-catalogs.svelte';
-import { tagList, withTags } from './filter.svelte';
+import { chordTags, getScale, listChords, listScales, scaleTags, setUserTagRules } from '../theory';
+import { USER_TAG_RULES_DOCUMENT, UserCatalogs } from '../user-catalogs.svelte';
+import { HIDDEN_BY_TAGS, TagFilters, tagList, withTags } from './filter.svelte';
 
 /** Each Storage implementation, as a way to open it again on the same data (a restart). */
 const implementations: [label: string, open: () => () => Storage][] = [
@@ -55,9 +55,16 @@ const chipNames = (chips: ReturnType<typeof scaleChips>) =>
     .filter((b) => b.hasAttribute('aria-pressed'))
     .map((b) => b.textContent?.trim());
 
-/** The ids listed in a picker, in order. */
+/** The ids a picker lists as passing the filter, in order: not a kept current item. */
 const listedIds = (select: HTMLElement) =>
-  [...select.querySelectorAll('option')].map((o) => o.value).filter((v) => v !== '');
+  [...select.querySelectorAll('option:not([data-hidden])')]
+    .map((o) => (o as HTMLOptionElement).value)
+    .filter((v) => v !== '');
+
+/** The options kept in a picker although the chips hide them. */
+const keptOptions = (select: HTMLElement) => [
+  ...select.querySelectorAll<HTMLOptionElement>('option[data-hidden]'),
+];
 
 /** Every scale (or chord) id of the catalog with all of `tags`, from the core, in catalog order. */
 const scalesWith = (...tags: string[]) =>
@@ -200,7 +207,14 @@ describe('tag filters', () => {
 
     expect(scaleTags('major')).not.toContain('dark');
     await fireEvent.click(scaleChips().getByRole('button', { name: 'dark' }));
-    expect(listedIds(scaleList())).not.toContain('major');
+    expect(listedIds(scaleList())).toEqual(scalesWith('dark'));
+    // Major is still in its family, marked, and still the list's value.
+    expect(keptOptions(scaleList()).map((o) => o.value)).toEqual(['major']);
+    const major = keptOptions(scaleList())[0];
+    expect(major.closest('optgroup')).toHaveAttribute('label', getScale('major')!.family);
+    expect(major.textContent).toBe(`${withTags('Major', scaleTags('major'))} ${HIDDEN_BY_TAGS}`);
+    expect(scaleList()).toHaveValue('major');
+    expect(major.selected).toBe(true);
     expect(screen.getByRole('heading', { name: 'C Major' })).toBeInTheDocument();
     expect(
       picker().getByText('Major stays selected, but it doesn’t have every tag you picked.'),
@@ -209,11 +223,38 @@ describe('tag filters', () => {
 
     expect(chordTags('major')).not.toContain('jazzy');
     await fireEvent.click(chordChips().getByRole('button', { name: 'jazzy' }));
-    expect(listedIds(quality())).not.toContain('major');
+    expect(listedIds(quality())).toEqual(chordsWith('jazzy'));
+    expect(keptOptions(quality()).map((o) => o.value)).toEqual(['major']);
+    expect(keptOptions(quality())[0].textContent).toMatch(/ \(hidden by tags\)$/);
+    expect(quality()).toHaveValue('major');
     expect(panel().getByRole('heading', { level: 3, name: 'C' })).toBeInTheDocument();
     expect(
       panel().getByText(/stays chosen, but it doesn’t have every tag you picked\.$/),
     ).toBeInTheDocument();
+
+    // Picking a listed scale drops the kept one; clearing the chips unmarks it.
+    await fireEvent.change(scaleList(), { target: { value: 'phrygian' } });
+    expect(keptOptions(scaleList())).toEqual([]);
+    expect(listedIds(scaleList())).not.toContain('major');
+    await fireEvent.click(chordChips().getByRole('button', { name: 'Clear tags' }));
+    expect(keptOptions(quality())).toEqual([]);
+    expect(quality()).toHaveValue('major');
+  });
+
+  it('keeps a hidden current scale out of the filtered set the random pick uses', async () => {
+    const filters = new TagFilters(new UserCatalogs(storage));
+    filters.scales.toggle('dark');
+    expect(filters.scales.items.map((s) => s.id)).toEqual(scalesWith('dark'));
+    const kept = filters.scales.keeping(filters.scales.families, 'major');
+    expect(kept.flatMap((f) => f.items.map((t) => t.item.id))).toEqual(
+      listScales()
+        .flatMap((f) => f.scales)
+        .map((s) => s.id)
+        .filter((id) => id === 'major' || scaleTags(id).includes('dark')),
+    );
+    expect(filters.scales.items.map((s) => s.id)).not.toContain('major');
+    filters.chords.toggle('jazzy');
+    expect(filters.chords.items.map((c) => c.id)).toEqual(chordsWith('jazzy'));
   });
 
   it('says so when no item has every tag picked', async () => {
@@ -245,7 +286,9 @@ b9 = 1
 `,
     );
     await startApp(storage);
-    expect(screen.getByText('One item in your files could not be loaded')).toBeInTheDocument();
+    expect(
+      screen.getByText('One problem with your files: some items or tag rules were not used'),
+    ).toBeInTheDocument();
     expect(screen.getByText(/^tags\.toml: tag "dark": unknown feature "b9"/)).toBeInTheDocument();
     // The rest of the file still applies.
     expect(chipNames(scaleChips())).toContain('spanish');

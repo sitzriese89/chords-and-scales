@@ -101,8 +101,8 @@
     {#if fileProblems.length > 0}
       <details class="file-problems">
         <summary>
-          {fileProblems.length === 1 ? 'One item' : `${fileProblems.length} items`} in your files could
-          not be loaded
+          {fileProblems.length === 1 ? 'One problem' : `${fileProblems.length} problems`} with your files:
+          some items or tag rules were not used
         </summary>
         <ul>
           {#each fileProblems as problem (problem)}

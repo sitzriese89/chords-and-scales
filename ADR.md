@@ -1528,10 +1528,13 @@ whether the chips are saved, and how the rules file is loaded and its errors sho
   tags are also under the scale list, and the chosen chord's in the panel. The plain name is on
   the option as `data-name`.
 - **Filtering never changes the choice.** A current scale or chord without the chips' tags
-  stays chosen and on the neck; the list just doesn't show it, and a note under the list says
-  so. Jumping to the first match would replace what the user was looking at because of a
-  click meant to browse, and listing the hidden item anyway would contradict the filter (the
-  search already hides the current scale the same way).
+  stays chosen and on the neck. It stays in its list too, in its family and marked
+  `(hidden by tags)`, so the select keeps showing it instead of going blank; every other item
+  without the tags is left out, and a note under the list says why it is there. Jumping to
+  the first match would replace what the user was looking at because of a click meant to
+  browse. The kept item is a display matter only: `TagFilter.items` (what M3.3 draws from)
+  never contains it, and the picker adds it with `TagFilter.keeping()`. The scale search
+  still hides the current scale as before.
 - **A filter that matches nothing says so**, naming the tags (“No scale has all of the tags
   dark and happy.”); the chips and **Clear tags** stay to get out of it.
 - **The chips are not saved.** Every start shows the whole catalog: a filter left on and
@@ -1551,7 +1554,7 @@ whether the chips are saved, and how the rules file is loaded and its errors sho
 - Every catalog change re-reads the tags of every scale and chord through WASM (one call per
   item); the catalogs are small enough for this to be instant.
 - Option texts are longer; tests that read names use `data-name`.
-- The note at the top still says "items in your files could not be loaded", also for skipped
-  tag tables.
+- The note at the top now counts problems ("2 problems with your files: some items or tag
+  rules were not used"), since a skipped tag table is not an item.
 - Reloading the rules without a restart (a file watcher or a "reload" button) is not there;
   `UserCatalogs.load()` is the place for it if wanted.

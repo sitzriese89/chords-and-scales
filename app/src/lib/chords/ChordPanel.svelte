@@ -28,7 +28,7 @@
     MIN_PANEL_HEIGHT,
     type ChordSymbolStyle,
   } from '../settings';
-  import { getTagFilters, TagChips, tagList, withTags } from '../tags';
+  import { getTagFilters, HIDDEN_BY_TAGS, TagChips, tagList, withTags } from '../tags';
   import { getChord } from '../theory';
   import { getUserCatalogs } from '../user-catalogs.svelte';
   import ChordEditorDialog from './ChordEditorDialog.svelte';
@@ -74,6 +74,10 @@
   /** The chosen quality stays chosen when the chips hide it; the picker says so. */
   const hiddenByTags = $derived(
     pickedChord !== undefined && activeTags.length > 0 && !tagFilter.matches(pickedChord.id),
+  );
+  /** What the list shows: the filtered chords, plus a chosen one the chips hide, in its family. */
+  const listed = $derived(
+    pickedChord && hiddenByTags ? tagFilter.keeping(families, pickedChord.id) : families,
   );
   const emptyMessage = $derived(
     activeTags.length === 1
@@ -265,11 +269,15 @@
             onchange={(e) => (chordState.chordId = e.currentTarget.value)}
           >
             <option value="">Choose a chord…</option>
-            {#each families as family (family.name)}
+            {#each listed as family (family.name)}
               <optgroup label={family.name}>
                 {#each family.items as { item: chord, tags } (chord.id)}
-                  <option value={chord.id} data-name={chord.name}
-                    >{withTags(chord.name, tags)}</option
+                  {@const kept = hiddenByTags && chord.id === pickedChord?.id}
+                  <option
+                    value={chord.id}
+                    data-name={chord.name}
+                    data-hidden={kept ? '' : undefined}
+                    >{withTags(chord.name, tags)}{kept ? ` ${HIDDEN_BY_TAGS}` : ''}</option
                   >
                 {/each}
               </optgroup>

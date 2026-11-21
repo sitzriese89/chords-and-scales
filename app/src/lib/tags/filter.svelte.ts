@@ -115,6 +115,22 @@ export class TagFilter<T extends { id: string }> {
     return [];
   }
 
+  /**
+   * `families` (this filter's, or a narrower list made from them) with the item `id` put back
+   * in its family and place: a current item the chips hide stays in its picker, so the picker
+   * never shows blank. `items` never includes it.
+   */
+  keeping(families: TaggedFamily<T>[], id: string): TaggedFamily<T>[] {
+    const listed = families.flatMap((family) => family.items.map((t) => t.item.id));
+    if (listed.includes(id)) return families;
+    return this.all
+      .map((family) => ({
+        name: family.name,
+        items: family.items.filter((t) => t.item.id === id || listed.includes(t.item.id)),
+      }))
+      .filter((family) => family.items.length > 0);
+  }
+
   /** Whether the item `id` is in the catalog and passes the filter. */
   matches(id: string): boolean {
     return this.families.some((family) => family.items.some((tagged) => tagged.item.id === id));
@@ -147,6 +163,9 @@ export const [getTagFilters, setTagFilters] = createContext<TagFilters>();
 export function withTags(name: string, tags: readonly string[]): string {
   return tags.length === 0 ? name : `${name} — ${tags.join(', ')}`;
 }
+
+/** The mark on a current item that is listed although the chips hide it. */
+export const HIDDEN_BY_TAGS = '(hidden by tags)';
 
 /** `["dark"]` → `dark`; `["dark", "sad", "evil"]` → `dark, sad and evil`. */
 export function tagList(tags: readonly string[]): string {

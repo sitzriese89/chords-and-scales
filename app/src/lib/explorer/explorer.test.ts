@@ -255,7 +255,9 @@ notes = ["E1", "A1", "D2"]
     expect(screen.getByRole('heading', { name: 'C My scale' })).toBeInTheDocument();
     expect(new Set(dots().map((d) => d.string))).toEqual(new Set([1, 2, 3, 4]));
     expect(screen.getByRole('combobox', { name: 'Tuning' })).toHaveValue('guitar-4-high');
-    expect(screen.getByText('One item in your files could not be loaded')).toBeInTheDocument();
+    expect(
+      screen.getByText('One problem with your files: some items or tag rules were not used'),
+    ).toBeInTheDocument();
     expect(screen.getByText(/^tunings\.toml: tuning 2 \("bass-3"\)/)).toBeInTheDocument();
   });
 

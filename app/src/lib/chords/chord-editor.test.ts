@@ -171,7 +171,9 @@ describe('Broken chord files', () => {
       '[[chord]]\nid = "bad"\nname = "Bad"\nsymbol = "bad"\nintervals = ["1"]\n',
     );
     await startApp(storage);
-    expect(screen.getByText('One item in your files could not be loaded')).toBeInTheDocument();
+    expect(
+      screen.getByText('One problem with your files: some items or tag rules were not used'),
+    ).toBeInTheDocument();
     expect(
       screen.getByText(
         'chords.toml: chord 1 ("bad"): a chord needs at least one note besides the root',

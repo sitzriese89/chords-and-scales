@@ -569,7 +569,8 @@ Algorithmic (works for any tuning and 4–9 strings; no static shape library).
   after its name (`Phrygian — dark, …`), the current scale's tags are shown under the list
   and the chosen chord's in the panel.
 - Filtering never changes the choice: a current scale or chord without the tags stays shown
-  on the neck, and the picker says it is hidden by the filter. A filter that matches nothing
+  on the neck and stays in its list, in its family, marked “(hidden by tags)”; the picker says
+  why. No other item without the tags is listed. A filter that matches nothing
   says so (“No scale has all of the tags dark and happy.”).
 - The chips start off at every start (they are not saved).
 - The user rules file is `tags.toml` (§3.2), read at start; editing it changes the tags after
