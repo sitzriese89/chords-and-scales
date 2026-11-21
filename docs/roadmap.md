@@ -24,8 +24,8 @@ each PR names its issue with `Fixes #n`.
 1. **M0** (alone: every other item builds on the scaffold).
 2. **M1**, then release **v0.1.0** (released 2026-11-15).
 3. **M2**, voicings (M2.11, M2.12) last, then release **v0.2.0** (released 2026-11-17).
-4. **M3**, with M4.1 (themes) pulled forward, then release **v0.3.0**. **Now**
-5. **M4**, then release **v0.4.0**.
+4. **M3**, with M4.1 (themes) pulled forward, then release **v0.3.0** (released 2026-11-21).
+5. **M4**, one item at a time (M4.2 → M4.3 → M4.4), then release **v0.4.0**. **Now**
 
 Items whose dependencies are done can run in parallel. The coordinator groups them into waves
 of issues that don't touch the same files (`implement` skill). Suggested waves from the
@@ -102,9 +102,10 @@ Collect scales and chords on a themed sheet and export it to PDF, PNG, SVG or HT
 | M4.1 Theme system and theme picker | [#29][29] | M1.6 | Done (#67) |
 | M4.2 Export sheet builder | [#30][30] | M4.1, M2.5, M1.10 | Open |
 | M4.3 Export to SVG and standalone HTML | [#31][31] | M4.2 | Open |
-| M4.4 Export to PNG and PDF | [#32][32] | M4.2 | Open |
+| M4.4 Export to PNG and PDF | [#32][32] | M4.2, M4.3 | Open |
 
-Suggested waves: (1) M4.1 → (2) M4.2 → (3) M4.3, M4.4.
+Suggested waves: (1) M4.1 → (2) M4.2 → (3) M4.3 → (4) M4.4. PNG rasterizes M4.3's standalone
+SVG, and both rework the same save path (`user_files.rs`, `files.ts`), so M4.4 follows M4.3.
 
 ## Release gates
 
