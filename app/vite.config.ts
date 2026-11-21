@@ -20,9 +20,28 @@ export default defineConfig({
   envPrefix: ['VITE_', 'TAURI_ENV_*'],
   test: {
     environment: 'jsdom',
-    include: ['src/**/*.test.ts'],
     setupFiles: ['src/test-setup.ts'],
-    // Vitest empties CSS by default; the theme files are read as text (`?raw`, ADR-40).
-    css: { include: [/src\/styles\/themes\/.*\.css/] },
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: 'unit',
+          include: ['src/**/*.test.ts'],
+          exclude: ['src/**/*.styled.test.ts'],
+          // Vitest empties CSS by default; the theme files are read as text (`?raw`, ADR-40).
+          css: { include: [/src\/styles\/themes\/.*\.css/] },
+        },
+      },
+      {
+        // The exports read the components' own styles (ADR-44), so these tests load them.
+        // Only here: jsdom gets much slower at everything else with every style in place.
+        extends: true,
+        test: {
+          name: 'styled',
+          include: ['src/**/*.styled.test.ts'],
+          css: { include: [/src\/styles\/.*\.css/, /\.svelte\?svelte&type=style/] },
+        },
+      },
+    ],
   },
 });

@@ -118,7 +118,9 @@ out.
 
 - Core: unit tests plus property tests (transposition round trips, mode rotations, symbol
   parse/format round trips). New behaviour needs a test that fails without the change.
-- Frontend: vitest component tests; WASM exports get a TS-side test.
+- Frontend: vitest component tests; WASM exports get a TS-side test. Tests run without the
+  components' styles, which keeps jsdom fast; a test that needs them (the exports, ADR-44) is
+  named `*.styled.test.ts` and runs in the `styled` vitest project, which loads them.
 - Keep `cargo fmt`, `cargo clippy -D warnings`, `svelte-check` and lint clean; CI checks them.
 
 ## Pull requests

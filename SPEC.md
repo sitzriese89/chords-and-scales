@@ -114,7 +114,8 @@ Files are hand-editable and shareable; the UI offers import/export of them.
   crashes on a bad file.
 - Export saves a document through a save dialog (a download in the browser); import picks a
   TOML file through an open dialog (an upload in the browser) and refuses files that aren't
-  valid TOML.
+  valid TOML. The same save path writes the sheet's SVG and HTML exports (§5.10); the dialog's
+  filter follows the kind of file.
 
 ### 3.3 Custom items (Q12, Q17, Q32)
 
@@ -630,6 +631,18 @@ Algorithmic (works for any tuning and 4–9 strings; no static shape library).
     generated) shows "Missing: …" with the reason; the rest of the sheet is drawn.
   - Saved as `sheet.toml` (§3.2) on every change; one sheet for now.
 - **Formats:** PDF (via webview print), PNG, SVG, standalone HTML.
+  - **SVG and HTML** (ADR-44): on the sheet page, **Export sheet as SVG** and **Export sheet as
+    HTML** (while the sheet has items), and **Export SVG** next to each item. They save through
+    a save dialog (a download in the browser), named after the sheet or item title
+    (`dorian-practice.svg`).
+  - Both are built from the sheet as shown, in the sheet's theme: what is exported looks like
+    the screen. Every colour and font is written into the file as a literal value on each
+    element (no stylesheet, `var()` or class it depends on), so the file keeps its colours in
+    a browser, Inkscape or another viewer.
+  - The SVG is one valid SVG document: the sheet's title, then each item's caption and drawing
+    where they are on screen; an item's SVG is its caption and drawing on the sheet's paper
+    colour. The HTML is one page with the sheet, its drawings as inline SVG and no scripts,
+    links, fonts, images or other requests, so it opens offline.
 - **Themes:** selectable; see §5.11.
 
 ### 5.11 Theming (Q30)

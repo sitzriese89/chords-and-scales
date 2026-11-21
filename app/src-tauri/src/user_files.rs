@@ -6,11 +6,50 @@
 
 use std::fs;
 use std::io;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::storage::write_atomic;
+
+/// The kinds of file the app saves (ADR-44); the same keys as `FILE_FORMATS` in
+/// `app/src/lib/storage/files.ts`. The webview names a kind, never a filter: the dialog's
+/// filter and the extension come from here.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ExportFormat {
+    Toml,
+    Svg,
+    Html,
+}
+
+impl ExportFormat {
+    /// The save dialog's filter: a name and the extensions it shows, the first one preferred.
+    pub fn filter(self) -> (&'static str, &'static [&'static str]) {
+        match self {
+            ExportFormat::Toml => ("TOML", &["toml"]),
+            ExportFormat::Svg => ("SVG image", &["svg"]),
+            ExportFormat::Html => ("HTML page", &["html", "htm"]),
+        }
+    }
+
+    /// `path`, with the format's extension added if the user typed a name without one of its
+    /// extensions (some dialogs don't add it), so the file opens in the right program.
+    pub fn with_extension(self, path: PathBuf) -> PathBuf {
+        let (_, extensions) = self.filter();
+        let has_one = path
+            .extension()
+            .and_then(|e| e.to_str())
+            .is_some_and(|e| extensions.iter().any(|x| x.eq_ignore_ascii_case(e)));
+        if has_one {
+            return path;
+        }
+        let mut name = path.file_name().map(|n| n.to_owned()).unwrap_or_default();
+        name.push(".");
+        name.push(extensions[0]);
+        path.with_file_name(name)
+    }
+}
 
 /// Largest file accepted on import. User files are small TOML documents; this only stops an
 /// accidental pick of a huge file from being loaded into the webview.
@@ -51,21 +90,23 @@ pub mod commands {
     use tauri::{AppHandle, Runtime};
     use tauri_plugin_dialog::DialogExt;
 
-    use super::ImportedFile;
+    use super::{ExportFormat, ImportedFile};
 
-    /// Asks where to save `content` (suggesting `suggested_name`) and writes it there.
-    /// `false` if the user cancelled.
+    /// Asks where to save `content` as a file of kind `format` (suggesting `suggested_name`)
+    /// and writes it there as UTF-8. `false` if the user cancelled.
     #[tauri::command]
     pub async fn export_file<R: Runtime>(
         app: AppHandle<R>,
         suggested_name: String,
+        format: ExportFormat,
         content: String,
     ) -> Result<bool, String> {
+        let (filter, extensions) = format.filter();
         // Async commands run off the main thread, where a blocking dialog is allowed.
         let Some(picked) = app
             .dialog()
             .file()
-            .add_filter("TOML", &["toml"])
+            .add_filter(filter, extensions)
             .set_file_name(&suggested_name)
             .blocking_save_file()
         else {
@@ -73,6 +114,7 @@ pub mod commands {
         };
         let path = picked
             .into_path()
+            .map(|path| format.with_extension(path))
             .map_err(|e| format!("unusable file path: {e}"))?;
         super::write_export(&path, &content)
             .map_err(|e| format!("could not write {}: {e}", path.display()))?;
@@ -155,6 +197,64 @@ mod tests {
         fs::write(&binary, [0xff, 0xfe, 0x00, 0x80]).unwrap();
         assert!(read_import(&binary).is_err());
         assert!(read_import(&dir.join("missing.toml")).is_err());
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn formats_are_read_from_the_frontend_keys() {
+        for (key, format) in [
+            ("toml", ExportFormat::Toml),
+            ("svg", ExportFormat::Svg),
+            ("html", ExportFormat::Html),
+        ] {
+            assert_eq!(
+                serde_json::from_str::<ExportFormat>(&format!("\"{key}\"")).unwrap(),
+                format
+            );
+        }
+        for bad in ["\"png\"", "\"SVG\"", "\"\"", "1"] {
+            assert!(serde_json::from_str::<ExportFormat>(bad).is_err(), "{bad}");
+        }
+    }
+
+    #[test]
+    fn each_format_has_its_dialog_filter() {
+        assert_eq!(ExportFormat::Toml.filter(), ("TOML", &["toml"][..]));
+        assert_eq!(ExportFormat::Svg.filter(), ("SVG image", &["svg"][..]));
+        assert_eq!(
+            ExportFormat::Html.filter(),
+            ("HTML page", &["html", "htm"][..])
+        );
+    }
+
+    #[test]
+    fn a_missing_extension_is_added() {
+        let dir = PathBuf::from("out");
+        assert_eq!(
+            ExportFormat::Svg.with_extension(dir.join("Dorian practice")),
+            dir.join("Dorian practice.svg")
+        );
+        assert_eq!(
+            ExportFormat::Html.with_extension(dir.join("sheet.HTM")),
+            dir.join("sheet.HTM")
+        );
+        assert_eq!(
+            ExportFormat::Html.with_extension(dir.join("sheet.svg")),
+            dir.join("sheet.svg.html")
+        );
+        assert_eq!(
+            ExportFormat::Toml.with_extension(dir.join("scales.toml")),
+            dir.join("scales.toml")
+        );
+    }
+
+    #[test]
+    fn exported_svg_and_html_are_written_as_utf8_text() {
+        let dir = temp_dir();
+        let path = dir.join("sheet.svg");
+        let svg = "<svg xmlns=\"http://www.w3.org/2000/svg\"><text>C♯ Dorian</text></svg>\n";
+        write_export(&path, svg).unwrap();
+        assert_eq!(fs::read(&path).unwrap(), svg.as_bytes());
         fs::remove_dir_all(dir).unwrap();
     }
 

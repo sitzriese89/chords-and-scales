@@ -18,26 +18,29 @@
   import { SettingsStore, setSettings } from './lib/settings';
   import type { Random } from './lib/random';
   import { setSheet, SheetStore, SheetView } from './lib/sheet';
-  import { createStorage, type Storage } from './lib/storage';
+  import { createStorage, createUserFiles, type Storage, type UserFiles } from './lib/storage';
   import { setTagFilters, TagFilters } from './lib/tags';
   import { applyTheme, setThemes, ThemeLibrary, ThemePicker } from './lib/themes';
   import { version } from './lib/theory';
   import { setUserCatalogs, UserCatalogs } from './lib/user-catalogs.svelte';
   import { VoicingBrowser } from './lib/voicings';
 
-  // Tests pass their own storage, audio engine, harmonizer and random numbers; the app picks
-  // Tauri files or localStorage (ADR-4), the Web Audio engine (ADR-28), the core's harmonize
-  // (ADR-32) and `Math.random` for the random pick (ADR-42).
+  // Tests pass their own storage, audio engine, harmonizer, random numbers and user files; the
+  // app picks Tauri files or localStorage (ADR-4), the Web Audio engine (ADR-28), the core's
+  // harmonize (ADR-32), `Math.random` for the random pick (ADR-42) and save dialogs or
+  // downloads for exports (ADR-17, ADR-44).
   const {
     storage = createStorage(),
     audio: injectedAudio,
     harmonizer = coreHarmonizer,
     random = Math.random,
+    files = createUserFiles(),
   }: {
     storage?: Storage;
     audio?: AudioEngine;
     harmonizer?: Harmonizer | null;
     random?: Random;
+    files?: UserFiles;
   } = $props();
 
   const coreVersion = version();
@@ -144,7 +147,7 @@
 
   {#if ready && page === 'sheet'}
     <main class="region sheet">
-      <SheetView />
+      <SheetView {files} />
     </main>
   {:else if ready}
     <nav class="region picker" aria-label="Scale picker">

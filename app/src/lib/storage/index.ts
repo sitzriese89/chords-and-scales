@@ -8,10 +8,13 @@ export { BrowserStorage } from './browser';
 export {
   BrowserUserFiles,
   exportDocument,
+  FILE_FORMATS,
   ImportError,
   importDocument,
   TauriUserFiles,
+  type FileFormat,
   type PickedFile,
+  type SaveRequest,
   type UserFiles,
 } from './files';
 export { CSS_EXTENSION, InvalidDocumentNameError, isDocumentName } from './names';

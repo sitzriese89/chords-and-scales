@@ -1673,3 +1673,71 @@ tuning is gone.
   selection) is cleared; the chord panel's chord lives in `ChordState` and stays.
 - More than one sheet would need either several documents (`sheet-<id>`) or a list in this one;
   either is a new version or a new name rule, not a change to the items.
+
+## ADR-44: Standalone exports: the sheet's subtree with resolved inline styles, a format key for saving
+
+**Context.** M4.3 exports the sheet (ADR-43), or one item, as SVG and the sheet as standalone
+HTML: one file each, no external requests, opening offline in a browser tab or in Inkscape and
+looking like the sheet on screen in its theme (ADR-3, ADR-11, ADR-40). The sheet's look lives
+in what such a file can't take along: Svelte's scoped rules (hashed class names), theme tokens
+used as `var(--…)`, `currentColor`, inherited fonts. The save path (ADR-17) only knew TOML,
+and M4.4 will add PNG bytes to it.
+
+**Decision.**
+- **Built from the subtree on screen, no second renderer.** The exports read
+  `article[data-sheet]` (or one `figure[data-sheet-item]`) as the app drew it. Nothing outside
+  that subtree is taken but what it inherits from its ancestors.
+- **Styles are resolved to literal values per element, in its `style` attribute**, rather than
+  collected into a `<style>` sheet. A small cascade (`lib/export/styles.ts`) reads the
+  document's own stylesheets (media rules that match, `@supports` blocks), takes the rules whose
+  selectors match each element (`Element.matches`), ranks them by importance, specificity
+  (with `:where()`, `:is()`, `:not()`) and source order, then the element's `style` attribute.
+  Custom properties are inherited and every `var()` is replaced; `currentColor` and `inherit`
+  become what they stand for; `rem` and a simple `calc()` become pixels. Rules for `:hover`,
+  `:focus` and the like are left out: an export is the resting state. The result needs no
+  stylesheet, no custom properties and no selectors, which matters for SVG viewers: Inkscape
+  and other editors don't support `var()` and handle `<style>` selectors only in part, while
+  every viewer reads presentation styles on the element. Collecting the matching rules into a
+  `<style>` would have kept files smaller, but would still need the tokens as custom properties
+  and the hashed classes.
+- **Declared values, not `getComputedStyle`.** The cascade reads each rule's declared text, so it
+  gives the same answer in every webview and in jsdom (which doesn't resolve `var()`), and the
+  export tests run the real components with their real styles. Only the properties the app's
+  components use are treated as inherited (`INHERITED`); a user-agent default the app relies on
+  outside HTML (headings are bold) is a rule of its own.
+- **HTML** is a page with a `<meta charset>`, the sheet title, two rules for the page around the
+  sheet (the sheet's paper colour, a margin) and a copy of the article with its resolved styles,
+  without the scoped theme `<style>`, comments, Svelte's classes and tab stops. No scripts,
+  links, fonts (the app uses `system-ui`), images or URLs. The item drawings are inline SVG.
+- **SVG** is one `<svg xmlns=…>` document. Each item drawing is the component's own `<svg>`,
+  copied with resolved presentation properties only (fill, stroke, fonts, opacity, …; layout
+  and interaction properties are dropped, `transparent` becomes `none`) and placed as a nested
+  `<svg>` with its `viewBox`. The HTML around the drawings (the title, each caption, the tab's
+  box, a "Missing" note) becomes `<rect>` (background, border with its radius and dashes) and
+  `<text>` at the position the browser laid it out (`getBoundingClientRect` relative to the
+  root), so the whole-sheet SVG has the sheet's layout without a layout engine of its own. When
+  there is no layout (jsdom, a hidden sheet) the parts are stacked top to bottom. An item's SVG
+  is the figure on the sheet's paper colour with a margin, cropped to what is drawn. Text is
+  one line per element; a caption that wraps on screen is one line in the SVG.
+- **Saving takes a format key.** `UserFiles.save({ suggestedName, format, content })` with
+  `format` one of `toml`, `svg`, `html` (`FILE_FORMATS` in `files.ts`). The Tauri command
+  `export_file` takes the same key as `ExportFormat` and maps it in Rust to the dialog's filter
+  and extensions, so the webview can't name an arbitrary filter; it adds the extension if the
+  user typed a name without one. The browser download uses the format's MIME type. Import is
+  unchanged (TOML only). M4.4 adds a `png` key and lets `content` also be bytes (a second field
+  or an untagged enum in Rust); callers and the command's name stay.
+- **Export actions** sit outside the article (ADR-43): "Export sheet as SVG", "Export sheet as
+  HTML" (disabled while the sheet is empty) and an "Export SVG" button per item in the item
+  list. File names come from the sheet or item title (`Dorian practice` →
+  `dorian-practice.svg`). A short status line says what was exported or why it failed.
+
+**Consequences.**
+- Files are larger than with a shared stylesheet (every fretboard cell carries its fill), but
+  each element can be edited on its own in Inkscape and the colours are plain hex values.
+- A new CSS feature in a component (a selector the specificity count doesn't know, a property
+  that inherits but isn't in `INHERITED`, a complex `calc()`) may need the resolver taught; the
+  export tests run every built-in theme with every item kind and fail on a leftover `var(`.
+- The SVG text uses the viewer's `system-ui`/sans-serif, so text widths can differ slightly
+  from the screen in another program.
+- The export tests need the components' styles, which make jsdom slow, so they are a vitest
+  project of their own (`*.styled.test.ts`) that loads them; the other tests run without.
