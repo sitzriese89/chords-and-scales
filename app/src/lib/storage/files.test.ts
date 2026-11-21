@@ -3,11 +3,13 @@ import { BrowserStorage } from './browser';
 import {
   BrowserUserFiles,
   exportDocument,
+  FILE_FORMATS,
   ImportError,
   importDocument,
   MAX_IMPORT_BYTES,
   TauriUserFiles,
   type PickedFile,
+  type SaveRequest,
   type UserFiles,
 } from './files';
 import { InvalidDocumentNameError } from './names';
@@ -16,10 +18,10 @@ import type { Invoke } from './tauri';
 
 /** Records saves and hands out a prepared pick. */
 class FakeUserFiles implements UserFiles {
-  saved: [string, string][] = [];
+  saved: SaveRequest[] = [];
   constructor(private readonly pick: PickedFile | null = null) {}
-  async save(suggestedName: string, content: string) {
-    this.saved.push([suggestedName, content]);
+  async save(file: SaveRequest) {
+    this.saved.push(file);
     return true;
   }
   async open() {
@@ -38,7 +40,9 @@ describe('exportDocument', () => {
     await storage.write('scales', '[[scale]]\nid = "mine"\n');
     const files = new FakeUserFiles();
     expect(await exportDocument(storage, files, 'scales')).toBe(true);
-    expect(files.saved).toEqual([['scales.toml', '[[scale]]\nid = "mine"\n']]);
+    expect(files.saved).toEqual([
+      { suggestedName: 'scales.toml', format: 'toml', content: '[[scale]]\nid = "mine"\n' },
+    ]);
   });
 
   it('refuses a document that does not exist', async () => {
@@ -94,25 +98,41 @@ describe('TauriUserFiles', () => {
       return command === 'export_file' ? true : { fileName: 'a.toml', content: 'x = 1' };
     };
     const files = new TauriUserFiles(invoke);
-    expect(await files.save('scales.toml', 'x = 1')).toBe(true);
+    expect(
+      await files.save({ suggestedName: 'scales.toml', format: 'toml', content: 'x = 1' }),
+    ).toBe(true);
+    expect(await files.save({ suggestedName: 'sheet.svg', format: 'svg', content: '<svg/>' })).toBe(
+      true,
+    );
     expect(await files.open()).toEqual({ fileName: 'a.toml', content: 'x = 1' });
     expect(calls).toEqual([
-      ['export_file', { suggestedName: 'scales.toml', content: 'x = 1' }],
+      ['export_file', { suggestedName: 'scales.toml', format: 'toml', content: 'x = 1' }],
+      ['export_file', { suggestedName: 'sheet.svg', format: 'svg', content: '<svg/>' }],
       ['import_file', undefined],
     ]);
   });
 
   it('reports cancelled dialogs', async () => {
     const files = new TauriUserFiles(async (command) => (command === 'export_file' ? false : null));
-    expect(await files.save('a.toml', '')).toBe(false);
+    expect(await files.save({ suggestedName: 'a.html', format: 'html', content: '' })).toBe(false);
     expect(await files.open()).toBeNull();
+  });
+
+  it('reports a failed save', async () => {
+    const files = new TauriUserFiles(async () => {
+      throw 'could not write a.svg: access denied';
+    });
+    await expect(
+      files.save({ suggestedName: 'a.svg', format: 'svg', content: '' }),
+    ).rejects.toThrow(/access denied/);
   });
 });
 
 describe('BrowserUserFiles', () => {
   afterEach(() => vi.restoreAllMocks());
 
-  it('downloads a Blob with the suggested file name', async () => {
+  /** Records the Blobs offered for download and the links clicked. */
+  function recordDownloads() {
     const created: Blob[] = [];
     URL.createObjectURL = vi.fn((blob: Blob) => {
       created.push(blob);
@@ -125,13 +145,42 @@ describe('BrowserUserFiles', () => {
     ) {
       clicked.push(this);
     });
+    return { created, clicked };
+  }
 
-    expect(await new BrowserUserFiles().save('scales.toml', 'a = 1\n')).toBe(true);
+  it('downloads a Blob with the suggested file name', async () => {
+    const { created, clicked } = recordDownloads();
+    const files = new BrowserUserFiles();
+    expect(
+      await files.save({ suggestedName: 'scales.toml', format: 'toml', content: 'a = 1\n' }),
+    ).toBe(true);
     expect(clicked).toHaveLength(1);
     expect(clicked[0].download).toBe('scales.toml');
     expect(clicked[0].href).toBe('blob:test');
     expect(await created[0].text()).toBe('a = 1\n');
+    expect(created[0].type).toBe('application/toml;charset=utf-8');
     expect(document.querySelector('a')).toBeNull();
+  });
+
+  it.each([
+    ['svg', 'sheet.svg', 'image/svg+xml;charset=utf-8'],
+    ['html', 'sheet.html', 'text/html;charset=utf-8'],
+  ] as const)('downloads a %s file with its MIME type', async (format, name, type) => {
+    const { created, clicked } = recordDownloads();
+    const content =
+      format === 'svg' ? '<svg xmlns="http://www.w3.org/2000/svg"/>' : '<!doctype html>';
+    expect(await new BrowserUserFiles().save({ suggestedName: name, format, content })).toBe(true);
+    expect(clicked[0].download).toBe(name);
+    expect(created[0].type).toBe(type);
+    expect(await created[0].text()).toBe(content);
+  });
+
+  it('knows a MIME type and an extension for every format', () => {
+    for (const format of Object.values(FILE_FORMATS)) {
+      expect(format.mime).toMatch(/^[a-z]+\/[a-z+.-]+$/);
+      expect(format.extensions.length).toBeGreaterThan(0);
+    }
+    expect(Object.keys(FILE_FORMATS).sort()).toEqual(['html', 'svg', 'toml']);
   });
 
   /** Makes the next file input "pick" `files` (or cancel when `null`) as soon as it opens. */

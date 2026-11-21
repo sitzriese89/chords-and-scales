@@ -8,9 +8,14 @@
   `figure[data-sheet-item]` per item holding that item's SVG, drawn by the app's own components
   (`Fretboard`, `TabView`, `ChordDiagram`) from what the item stored. The editing controls are
   outside it, so an export can take the subtree as it is (M4.3, M4.4).
+
+  Export: the whole sheet as SVG or HTML, each item as SVG, built from that subtree (ADR-44)
+  and saved through `files` (a save dialog in Tauri, a download in the browser).
 -->
 <script lang="ts">
+  import { exportFileName, itemSvg, sheetHtml, sheetSvg } from '../export';
   import { Fretboard } from '../fretboard';
+  import type { FileFormat, UserFiles } from '../storage';
   import { TabView } from '../tab';
   import { BUILT_IN_THEMES, getThemes, resolveScheme, schemesOf, themeCss } from '../themes';
   import type { Theme } from '../themes';
@@ -20,6 +25,8 @@
   import type { SheetScheme } from './schema';
   import { getSheet } from './store.svelte';
   import { sheetItemView } from './view';
+
+  const { files }: { files: UserFiles } = $props();
 
   const sheet = getSheet();
   const library = getThemes();
@@ -54,6 +61,35 @@
 
   function ignore() {
     // A failed save is shown by the store's warning.
+  }
+
+  /** The sheet's subtree on screen: what the exports are built from. */
+  let article = $state<HTMLElement>();
+  /** What the last export did; shown until the next one. */
+  let exported = $state<string | null>(null);
+
+  async function save(format: FileFormat, suggestedName: string, build: () => string) {
+    exported = null;
+    try {
+      const saved = await files.save({ suggestedName, format, content: build() });
+      if (saved) exported = `Exported ${suggestedName}.`;
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error);
+      exported = `Could not export ${suggestedName}: ${reason}`;
+    }
+  }
+
+  function exportSheet(format: 'svg' | 'html') {
+    const root = article;
+    if (!root) return;
+    const build = format === 'svg' ? () => sheetSvg(root) : () => sheetHtml(root);
+    return save(format, exportFileName(sheet.title, format), build);
+  }
+
+  function exportItem(index: number, title: string) {
+    const figure = article?.querySelectorAll<HTMLElement>('figure[data-sheet-item]')[index];
+    if (!figure) return;
+    return save('svg', exportFileName(title, 'svg'), () => itemSvg(figure));
   }
 
   /** Puts the theme's stylesheet first in the sheet, kept up to date as the theme changes. */
@@ -155,13 +191,31 @@
             aria-label="Remove {view.title}"
             onclick={() => sheet.remove(key).catch(ignore)}>Remove</button
           >
+          <button
+            type="button"
+            aria-label="Export {view.title} as SVG"
+            onclick={() => exportItem(index, view.title)}>Export SVG</button
+          >
         </li>
       {/each}
     </ol>
   {/if}
 
+  <div class="export" role="group" aria-label="Export the sheet">
+    <button type="button" disabled={views.length === 0} onclick={() => exportSheet('svg')}
+      >Export sheet as SVG</button
+    >
+    <button type="button" disabled={views.length === 0} onclick={() => exportSheet('html')}
+      >Export sheet as HTML</button
+    >
+    {#if exported}
+      <p class="muted" role="status">{exported}</p>
+    {/if}
+  </div>
+
   <div class="preview">
     <article
+      bind:this={article}
       class="sheet"
       data-sheet
       data-scheme={scheme}
@@ -328,6 +382,13 @@
 
   .item-title {
     margin-right: auto;
+  }
+
+  .export {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
   }
 
   .preview {

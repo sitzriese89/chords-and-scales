@@ -11,13 +11,34 @@ export interface PickedFile {
 }
 
 /**
+ * The kinds of file the app saves (ADR-44). The Tauri command maps the same keys to its save
+ * dialog's filter (`ExportFormat` in `user_files.rs`); the browser download uses the MIME type.
+ */
+export const FILE_FORMATS = {
+  toml: { name: 'TOML', extensions: ['toml'], mime: 'application/toml' },
+  svg: { name: 'SVG image', extensions: ['svg'], mime: 'image/svg+xml' },
+  html: { name: 'HTML page', extensions: ['html', 'htm'], mime: 'text/html' },
+} as const satisfies Record<string, { name: string; extensions: readonly string[]; mime: string }>;
+
+export type FileFormat = keyof typeof FILE_FORMATS;
+
+/** A file to save: what kind it is, what to call it, and what is in it. */
+export interface SaveRequest {
+  /** File name offered in the dialog or used for the download, e.g. `scales.toml`. */
+  suggestedName: string;
+  format: FileFormat;
+  /** The file's text, written as UTF-8. */
+  content: string;
+}
+
+/**
  * Moving user files in and out of the app (SPEC §3.2): a save dialog / download for export,
  * an open dialog / upload for import. `createUserFiles()` in `./index.ts` picks the
  * implementation.
  */
 export interface UserFiles {
-  /** Offers `content` as a file named `suggestedName`; `false` if the user cancelled. */
-  save(suggestedName: string, content: string): Promise<boolean>;
+  /** Offers the file to save; `false` if the user cancelled. */
+  save(file: SaveRequest): Promise<boolean>;
   /** Lets the user pick a TOML file; `null` if they cancelled. */
   open(): Promise<PickedFile | null>;
 }
@@ -37,9 +58,9 @@ export class ImportError extends Error {
 export class TauriUserFiles implements UserFiles {
   constructor(private readonly invoke: Invoke) {}
 
-  async save(suggestedName: string, content: string): Promise<boolean> {
+  async save({ suggestedName, format, content }: SaveRequest): Promise<boolean> {
     try {
-      return (await this.invoke('export_file', { suggestedName, content })) === true;
+      return (await this.invoke('export_file', { suggestedName, format, content })) === true;
     } catch (cause) {
       throw new StorageError(String(cause), { cause });
     }
@@ -58,8 +79,9 @@ export class TauriUserFiles implements UserFiles {
 export class BrowserUserFiles implements UserFiles {
   constructor(private readonly doc: Document = document) {}
 
-  async save(suggestedName: string, content: string): Promise<boolean> {
-    const url = URL.createObjectURL(new Blob([content], { type: 'application/toml' }));
+  async save({ suggestedName, format, content }: SaveRequest): Promise<boolean> {
+    const type = `${FILE_FORMATS[format].mime};charset=utf-8`;
+    const url = URL.createObjectURL(new Blob([content], { type }));
     const link = this.doc.createElement('a');
     link.href = url;
     link.download = suggestedName;
@@ -105,7 +127,7 @@ export async function exportDocument(
 ): Promise<boolean> {
   const content = await storage.read(name);
   if (content === null) throw new StorageError(`there is no document "${name}" to export`);
-  return files.save(`${name}.toml`, content);
+  return files.save({ suggestedName: `${name}.toml`, format: 'toml', content });
 }
 
 /**
