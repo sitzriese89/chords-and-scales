@@ -87,7 +87,7 @@ Filter by mood tags derived from interval rules; random picks that respect filte
 
 | Item | Issue | Depends on | Status |
 |---|---|---|---|
-| M3.1 Mood tag rules engine | [#26][26] | M2.1 | Open |
+| M3.1 Mood tag rules engine | [#26][26] | M2.1 | Done (#66) |
 | M3.2 Tag filters | [#27][27] | M3.1, M2.5, M1.7 | Open |
 | M3.3 Random scale or chord | [#28][28] | M3.2 | Open |
 
