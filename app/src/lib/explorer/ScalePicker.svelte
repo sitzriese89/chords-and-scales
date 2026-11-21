@@ -10,15 +10,22 @@
   dialog with its own neck, and saves to `scales.toml` through `UserCatalogs`. The dialog is
   open while `ScaleEditorState.editing` says so, so reverse lookup can open it too, with the
   selected notes (ADR-38).
+
+  **Random scale** picks a root and a scale from what the list shows (the chips and the search,
+  never a kept hidden scale), as if the user had picked them (SPEC §5.8, ADR-42). `random` is
+  the number source; tests pass a seeded one.
 -->
 <script lang="ts">
   import { IntervalSetEditor, editorNeck, type IntervalSetDraft, type Neck } from '../editor';
   import { DEFAULT_SETTINGS, getSettings } from '../settings';
   import { getTagFilters, HIDDEN_BY_TAGS, TagChips, tagList, withTags } from '../tags';
   import { getScale, listScales, newScaleId, type ScaleInfo, type ScaleInput } from '../theory';
+  import { randomPick, rootPitchClass, spellRoot, type Random } from '../random';
   import { getUserCatalogs } from '../user-catalogs.svelte';
   import { getScaleEditor } from './scale-editor.svelte';
   import { displayRoot, rootChoices } from './view';
+
+  const { random = Math.random }: { random?: Random } = $props();
 
   const settings = getSettings();
   const catalogs = getUserCatalogs();
@@ -173,6 +180,23 @@
     return query.trim() ? `No scale with ${tagged} matches “${query}”.` : `No scale has ${tagged}.`;
   });
 
+  /** What Random scale draws from: the scales the list shows, without a kept hidden one. */
+  const randomSet = $derived(shown.flatMap((family) => family.items.map(({ item }) => item)));
+
+  /**
+   * A random root, spelled by the sharp/flat preference, and scale from `randomSet`, saved like a
+   * pick from the lists; never the root and scale shown now while there is another pair.
+   */
+  function pickRandom() {
+    const { lastView, accidentals } = settings.current;
+    const current = { id: lastView.scale, pitchClass: rootPitchClass(lastView.root) };
+    const picked = randomPick(randomSet, current, random);
+    if (!picked) return;
+    rootError = null;
+    const root = spellRoot(picked.pitchClass, accidentals);
+    settings.update({ lastView: { root, scale: picked.item.id } }).catch(report);
+  }
+
   function report(error: unknown) {
     rootError = error instanceof Error ? error.message : String(error);
   }
@@ -237,6 +261,15 @@
     <TagChips filter={tagFilter} label="Filter scales by tag" />
   </div>
 
+  <div class="buttons">
+    <button
+      type="button"
+      disabled={randomSet.length === 0}
+      aria-describedby={randomSet.length === 0 ? 'scale-empty' : undefined}
+      onclick={pickRandom}>Random scale</button
+    >
+  </div>
+
   <div class="field grow">
     <label for="scale-list">Scale</label>
     <select
@@ -258,7 +291,7 @@
       {/each}
     </select>
     {#if shownCount === 0}
-      <p class="hint" role="status">{emptyMessage}</p>
+      <p id="scale-empty" class="hint" role="status">{emptyMessage}</p>
     {/if}
     {#if hiddenByTags && current}
       <p id="scale-hidden" class="hint">
@@ -402,7 +435,12 @@
     cursor: pointer;
   }
 
-  button:hover {
+  button:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+
+  button:hover:not(:disabled) {
     border-color: var(--accent);
   }
 

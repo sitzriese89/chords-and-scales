@@ -52,6 +52,7 @@ ADR-1 to ADR-13 come from the design interview behind [SPEC.md](SPEC.md) (decisi
 | 39 | [Mood tags: features from semitones, one weight table per tag, a threshold per kind, user rules merged per key](#adr-39-mood-tags-features-from-semitones-one-weight-table-per-tag-a-threshold-per-kind-user-rules-merged-per-key) | Accepted |
 | 40 | [Themes: CSS files with a light and/or dark scheme, applied at runtime, user themes as CSS documents](#adr-40-themes-css-files-with-a-light-andor-dark-scheme-applied-at-runtime-user-themes-as-css-documents) | Accepted |
 | 41 | [Tag filters: chips per picker, AND, the choice never jumps, `tags.toml` read with the user catalogs](#adr-41-tag-filters-chips-per-picker-and-the-choice-never-jumps-tagstoml-read-with-the-user-catalogs) | Accepted |
+| 42 | [Random pick: a button per picker, from what the picker shows, never the pair on screen](#adr-42-random-pick-a-button-per-picker-from-what-the-picker-shows-never-the-pair-on-screen) | Accepted |
 
 ---
 
@@ -1558,3 +1559,46 @@ whether the chips are saved, and how the rules file is loaded and its errors sho
   rules were not used"), since a skipped tag table is not an item.
 - Reloading the rules without a restart (a file watcher or a "reload" button) is not there;
   `UserCatalogs.load()` is the place for it if wanted.
+
+## ADR-42: Random pick: a button per picker, from what the picker shows, never the pair on screen
+
+**Context.** SPEC §5.8 asked for one random button that picks a scale or a chord "depending on
+the active view", from the tag-filtered set (M3.3). There is no active view any more: the app
+is one scale explorer with the chord panel docked under it (ADR-23, ADR-32), so the button
+can't tell which kind is wanted. Open as well: whether the scale search narrows the set, how
+the root is chosen and spelled, whether a pick may repeat what is shown, what happens when
+nothing matches, and how tests control the randomness.
+
+**Decision.**
+- **Two buttons, each in its picker.** **Random scale** sits under the scale picker's tag
+  chips; **Random chord** in the chord panel's root and quality input, under the quality,
+  next to the chord chips (the only input that lists chords, ADR-41). Each draws from its own
+  picker, so which kind is picked is where the user clicks.
+- **From what the picker shows.** Random chord draws from `TagFilter.items` of the chords.
+  Random scale draws from the scales the list shows: the tag chips *and* the search. The list
+  is what the user sees as "the scales I narrowed to", so a search for "phrygian" followed by
+  Random scale should give a Phrygian; ignoring the search would pick scales not on screen.
+  A current item kept only because it is chosen (`(hidden by tags)`) is never picked.
+- **The root is a pitch class**, 0–11 with equal chance, spelled by the core
+  (`spellPitchClass`) in the global sharp/flat preference (ADR-6): a random pick has no typed
+  spelling to keep. It is applied through the paths the pickers use: the scale picker's
+  `settings.update({ lastView: { root, scale } })` (saved like a pick from the lists) and
+  `ChordState.chooseChord(root, chordId)` (root and quality).
+- **Never the pair on screen.** Every pair of root and item is equally likely except the one
+  shown now (compared by pitch class through the core's `pitchClassOf`, so `D♭` and `C♯` are
+  the same root), which is left out of the draw. The set always has at least 12 pairs, so
+  there is always another; a click always changes something. A current item outside the set
+  is not left out of anything.
+- **The pick is pure TypeScript with the number source injected** (`lib/random`:
+  `randomPick(items, current, random)`). It does no music theory: it indexes a list and a
+  0–11 range. The source is a `() => number` prop on `App`, `ScalePicker` and `ChordPanel`,
+  `Math.random` by default; tests pass `seededRandom(seed)` (mulberry32).
+- **Nothing to pick: the button is disabled**, and its accessible description
+  (`aria-describedby`) is the picker's own "No scale has the tag …" message, which is shown
+  next to the list at the same time; no second message.
+
+**Consequences.**
+- In degree and typed-symbol mode there is no Random chord; the user switches to root and
+  quality, where the chord chips are too.
+- Picks are not saved or listed (no history, no undo beyond picking again).
+- Weighting the pick (e.g. by tag score) would only change `randomPick`.
