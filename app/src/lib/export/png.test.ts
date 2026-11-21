@@ -142,3 +142,20 @@ describe('svgToPng', () => {
     await expect(svgToPng(SVG, 0, fakeCanvas().environment)).rejects.toThrow(/invalid scale/);
   });
 });
+
+describe('the Tauri content security policy', () => {
+  // The installed app enforces the CSP in tauri.conf.json; a browser and `pnpm dev` don't, so
+  // only this test notices when the policy blocks the image the rasterizer loads.
+  it('lets the rasterizer load its SVG as an image', async () => {
+    const config = (await import('../../../src-tauri/tauri.conf.json')).default;
+    const directives = new Map(
+      config.app.security.csp
+        .split(';')
+        .map((d: string) => d.trim().split(/\s+/))
+        .map(([name, ...sources]: string[]) => [name, sources]),
+    );
+    const sources = directives.get('img-src') ?? directives.get('default-src') ?? [];
+    const scheme = scaledSvgUrl(SVG, { width: 10, height: 10 }).split(',')[0].split(':')[0];
+    expect(sources).toContain(`${scheme}:`);
+  });
+});
