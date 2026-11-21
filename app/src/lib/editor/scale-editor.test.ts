@@ -45,7 +45,7 @@ const closed = () => waitFor(() => expect(screen.queryByRole('dialog')).toBeNull
 /** The names in the picker's group `family`. */
 function listed(family: string): string[] {
   const group = scaleList().querySelector(`optgroup[label="${family}"]`);
-  return [...(group?.querySelectorAll('option') ?? [])].map((o) => o.textContent ?? '');
+  return [...(group?.querySelectorAll('option') ?? [])].map((o) => o.dataset.name ?? '');
 }
 
 /** Opens the editor and clicks F and G on the low E string: with the root C, a 4 and a 5. */

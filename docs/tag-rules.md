@@ -139,9 +139,23 @@ A user rules file is merged over the built-in rules, table by table:
 There is no way to delete a built-in tag; to switch one off, give it thresholds no item reaches
 (`scale-threshold = 1000`, `chord-threshold = 1000`).
 
-Loading the file from the app-data folder, and showing its errors, is part of the tag filters
-(M3.2). The core takes the file as a string (`TagRules::with_user_rules`); the WASM binding
-takes it through `setUserTagRules(toml)`.
+### Where the file goes
+
+The user rules file is **`tags.toml`** in the app-data folder, next to `settings.toml` and
+your `scales.toml` (the folder for each OS is in
+[docs/theme-tokens.md](theme-tokens.md#where-user-themes-go)). In the browser build it is the
+localStorage entry `chords-and-scales:document:tags`. The app only reads it, never writes it,
+so your comments stay. A missing file means the built-in rules.
+
+The file is read **at start**: after editing it, restart the app (or reload the page in the
+browser) to see the new tags. Tables that could not be used are listed, as
+`tags.toml: tag "dark": unknown feature "b9"; …`, in the note at the top of the window that
+also lists broken scales, chords and tunings. The user-file import stores a picked
+`tags.toml` as this file.
+
+In the code, the core takes the file as a string (`TagRules::with_user_rules`); the WASM
+binding takes it through `setUserTagRules(toml)`, which `UserCatalogs` calls at start
+(ADR-41).
 
 ## A worked example
 

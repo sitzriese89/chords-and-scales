@@ -45,7 +45,7 @@ const closed = () => waitFor(() => expect(screen.queryByRole('dialog')).toBeNull
 /** The chord names in the quality list's group `family`. */
 function listed(family: string): string[] {
   const group = quality().querySelector(`optgroup[label="${family}"]`);
-  return [...(group?.querySelectorAll('option') ?? [])].map((o) => o.textContent ?? '');
+  return [...(group?.querySelectorAll('option') ?? [])].map((o) => o.dataset.name ?? '');
 }
 
 /** Opens the editor and makes 1 3 ♭7 ♯9 called `name` with the symbol `symbol`. */

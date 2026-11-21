@@ -17,6 +17,7 @@
   import { InstrumentPanel } from './lib/instrument';
   import { SettingsStore, setSettings } from './lib/settings';
   import { createStorage, type Storage } from './lib/storage';
+  import { setTagFilters, TagFilters } from './lib/tags';
   import { applyTheme, setThemes, ThemeLibrary, ThemePicker } from './lib/themes';
   import { version } from './lib/theory';
   import { setUserCatalogs, UserCatalogs } from './lib/user-catalogs.svelte';
@@ -42,6 +43,8 @@
   // svelte-ignore state_referenced_locally
   const catalogs = new UserCatalogs(storage);
   setUserCatalogs(catalogs);
+  // The tag chips of the scale and chord pickers, and what they let through (ADR-41).
+  setTagFilters(new TagFilters(catalogs));
   // The built-in themes and the user's theme files (ADR-40).
   // svelte-ignore state_referenced_locally
   const themes = new ThemeLibrary(storage);

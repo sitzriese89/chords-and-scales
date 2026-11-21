@@ -8,7 +8,9 @@
   for a degree. The panel lists the chord's notes and strums it (lowest
   string first, ADR-28): the shape chosen in the voicing browser if there is one, else the
   chord stacked up from its lowest root (ADR-32, ADR-37). The user's own chords are made, edited
-  and deleted in the root and quality picker (ADR-36).
+  and deleted in the root and quality picker (ADR-36). That picker's qualities show their mood
+  tags and can be filtered by tag with the chips; a chosen chord the filter hides stays chosen
+  (ADR-41).
 
   `children` is placed at the end of the panel's body: the app puts the voicing browser there
   (ADR-37), so this module does not depend on it.
@@ -26,7 +28,8 @@
     MIN_PANEL_HEIGHT,
     type ChordSymbolStyle,
   } from '../settings';
-  import { listChords } from '../theory';
+  import { getTagFilters, TagChips, tagList, withTags } from '../tags';
+  import { getChord } from '../theory';
   import { getUserCatalogs } from '../user-catalogs.svelte';
   import ChordEditorDialog from './ChordEditorDialog.svelte';
   import { chordSymbol } from './display';
@@ -41,6 +44,7 @@
   const catalogs = getUserCatalogs();
   const audio = getAudio();
   const chordState = getChordState();
+  const tagFilter = getTagFilters().chords;
 
   const collapsed = $derived(settings.current.chordPanel.collapsed);
   /** The height while the edge is being dragged; the saved height otherwise. */
@@ -59,13 +63,26 @@
   const styleExample = (style: ChordSymbolStyle) =>
     ['maj7', 'min7b5'].map((id) => chordSymbol('C', { id }, style)).join(' ');
   const roots = rootChoices();
-  const families = $derived.by(() => {
-    // Re-read the catalog when the user's chords changed (ADR-24).
+  // The catalog as the tag chips let it through, re-read when the user's chords or tag rules
+  // changed (ADR-24, ADR-41).
+  const families = $derived(tagFilter.families);
+  const activeTags = $derived(tagFilter.active);
+  const pickedChord = $derived.by(() => {
     void catalogs.revision;
-    return listChords();
+    return chordState.chordId ? getChord(chordState.chordId) : undefined;
   });
+  /** The chosen quality stays chosen when the chips hide it; the picker says so. */
+  const hiddenByTags = $derived(
+    pickedChord !== undefined && activeTags.length > 0 && !tagFilter.matches(pickedChord.id),
+  );
+  const emptyMessage = $derived(
+    activeTags.length === 1
+      ? `No chord has the tag ${tagList(activeTags)}.`
+      : `No chord has all of the tags ${tagList(activeTags)}.`,
+  );
 
   const active = $derived(chordState.active);
+  const activeChordTags = $derived(active ? tagFilter.tagsOf(active.chord.id) : []);
   const view = $derived(
     active ? chordPanelView(settings.current, active, chordState.voicing) : null,
   );
@@ -236,21 +253,36 @@
           </select>
         </div>
         <div class="field">
+          <span class="label">Filter by tag</span>
+          <TagChips filter={tagFilter} label="Filter chords by tag" />
+        </div>
+        <div class="field">
           <label for="chord-quality">Chord quality</label>
           <select
             id="chord-quality"
             value={chordState.chordId}
+            aria-describedby={hiddenByTags ? 'chord-hidden' : undefined}
             onchange={(e) => (chordState.chordId = e.currentTarget.value)}
           >
             <option value="">Choose a chord…</option>
             {#each families as family (family.name)}
               <optgroup label={family.name}>
-                {#each family.chords as chord (chord.id)}
-                  <option value={chord.id}>{chord.name}</option>
+                {#each family.items as { item: chord, tags } (chord.id)}
+                  <option value={chord.id} data-name={chord.name}
+                    >{withTags(chord.name, tags)}</option
+                  >
                 {/each}
               </optgroup>
             {/each}
           </select>
+          {#if families.length === 0}
+            <p class="muted" role="status">{emptyMessage}</p>
+          {/if}
+          {#if hiddenByTags && pickedChord}
+            <p id="chord-hidden" class="muted">
+              {pickedChord.name} stays chosen, but it doesn’t have every tag you picked.
+            </p>
+          {/if}
         </div>
         <UserChordButtons />
       {:else if chordState.mode === 'symbol'}
@@ -346,6 +378,9 @@
               : ''}
           </span>
         </div>
+        <p class="muted chord-tags">
+          Tags: {activeChordTags.length > 0 ? activeChordTags.join(', ') : 'none'}
+        </p>
         <dl class="notes" aria-label="Notes of {view.symbol}">
           {#each view.notes as note (note.semitones)}
             <div class="note" class:root={note.semitones === 0}>
@@ -520,7 +555,8 @@
     gap: 0.25rem;
   }
 
-  .field label {
+  .field label,
+  .field .label {
     font-size: 0.875rem;
     font-weight: 600;
   }

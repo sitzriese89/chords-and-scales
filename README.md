@@ -44,11 +44,16 @@ the neck; click it again (or **Show all positions**) to see the whole neck again
 (`♭9`, `♯11`, `13` above the octave) or click notes on the neck, give it a name, the symbol
 written after the root (`m7b5`) and, if you like, a Jazz symbol and a family. Your chords are
 listed with the others (under *Custom* unless you named a family), can be typed by their
-symbol, and can be edited and deleted there. Everything is saved and comes back at the next
-start. Your own scales, chords and tunings go in `scales.toml`, `chords.toml` and
-`tunings.toml` next to `settings.toml` in the app-data folder, in the format described in
-[SPEC.md](SPEC.md). Your own themes go there too, as `theme-<name>.css` files; the format and
-the folder for each OS are in [docs/theme-tokens.md](docs/theme-tokens.md).
+symbol, and can be edited and deleted there. Every scale and chord in the lists shows its
+mood tags (`Phrygian — dark, …`); click the tag chips above the scale list or above the chord
+quality to list only the items with every tag you picked (**Clear tags** shows them all
+again). The tags come from the intervals, so your own scales and chords get them too.
+Everything is saved and comes back at the next start. Your own scales, chords and tunings go
+in `scales.toml`, `chords.toml` and `tunings.toml` next to `settings.toml` in the app-data
+folder, in the format described in [SPEC.md](SPEC.md); your own tag rules go in `tags.toml`
+([docs/tag-rules.md](docs/tag-rules.md)). Your own themes go there too, as
+`theme-<name>.css` files; the format and the folder for each OS are in
+[docs/theme-tokens.md](docs/theme-tokens.md).
 
 ## Install
 

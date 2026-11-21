@@ -7,20 +7,25 @@ import {
   getTuning,
   listChords,
   listScales,
+  listTags,
   lookupChords,
   parseChordSymbol,
+  scaleTags,
   setUserChords,
   setUserScales,
+  setUserTagRules,
   setUserTunings,
   type ChordInput,
   type ScaleInput,
   type Tuning,
 } from './theory';
+import { importDocument, type UserFiles } from './storage/files';
 import {
   USER_CHORDS_BACKUP_DOCUMENT,
   USER_CHORDS_DOCUMENT,
   USER_SCALES_BACKUP_DOCUMENT,
   USER_SCALES_DOCUMENT,
+  USER_TAG_RULES_DOCUMENT,
   USER_TUNINGS_DOCUMENT,
   UserCatalogs,
 } from './user-catalogs.svelte';
@@ -252,5 +257,92 @@ describe('UserCatalogs', () => {
     expect(broken.userTunings).toEqual([]);
     expect(broken.revision).toBe(1);
     expect(getTuning('bass-4-mine')).toBeUndefined();
+  });
+});
+
+const SPANISH = `[tag.spanish]
+scale-threshold = 4
+[tag.spanish.weights]
+b2 = 2
+3 = 2
+`;
+
+describe.each(implementations)('UserCatalogs tag rules (%s storage)', (_label, fixture) => {
+  let open: () => Storage;
+
+  beforeEach(() => {
+    open = fixture();
+  });
+
+  afterEach(() => {
+    setUserTagRules('');
+  });
+
+  it('uses the built-in rules without a tags document', async () => {
+    setUserTagRules(SPANISH);
+    const catalogs = new UserCatalogs(open());
+    await catalogs.load();
+    expect(listTags().map((t) => t.name)).not.toContain('spanish');
+    expect(catalogs.problems).toEqual([]);
+  });
+
+  it('merges tags.toml over the built-in rules and reads it again on the next load', async () => {
+    await open().write(USER_TAG_RULES_DOCUMENT, SPANISH);
+    const catalogs = new UserCatalogs(open());
+    await catalogs.load();
+    expect(catalogs.revision).toBe(1);
+    expect(scaleTags('phrygian-dominant')).toContain('spanish');
+
+    // Edited by hand, then a restart.
+    await open().write(
+      USER_TAG_RULES_DOCUMENT,
+      '[tag.phrygian-ish]\nscale-threshold = 2\nweights = { b2 = 2 }\n',
+    );
+    await new UserCatalogs(open()).load();
+    expect(scaleTags('phrygian-dominant')).not.toContain('spanish');
+    expect(scaleTags('phrygian')).toContain('phrygian-ish');
+  });
+
+  it('lists the tables that could not be used, prefixed with the file name', async () => {
+    await open().write(USER_TAG_RULES_DOCUMENT, `${SPANISH}\n[tag.dark.weights]\nb9 = 1\n`);
+    const catalogs = new UserCatalogs(open());
+    await catalogs.load();
+    expect(catalogs.problems).toEqual([
+      expect.stringMatching(/^tags\.toml: tag "dark": unknown feature "b9"/),
+    ]);
+    expect(scaleTags('phrygian-dominant')).toContain('spanish');
+  });
+
+  it('takes a tags.toml brought in through the user-file import', async () => {
+    const files: UserFiles = {
+      save: async () => true,
+      open: async () => ({ fileName: 'tags.toml', content: SPANISH }),
+    };
+    expect(await importDocument(open(), files)).toBe(USER_TAG_RULES_DOCUMENT);
+    await new UserCatalogs(open()).load();
+    expect(scaleTags('phrygian-dominant')).toContain('spanish');
+  });
+});
+
+describe('UserCatalogs tag rules that cannot be read', () => {
+  afterEach(() => {
+    setUserTagRules('');
+  });
+
+  it('falls back to the built-in rules and says so', async () => {
+    setUserTagRules(SPANISH);
+    const storage: Storage = {
+      read: async (name) => {
+        if (name === USER_TAG_RULES_DOCUMENT) throw new StorageError('permission denied');
+        return null;
+      },
+      write: async () => {},
+      list: async () => [],
+      delete: async () => {},
+    };
+    const catalogs = new UserCatalogs(storage);
+    await catalogs.load();
+    expect(catalogs.problems).toEqual(['tags.toml could not be read: permission denied']);
+    expect(listTags().map((t) => t.name)).not.toContain('spanish');
   });
 });
