@@ -8,6 +8,40 @@ into its GitHub Release, and refuses to build a tag without one
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-22
+
+A new layout: Scales, Chords and Sheet pages under one toolbar, the pickers in a drawer, and
+the fretboard and chord shapes across the full width of the window.
+
+### Added
+
+- **Toolbar and pages.** One toolbar holds the title, the page tabs **Scales**, **Chords** and
+  **Sheet (n)**, the page's picker button, the instrument button and ⚙ **Settings**. The app
+  opens on the page it was on when it closed.
+- **Instrument button.** A summary of the neck ("6-string guitar · Standard · 24 frets ·
+  capo 2") that opens the instrument settings (strings, tuning, frets, capo, left-handed).
+- **Settings dialog.** ⚙ Settings opens Sound (volume, mute) and Appearance (theme, light or
+  dark).
+- **Chords page.** The chosen chord's symbol, notes, ▶ Strum and "Add chord to sheet" at the
+  top, then the voicing constraints, then the chord's shapes across the full width with larger
+  diagrams. Choosing a shape marks it, strums it and enables "Add shape to sheet".
+
+### Changed
+
+- **Pickers in a drawer.** "☰ Choose scale" on Scales and "☰ Choose chord" on Chords slide the
+  scale or chord picker in from the left. It closes with ✕, Escape or a click outside it.
+- **Harmonize and Select notes** sit side by side in one row between the scale's notes and the
+  neck; what each opens unfolds under the row, and both can be open at once.
+- **The Scales neck shows the scale only.** A chosen chord or shape is no longer drawn on it;
+  chords and their shapes are on the Chords page. Clicking a chord in Harmonize or in Select
+  notes' results chooses it and opens the Chords page.
+
+### Removed
+
+- The side panels (scale picker, settings) and the docked chord panel, with their collapse and
+  resize controls. "Show all positions" in the shape list is gone too. Settings files from
+  earlier versions still open without a warning.
+
 ## [0.5.0] - 2026-11-22
 
 Small adjustments: an easier root picker, more room for the fretboard, chord shapes higher up
@@ -185,7 +219,8 @@ folder.
   `.deb`). They are not code-signed yet, so Windows SmartScreen and macOS Gatekeeper will warn
   on first start.
 
-[Unreleased]: https://github.com/sitzriese89/chords-and-scales/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/sitzriese89/chords-and-scales/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/sitzriese89/chords-and-scales/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/sitzriese89/chords-and-scales/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/sitzriese89/chords-and-scales/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/sitzriese89/chords-and-scales/compare/v0.3.0...v0.4.0
