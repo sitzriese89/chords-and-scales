@@ -17,7 +17,7 @@ export const DEFAULT_THEME_ID = 'default';
 
 /**
  * Built-in theme files by id, in picker order: the app's own two, then the themes after
- * editor palettes (ADR-46) alphabetically, then Print.
+ * editor palettes (ADR-48) alphabetically, then Print.
  */
 export const BUILT_IN_THEME_FILES: Readonly<Record<string, string>> = {
   [DEFAULT_THEME_ID]: defaultCss,

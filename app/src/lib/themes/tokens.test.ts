@@ -51,7 +51,7 @@ describe('built-in themes', () => {
     ['catppuccin', 'Catppuccin'],
     ['dracula', 'Dracula'],
     ['nord', 'Nord'],
-  ])('include %s after an editor palette, light and dark, crediting it (ADR-46)', (id, name) => {
+  ])('include %s after an editor palette, light and dark, crediting it (ADR-48)', (id, name) => {
     const ids = BUILT_IN_THEMES.map((t) => t.id);
     const theme = BUILT_IN_THEMES.find((t) => t.id === id)!;
     expect(theme.name).toBe(name);

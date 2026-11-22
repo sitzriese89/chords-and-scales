@@ -28,7 +28,7 @@ const custom: Settings = {
   },
   audio: { volume: 35, muted: true },
   chordPanel: { collapsed: true, height: 300 },
-  voicings: { maxSpan: 6, openStrings: false, mutedStrings: false, inversions: true },
+  voicings: { maxSpan: 6, openStrings: false, mutedStrings: false, inversions: true, startFret: 9 },
 };
 
 function parsed(text: string) {
@@ -81,7 +81,13 @@ describe('serializeSettings', () => {
       },
       audio: { volume: 35, muted: true },
       chord_panel: { collapsed: true, height: 300 },
-      voicings: { max_span: 6, open_strings: false, muted_strings: false, inversions: true },
+      voicings: {
+        max_span: 6,
+        open_strings: false,
+        muted_strings: false,
+        inversions: true,
+        start_fret: 9,
+      },
     });
   });
 
@@ -211,6 +217,8 @@ direction = "both"
       openStrings: false,
       mutedStrings: true,
       inversions: true,
+      // A file from before the start fret: no limit.
+      startFret: 0,
     });
     expect(result.problems).toEqual([
       'voicings.max_span should be a whole number from 1 to 6, not 9',
@@ -226,7 +234,19 @@ direction = "both"
       openStrings: true,
       mutedStrings: true,
       inversions: false,
+      startFret: 0,
     });
+  });
+
+  it('reads the start fret and falls back on one off the longest neck', () => {
+    const seven = parsed('version = 1\n[voicings]\nstart_fret = 7\n');
+    expect(seven.settings.voicings.startFret).toBe(7);
+    expect(seven.problems).toEqual([]);
+    const result = parsed('version = 1\n[voicings]\nstart_fret = 30\n');
+    expect(result.settings.voicings.startFret).toBe(0);
+    expect(result.problems).toEqual([
+      'voicings.start_fret should be a whole number from 0 to 27, not 30',
+    ]);
   });
 
   it('reads the chord symbol style and falls back on an unknown one', () => {

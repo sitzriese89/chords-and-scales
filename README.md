@@ -6,8 +6,9 @@ Contributing: [CONTRIBUTING.md](CONTRIBUTING.md) · design decisions: [ADR.md](A
 
 ## Using it
 
-Pick or type a root (`A`, `F#`, `Db`) and pick a scale from the list on the left (search by
-name or alias); the neck shows the scale over every fret. **New scale** under the list makes
+Pick a root from the dropdown (all 17 names, both spellings of each black key) or type one
+(`A`, `F#`, `Db`), and pick a scale from the list on the left (search by name or alias); the
+neck shows the scale over every fret. **New scale** under the list makes
 your own scale: pick intervals on the 12-semitone picker or click notes on the neck, then
 give it a name and, if you like, a family. Your scales are listed with the others (under
 *Custom* unless you named a family) and can be edited and deleted there. Above the neck,

@@ -54,7 +54,8 @@ ADR-1 to ADR-13 come from the design interview behind [SPEC.md](SPEC.md) (decisi
 | 41 | [Tag filters: chips per picker, AND, the choice never jumps, `tags.toml` read with the user catalogs](#adr-41-tag-filters-chips-per-picker-and-the-choice-never-jumps-tagstoml-read-with-the-user-catalogs) | Accepted |
 | 42 | [Random pick: a button per picker, from what the picker shows, never the pair on screen](#adr-42-random-pick-a-button-per-picker-from-what-the-picker-shows-never-the-pair-on-screen) | Accepted |
 | 43 | [The export sheet: items store their inputs, one `sheet.toml`, its own scoped theme](#adr-43-the-export-sheet-items-store-their-inputs-one-sheettoml-its-own-scoped-theme) | Accepted |
-| 46 | [Built-in themes after editor palettes: the original's own variants, nudged to pass the rules, credited in the file](#adr-46-built-in-themes-after-editor-palettes-the-originals-own-variants-nudged-to-pass-the-rules-credited-in-the-file) | Accepted |
+| 46 | [The root picker is an editable combobox whose list always shows all 17 names](#adr-46-the-root-picker-is-an-editable-combobox-whose-list-always-shows-all-17-names) | Accepted |
+| 48 | [Built-in themes after editor palettes: the original's own variants, nudged to pass the rules, credited in the file](#adr-48-built-in-themes-after-editor-palettes-the-originals-own-variants-nudged-to-pass-the-rules-credited-in-the-file) | Accepted |
 
 ---
 
@@ -1809,7 +1810,73 @@ when `sheet.svg` existed replaced `sheet.svg` without the dialog ever asking abo
 - Typing a name without an extension over an existing file shows the save dialog twice, the
   second time with the full name and the overwrite question.
 
-## ADR-46: Built-in themes after editor palettes: the original's own variants, nudged to pass the rules, credited in the file
+## ADR-46: The root picker is an editable combobox whose list always shows all 17 names
+
+**Context.** The explorer's root was an `<input list>` with a `<datalist>` of `rootChoices()`.
+Browsers filter a datalist by the text in the field, so with `A` chosen the suggestions were
+`A`, `A♯`, `A♭` and never the whole list (M5.1, #81). The user wants a dropdown of every note
+name, both spellings of each black key, and typing a root (`Db`, `f#`, `E♭`) must keep working.
+
+**Decision.**
+- **One control, `RootCombobox.svelte`**, following the WAI-ARIA editable combobox pattern
+  with a list and no autocomplete: a text field (`role="combobox"`, still labelled "Root"),
+  a "Show all roots" button beside it, and a popup `listbox` of the 17 names in pitch order.
+  The list is never filtered: it shows the same 17 whatever is typed or chosen, and opens on
+  the current root. ↓ or Alt+↓ opens it, ↑ / ↓ / Home / End move (`aria-activedescendant`),
+  Enter chooses, Escape and leaving the control close it; typing closes it and edits the
+  text, committed with Enter or on leaving the field as before. The button is out of the tab
+  order (the field opens the list), as in the pattern's examples.
+- **No theory in the control.** It gets its names from `rootChoices()` (the core's spelling)
+  and hands chosen or typed text to the picker, which reads it with `displayRoot()` through
+  the core. A chosen name is saved as it is listed, so its spelling is kept (ADR-6); the error
+  for text that isn't a note is unchanged.
+- Rejected: a native `<select>` of the 17 names next to a separate "type a root" field. It is
+  the most robust widget, but it is two controls for one value, and a typed root like `E𝄫` or
+  `F##` would have no option to show in the select.
+
+**Consequences.**
+- The popup is drawn by the app, so it looks the same in every webview and follows the theme;
+  in exchange the app owns its keyboard and screen-reader behaviour, which the explorer tests
+  cover (choosing by mouse and keyboard, typing, the error).
+- The chord panel's root stays a native `<select>` of the same names: it has no typing.
+
+## ADR-47: A start fret for voicings: a constraint in the core, applied where the search starts
+
+**Context.** M5.3: players want chord shapes higher up the neck. The voicing browser (ADR-37)
+lists the best 50 shapes from the nut up, and ADR-35's ranking favours low shapes, so shapes
+past the first few frets rarely make the list. The scale view's tab already has a start fret
+(ADR-25). Open were what "from a fret" means for open strings and a capo, where the rule
+lives, and whether filtering the list is enough.
+
+**Decision.**
+- **A core constraint.** `VoicingOptions.start_fret` (default 0): a shape is kept only if every
+  fretted note is on the start fret or higher. Open strings (the capo fret) are not fretted, so
+  they follow `open_strings` alone: with it on, `0 7 9 9 9 0` is an E above fret 7. Frets are
+  absolute (ADR-18), so a start fret at or below the first fret above the capo changes nothing;
+  one past the neck leaves only shapes with open strings alone. No value is an error in the
+  core; the binding takes `startFret` (0 … 255).
+- **Applied where the search starts, not as a filter.** The search already walks one window per
+  lowest fretted fret, from the capo up (ADR-35); it now starts at the start fret. Filtering the
+  default 50 afterwards would leave a few shapes, or none, since the better low shapes fill the
+  list and its pruning stops before the high frets; starting there fills the list with the best
+  50 from that fret up. The ranking is unchanged (the position term still counts from the capo),
+  so the order among the kept shapes is the one the full list has.
+- **Saved with the other constraints.** `settings.toml` `[voicings]` gains `start_fret`, 0 to
+  the longest neck (27); a file without it reads as 0, so the version stays 1 (ADR-25). Sheet
+  items store it with the other constraints (ADR-43), so a stored shape is found again. The
+  browser's control is a number input next to "Max fret span", bounded 0 to the current neck's
+  fret count, like the tab view's start fret: anything else is refused with a message and the
+  saved value is put back.
+
+**Consequences.**
+- "Shapes from fret 7" is one setting, and the property tests (brute force on four strings, the
+  limit against the full ranking) cover it with the other options.
+- With open strings on, shapes that ring them under a hand high up the neck rank low (ADR-35
+  counts the open strings' reach), so a high start fret mostly lists closed shapes anyway.
+- Shortening the neck below a saved start fret leaves the setting as it is; the list then has
+  only open-string shapes, or none, until the start fret is lowered.
+
+## ADR-48: Built-in themes after editor palettes: the original's own variants, nudged to pass the rules, credited in the file
 
 **Context.** M5.5 adds built-in themes after four popular editor palettes: Catppuccin,
 Dracula, Nord and Atom One. Each is known for a light and a dark variant under its own names

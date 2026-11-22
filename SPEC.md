@@ -312,10 +312,11 @@ intervals = ["1", "b3", "b5", "b7"]
   note; in reverse lookup's select mode it selects or unselects it, and a selected position
   is ringed and named "selected" (§5.4, ADR-38).
 - **Dot labels (toggle):** note names / intervals (scale degrees: 1, ♭3, 5…) / none.
-- **Scale explorer** (the main view, ADR-23): pick or type a root and pick a scale from a
-  list grouped by family, with a search over names and aliases; the neck shows every note of
-  the scale across all frets of the current instrument, the root as a square, with the scale
-  spelled out above it. The label and sharp/flat toggles sit next to the neck; interval
+- **Scale explorer** (the main view, ADR-23): pick a root from a dropdown of all 17 names
+  (C, C♯, D♭, D, … B♭, B in pitch order, never filtered by what is typed) or type one
+  (ADR-46), and pick a scale from a list grouped by family, with a search over names and
+  aliases; the neck shows every note of the scale across all frets of the current
+  instrument, the root as a square, with the scale spelled out above it. The label and sharp/flat toggles sit next to the neck; interval
   labels are the scale's own (`♯4` in Lydian). Root, scale, labels and sharps/flats are saved
   on every change and come back at the next start. The window has regions for the picker,
   the neck, the instrument settings and the docked chord panel (§5.3); on a narrow window
@@ -515,6 +516,10 @@ Algorithmic (works for any tuning and 4–9 strings; no static shape library).
 
 - **Constraints (user-adjustable):**
   - Max fret span (default 4, up to 6; open strings don't count)
+  - Start fret (default 0: none): every fretted note is on this fret or higher, so the list
+    holds the best shapes from there up the neck. Open strings are not fretted and still ring
+    when allowed. Frets are absolute (ADR-18): with a capo, a start fret at or below the capo
+    changes nothing. (ADR-47)
   - Allow/forbid open strings (with a capo: the capo fret)
   - Allow/forbid inversions (default forbidden: the root is the lowest note)
   - Allow/forbid muted strings (default allowed)
@@ -542,10 +547,10 @@ Algorithmic (works for any tuning and 4–9 strings; no static shape library).
     it, ○ plays it open (at the capo fret, with a capo). Dots carry the dot label setting
     (note names, intervals or none), the root as a square; a barre is a bar across its
     strings. Works for 4–9 strings, in both themes.
-  - **Constraints:** max fret span (1–6), open strings, muted strings and inversions, as
-    above; changing one updates the list at once. They are saved in `settings.toml`
-    (`[voicings]`: `max_span`, `open_strings`, `muted_strings`, `inversions`; missing keys
-    take the defaults above).
+  - **Constraints:** max fret span (1–6), start fret (0 to the neck's last fret, typed like the
+    tab view's), open strings, muted strings and inversions, as above; changing one updates the
+    list at once. They are saved in `settings.toml` (`[voicings]`: `max_span`, `start_fret`,
+    `open_strings`, `muted_strings`, `inversions`; missing keys take the defaults above).
   - **Choosing a shape** shows only its positions on the explorer's neck, still named as the
     chord and without the scale behind it, and strums it lowest string first; while it is
     chosen, the panel's **Strum** plays it too. Choosing it again, or **Show all positions**,
@@ -662,7 +667,7 @@ Algorithmic (works for any tuning and 4–9 strings; no static shape library).
 - A **theme** is a CSS file setting the tokens for a light scheme, a dark scheme or both
   (ADR-40). Built-in: **Default** (light and dark), **High contrast** (light and dark), four
   after popular editor palettes, each with the light and dark variants the original has
-  (ADR-46): **Atom One** (One Light, One Dark), **Catppuccin** (Latte, Mocha), **Dracula**
+  (ADR-48): **Atom One** (One Light, One Dark), **Catppuccin** (Latte, Mocha), **Dracula**
   (Alucard, Dracula) and **Nord** (Snow Storm, Polar Night), and **Print** (light only: white
   paper, black ink, a white fingerboard).
 - **Appearance** in the settings region: a theme picker (built-in themes, then the user's

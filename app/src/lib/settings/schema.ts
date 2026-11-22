@@ -132,6 +132,11 @@ export interface Settings {
     mutedStrings: boolean;
     /** A chord tone other than the root may be the lowest note. */
     inversions: boolean;
+    /**
+     * The lowest fret a fretted note may be on, 0 to `MAX_FRETS`, absolute (ADR-18); open strings
+     * follow `openStrings`. 0: no limit.
+     */
+    startFret: number;
   };
 }
 
@@ -160,7 +165,13 @@ export const DEFAULT_SETTINGS: Readonly<Settings> = Object.freeze({
   }),
   audio: Object.freeze({ volume: 70, muted: false }),
   chordPanel: Object.freeze({ collapsed: false, height: DEFAULT_PANEL_HEIGHT }),
-  voicings: Object.freeze({ maxSpan: 4, openStrings: true, mutedStrings: true, inversions: false }),
+  voicings: Object.freeze({
+    maxSpan: 4,
+    openStrings: true,
+    mutedStrings: true,
+    inversions: false,
+    startFret: 0,
+  }),
 });
 
 export function defaultSettings(): Settings {
@@ -377,6 +388,7 @@ export function parseSettings(text: string): ParsedSettings {
     openStrings: voicingTable.boolean('open_strings', d.voicings.openStrings),
     mutedStrings: voicingTable.boolean('muted_strings', d.voicings.mutedStrings),
     inversions: voicingTable.boolean('inversions', d.voicings.inversions),
+    startFret: voicingTable.integer('start_fret', 0, MAX_FRETS, d.voicings.startFret),
   };
   voicingTable.unknownKeys();
 
@@ -438,6 +450,7 @@ export function serializeSettings(settings: Settings): string {
       open_strings: settings.voicings.openStrings,
       muted_strings: settings.voicings.mutedStrings,
       inversions: settings.voicings.inversions,
+      start_fret: settings.voicings.startFret,
     },
   };
   return `${HEADER}\n${stringify(doc).trimEnd()}\n`;
