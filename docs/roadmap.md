@@ -148,7 +148,7 @@ tab (ADR-55, Scales page mockup layout B · Neck first).
 
 | Item | Issue | Depends on | Status |
 |---|---|---|---|
-| M7.1 Scales page: neck first | [#102][102] |  | Open |
+| M7.1 Scales page: neck first | [#102][102] |  | Done (#103) |
 
 ## Release gates
 
