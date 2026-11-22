@@ -56,6 +56,7 @@ ADR-1 to ADR-13 come from the design interview behind [SPEC.md](SPEC.md) (decisi
 | 43 | [The export sheet: items store their inputs, one `sheet.toml`, its own scoped theme](#adr-43-the-export-sheet-items-store-their-inputs-one-sheettoml-its-own-scoped-theme) | Accepted |
 | 46 | [The root picker is an editable combobox whose list always shows all 17 names](#adr-46-the-root-picker-is-an-editable-combobox-whose-list-always-shows-all-17-names) | Accepted |
 | 48 | [Built-in themes after editor palettes: the original's own variants, nudged to pass the rules, credited in the file](#adr-48-built-in-themes-after-editor-palettes-the-originals-own-variants-nudged-to-pass-the-rules-credited-in-the-file) | Accepted |
+| 50 | [Collapsible side panels: one stateless component, the parent keeps the state and the width, a table per panel](#adr-50-collapsible-side-panels-one-stateless-component-the-parent-keeps-the-state-and-the-width-a-table-per-panel) | Accepted |
 
 ---
 
@@ -1918,3 +1919,42 @@ and how the two variants relate to the light/dark setting.
   warnings (ADR-40).
 - Editing one of these files means re-checking the rules with `tokens.test.ts`; the script
   that found the nudged values isn't kept.
+
+## ADR-50: Collapsible side panels: one stateless component, the parent keeps the state and the width, a table per panel
+
+**Context.** M5.2 (#82): the user wants as much width as possible for the fretboard. The chord
+panel under the neck already collapses (ADR-32); the scale picker on the left and the settings
+on the right (instrument, sound, appearance) could not. The next step is a UI redesign with
+Scales / Chords / Sheet tabs, each with its own neck, which will place these panels anew, so
+the collapsing must not be tied to the current grid.
+
+**Decision.**
+- **One component, `CollapsiblePanel.svelte`** (`lib/panels`), wraps a panel's content in a
+  bar with its title and a Collapse / Expand button. It holds no state and reads no settings:
+  the parent passes `collapsed` and flips it in `ontoggle`. The button is a native `<button>`
+  with `aria-expanded` and `aria-controls` (the body); its accessible name is the action and
+  the title ("Collapse Scale picker"), so it differs from the chord panel's "Collapse". The
+  collapsed body is `hidden` but stays mounted, so a typed search or a scrolled list is still
+  there on expanding. The landmark (`nav` / `aside`) and its label stay in the parent.
+- **Collapsed, the bar turns vertical**: `writing-mode: vertical-rl`, so title and button read
+  top to bottom in a strip about 3.5rem wide; the button's padding is logical so it fits either
+  way. The component knows no breakpoints: a parent that stacks its panels sets
+  `--collapsible-panel-writing-mode: horizontal-tb`, and the collapsed panel is a title bar.
+  The app does that in its narrow-window media query.
+- **The parent gives the width back.** `App.svelte` sets a class per collapsed panel on the
+  layout, which turns that side's grid column from `minmax(…)` into `auto`; the board's `1fr`
+  column takes the rest, and the neck scales to it (SPEC §5.1).
+- **Stored like the chord panel**: a table per panel, `[scale_picker]` and `[settings_panel]`,
+  each with `collapsed` (default `false`). Missing tables read as their defaults, so the
+  settings version stays 1 (ADR-17).
+- Rejected: one `[side_panels]` table with a key per panel. Fewer tables, but the redesign
+  will add and move panels, and a table per panel matches `[chord_panel]` and leaves room for
+  more keys (a width, say). Rejected too: the component choosing strip or bar with its own
+  media query, which would tie it to this layout's breakpoint.
+
+**Consequences.**
+- The chord panel keeps its own collapse and resize; it could move onto the component later,
+  but its height handle and the chord name in its title bar are its own.
+- A redesign with several necks can wrap any panel in `CollapsiblePanel` and decide per page
+  where the state lives; each new panel needs a settings table, or a shared one if the
+  redesign wants it.

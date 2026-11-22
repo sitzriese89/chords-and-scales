@@ -9,13 +9,25 @@ export const SETTINGS_BACKUP_DOCUMENT = 'settings-backup';
 
 /** A change to some settings; nested groups can be changed partly. */
 export type SettingsChange = Partial<
-  Omit<Settings, 'instrument' | 'lastView' | 'tab' | 'audio' | 'chordPanel' | 'voicings'>
+  Omit<
+    Settings,
+    | 'instrument'
+    | 'lastView'
+    | 'tab'
+    | 'audio'
+    | 'chordPanel'
+    | 'scalePicker'
+    | 'settingsPanel'
+    | 'voicings'
+  >
 > & {
   instrument?: Partial<Settings['instrument']>;
   lastView?: Partial<Settings['lastView']>;
   tab?: Partial<Settings['tab']>;
   audio?: Partial<Settings['audio']>;
   chordPanel?: Partial<Settings['chordPanel']>;
+  scalePicker?: Partial<Settings['scalePicker']>;
+  settingsPanel?: Partial<Settings['settingsPanel']>;
   voicings?: Partial<Settings['voicings']>;
 };
 
@@ -86,6 +98,8 @@ export class SettingsStore {
       tab: { ...this.current.tab, ...change.tab },
       audio: { ...this.current.audio, ...change.audio },
       chordPanel: { ...this.current.chordPanel, ...change.chordPanel },
+      scalePicker: { ...this.current.scalePicker, ...change.scalePicker },
+      settingsPanel: { ...this.current.settingsPanel, ...change.settingsPanel },
       voicings: { ...this.current.voicings, ...change.voicings },
     };
     const text = serializeSettings(next);

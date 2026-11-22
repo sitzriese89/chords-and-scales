@@ -2,8 +2,9 @@
  * The settings document `settings.toml` (ADR-17): display preferences and the last view.
  *
  * Tables: `display`, `instrument`, `last_view`, `tab` (the tab view's position, ADR-25),
- * `audio` (volume and mute, ADR-28), `chord_panel` (collapsed and height, ADR-32) and
- * `voicings` (the voicing browser's constraints, ADR-37).
+ * `audio` (volume and mute, ADR-28), `chord_panel` (collapsed and height, ADR-32),
+ * `voicings` (the voicing browser's constraints, ADR-37), and `scale_picker` and
+ * `settings_panel` (whether the side panels are collapsed, ADR-50).
  * `display.chord_symbols` is the style chord names are written in (ADR-33).
  * `display.theme` is the colour scheme (light, dark or the OS's) and `display.theme_id` the
  * theme shown in it (ADR-40).
@@ -122,6 +123,16 @@ export interface Settings {
     /** Height of the open panel in pixels. */
     height: number;
   };
+  /** The scale picker, the left side panel (ADR-50). */
+  scalePicker: {
+    /** Only a narrow strip with its title and expand button is shown. */
+    collapsed: boolean;
+  };
+  /** The settings panel (instrument, sound, appearance), the right side panel (ADR-50). */
+  settingsPanel: {
+    /** Only a narrow strip with its title and expand button is shown. */
+    collapsed: boolean;
+  };
   /** The voicing browser's constraints (SPEC §5.6, ADR-37); the defaults are the core's. */
   voicings: {
     /** The most frets the fretted notes may cover, 1 to `MAX_VOICING_SPAN`. */
@@ -165,6 +176,8 @@ export const DEFAULT_SETTINGS: Readonly<Settings> = Object.freeze({
   }),
   audio: Object.freeze({ volume: 70, muted: false }),
   chordPanel: Object.freeze({ collapsed: false, height: DEFAULT_PANEL_HEIGHT }),
+  scalePicker: Object.freeze({ collapsed: false }),
+  settingsPanel: Object.freeze({ collapsed: false }),
   voicings: Object.freeze({
     maxSpan: 4,
     openStrings: true,
@@ -382,6 +395,18 @@ export function parseSettings(text: string): ParsedSettings {
   };
   panelTable.unknownKeys();
 
+  const pickerTable = root.section('scale_picker');
+  const scalePicker: Settings['scalePicker'] = {
+    collapsed: pickerTable.boolean('collapsed', d.scalePicker.collapsed),
+  };
+  pickerTable.unknownKeys();
+
+  const settingsPanelTable = root.section('settings_panel');
+  const settingsPanel: Settings['settingsPanel'] = {
+    collapsed: settingsPanelTable.boolean('collapsed', d.settingsPanel.collapsed),
+  };
+  settingsPanelTable.unknownKeys();
+
   const voicingTable = root.section('voicings');
   const voicings: Settings['voicings'] = {
     maxSpan: voicingTable.integer('max_span', 1, MAX_VOICING_SPAN, d.voicings.maxSpan),
@@ -408,6 +433,8 @@ export function parseSettings(text: string): ParsedSettings {
       tab,
       audio,
       chordPanel,
+      scalePicker,
+      settingsPanel,
       voicings,
     },
     problems,
@@ -445,6 +472,8 @@ export function serializeSettings(settings: Settings): string {
       collapsed: settings.chordPanel.collapsed,
       height: settings.chordPanel.height,
     },
+    scale_picker: { collapsed: settings.scalePicker.collapsed },
+    settings_panel: { collapsed: settings.settingsPanel.collapsed },
     voicings: {
       max_span: settings.voicings.maxSpan,
       open_strings: settings.voicings.openStrings,

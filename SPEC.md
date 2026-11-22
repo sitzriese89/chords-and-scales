@@ -88,8 +88,9 @@ Files are hand-editable and shareable; the UI offers import/export of them.
 - `settings.toml` holds the display preferences (sharps/flats, dot labels, theme and
   light/dark, left-handed), the last instrument (kind, string count, tuning, fret count, capo) and the
   last view (root, scale) and the tab view's position (system, 3NPS pattern, fret window,
-  direction, highlight; ADR-25), the sound (volume 0–100, mute; ADR-28) and the voicing
-  browser's constraints (`[voicings]`; ADR-37). It is created with
+  direction, highlight; ADR-25), the sound (volume 0–100, mute; ADR-28), the voicing
+  browser's constraints (`[voicings]`; ADR-37) and which panels are collapsed
+  (`[chord_panel]`, `[scale_picker]`, `[settings_panel]`; ADR-32, ADR-50). It is created with
   the defaults on first start, read once at start and saved on every change.
 - The user's own scales, chords and tunings are `scales.toml`, `chords.toml` and
   `tunings.toml`, in the format of the built-in catalogs (§4.2, §4.3, §5.1). They are read at
@@ -321,6 +322,14 @@ intervals = ["1", "b3", "b5", "b7"]
   on every change and come back at the next start. The window has regions for the picker,
   the neck, the instrument settings and the docked chord panel (§5.3); on a narrow window
   they stack.
+- **Side panels** (ADR-50): the picker (left) and the settings (right, below) each have a
+  Collapse button in a bar with their title. A collapsed side panel is a narrow strip with
+  its title and an Expand button, and the neck's column takes the width; on a narrow window,
+  where the regions stack, it is just its title bar. The button is a real button with
+  `aria-expanded` and `aria-controls`, named "Collapse Scale picker" / "Expand Settings" and
+  so on. Whether each is collapsed is saved in `settings.toml` (`[scale_picker]` and
+  `[settings_panel]`, `collapsed`) and comes back at the next start; a file without them
+  opens both expanded.
 - **Instrument panel** (the `settings` region, ADR-24): string count 4–9, the tuning presets
   for that count grouped by kind (guitar, bass) with the user's own tunings in a group of
   their own, fret count (12–27), capo (below the last fret; a shorter neck moves it down),
