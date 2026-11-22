@@ -26,7 +26,9 @@ each PR names its issue with `Fixes #n`.
 3. **M2**, voicings (M2.11, M2.12) last, then release **v0.2.0** (released 2026-11-17).
 4. **M3**, with M4.1 (themes) pulled forward, then release **v0.3.0** (released 2026-11-21).
 5. **M4**, one item at a time (M4.2 → M4.3 → M4.4), then release **v0.4.0** (released 2026-11-21).
-6. Next scope: not planned yet. New items get a row and an issue before work starts. **Now**
+6. **M5**, small adjustments before the UI redesign, then release **v0.5.0**. **Now**
+7. UI redesign (Scales / Chords / Sheet tabs, each with its own fretboard): not planned yet.
+   New items get a row and an issue before work starts.
 
 Items whose dependencies are done can run in parallel. The coordinator groups them into waves
 of issues that don't touch the same files (`implement` skill). Suggested waves from the
@@ -108,6 +110,21 @@ Collect scales and chords on a themed sheet and export it to PDF, PNG, SVG or HT
 Suggested waves: (1) M4.1 → (2) M4.2 → (3) M4.3 → (4) M4.4. PNG rasterizes M4.3's standalone
 SVG, and both rework the same save path (`user_files.rs`, `files.ts`), so M4.4 follows M4.3.
 
+## M5 · Adjustments (v5)
+
+Small adjustments before the UI redesign.
+
+| Item | Issue | Depends on | Status |
+|---|---|---|---|
+| M5.1 Root picker as a dropdown of all 17 note names | [#81][81] |  | Open |
+| M5.2 Collapsible scale picker and settings panels | [#82][82] |  | Open |
+| M5.3 Start fret for chord voicings | [#83][83] |  | Open |
+| M5.4 Horizontal chord diagrams with the lowest fret number | [#84][84] | M5.3 | Open |
+| M5.5 Built-in themes: Catppuccin, Dracula, Nord, Atom One | [#85][85] |  | Open |
+
+Suggested waves: (1) M5.1, M5.3, M5.5 → (2) M5.2, M5.4. M5.2 and M5.3 both add settings
+fields, and M5.3 and M5.4 both change `VoicingBrowser.svelte`, so each pair is split.
+
 ## Release gates
 
 A milestone is released when all its items are Done, main is green, and the release workflow
@@ -154,3 +171,8 @@ A milestone is released when all its items are Done, main is green, and the rele
 [30]: https://github.com/sitzriese89/chords-and-scales/issues/30
 [31]: https://github.com/sitzriese89/chords-and-scales/issues/31
 [32]: https://github.com/sitzriese89/chords-and-scales/issues/32
+[81]: https://github.com/sitzriese89/chords-and-scales/issues/81
+[82]: https://github.com/sitzriese89/chords-and-scales/issues/82
+[83]: https://github.com/sitzriese89/chords-and-scales/issues/83
+[84]: https://github.com/sitzriese89/chords-and-scales/issues/84
+[85]: https://github.com/sitzriese89/chords-and-scales/issues/85
