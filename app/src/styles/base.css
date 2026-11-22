@@ -9,7 +9,14 @@ html {
 
 body {
   margin: 0;
-  padding: 2rem;
+  /* No top padding: the app's toolbar sticks to the top and pads itself. */
+  padding: 0 2rem 2rem;
+}
+
+@media (max-width: 40rem) {
+  body {
+    padding: 0 1rem 1rem;
+  }
 }
 
 a {

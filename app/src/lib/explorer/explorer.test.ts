@@ -2,6 +2,7 @@
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import App from '../../App.svelte';
+import { instrumentPanel, scalePicker } from '../../test-shell';
 import { defaultSettings, SETTINGS_DOCUMENT, serializeSettings, type Settings } from '../settings';
 import { BrowserStorage } from '../storage';
 import { setUserScales, setUserTunings } from '../theory';
@@ -152,7 +153,7 @@ describe('scale explorer', () => {
 
   it('updates the neck when the root or the scale changes, keeping the typed spelling', async () => {
     await startApp(storage);
-    const root = screen.getByRole('combobox', { name: 'Root' });
+    const root = scalePicker().getByRole('combobox', { name: 'Root' });
 
     await fireEvent.change(root, { target: { value: 'db' } });
     expect(root).toHaveValue('D♭');
@@ -167,7 +168,7 @@ describe('scale explorer', () => {
     expect(screen.getByRole('heading', { name: 'D♭ Dorian' })).toBeInTheDocument();
 
     await fireEvent.change(root, { target: { value: 'E' } });
-    await fireEvent.change(screen.getByRole('listbox', { name: 'Scale' }), {
+    await fireEvent.change(scalePicker().getByRole('listbox', { name: 'Scale' }), {
       target: { value: 'minor-pentatonic' },
     });
     expect(screen.getByRole('heading', { name: 'E Minor pentatonic' })).toBeInTheDocument();
@@ -178,8 +179,8 @@ describe('scale explorer', () => {
 
   it('lists all 17 roots whatever is typed or chosen, and keeps the chosen spelling', async () => {
     await startApp(storage);
-    const root = screen.getByRole('combobox', { name: 'Root' });
-    const toggle = screen.getByRole('button', { name: 'Show all roots' });
+    const root = scalePicker().getByRole('combobox', { name: 'Root' });
+    const toggle = scalePicker().getByRole('button', { name: 'Show all roots' });
     const ALL = [
       'C',
       'C♯',
@@ -256,16 +257,16 @@ describe('scale explorer', () => {
 
   it('searches the scales by name and alias, grouped by family', async () => {
     await startApp(storage);
-    const list = screen.getByRole('listbox', { name: 'Scale' });
+    const list = scalePicker().getByRole('listbox', { name: 'Scale' });
     expect(list.querySelectorAll('optgroup')[0]).toHaveAttribute('label', 'Diatonic modes');
 
-    await fireEvent.input(screen.getByRole('searchbox', { name: 'Search scales' }), {
+    await fireEvent.input(scalePicker().getByRole('searchbox', { name: 'Search scales' }), {
       target: { value: 'FREYGISH' },
     });
     expect([...list.querySelectorAll('option')].map((o) => o.value)).toEqual(['phrygian-dominant']);
     expect(list.querySelector('optgroup')).toHaveAttribute('label', 'Harmonic minor modes');
 
-    await fireEvent.input(screen.getByRole('searchbox', { name: 'Search scales' }), {
+    await fireEvent.input(scalePicker().getByRole('searchbox', { name: 'Search scales' }), {
       target: { value: 'zzz' },
     });
     expect(list.querySelectorAll('option')).toHaveLength(0);
@@ -274,10 +275,10 @@ describe('scale explorer', () => {
 
   it('restores the view after a restart', async () => {
     const first = await startApp(storage);
-    await fireEvent.change(screen.getByRole('combobox', { name: 'Root' }), {
+    await fireEvent.change(scalePicker().getByRole('combobox', { name: 'Root' }), {
       target: { value: 'F#' },
     });
-    await fireEvent.change(screen.getByRole('listbox', { name: 'Scale' }), {
+    await fireEvent.change(scalePicker().getByRole('listbox', { name: 'Scale' }), {
       target: { value: 'phrygian-dominant' },
     });
     await fireEvent.click(screen.getByRole('radio', { name: 'Intervals' }));
@@ -289,8 +290,8 @@ describe('scale explorer', () => {
     // A fresh app over the same storage: a new settings store reads what was saved.
     await startApp(new BrowserStorage(window.localStorage));
     expect(screen.getByRole('heading', { name: 'F♯ Phrygian dominant' })).toBeInTheDocument();
-    expect(screen.getByRole('combobox', { name: 'Root' })).toHaveValue('F♯');
-    expect(screen.getByRole('listbox', { name: 'Scale' })).toHaveValue('phrygian-dominant');
+    expect(scalePicker().getByRole('combobox', { name: 'Root' })).toHaveValue('F♯');
+    expect(scalePicker().getByRole('listbox', { name: 'Scale' })).toHaveValue('phrygian-dominant');
     expect(screen.getByRole('radio', { name: 'Intervals' })).toBeChecked();
     expect(screen.getByRole('radio', { name: /Flats/ })).toBeChecked();
     expect(dots()).toEqual(before);
@@ -332,7 +333,9 @@ notes = ["E1", "A1", "D2"]
 
     expect(screen.getByRole('heading', { name: 'C My scale' })).toBeInTheDocument();
     expect(new Set(dots().map((d) => d.string))).toEqual(new Set([1, 2, 3, 4]));
-    expect(screen.getByRole('combobox', { name: 'Tuning' })).toHaveValue('guitar-4-high');
+    expect(instrumentPanel().getByRole('combobox', { name: 'Tuning' })).toHaveValue(
+      'guitar-4-high',
+    );
     expect(
       screen.getByText('One problem with your files: some items or tag rules were not used'),
     ).toBeInTheDocument();
@@ -411,7 +414,7 @@ notes = ["E1", "A1", "D2"]
     await startApp(storage);
     expect(tabNotes()).toEqual(G_MAJOR_PATTERN_1);
 
-    await fireEvent.change(screen.getByRole('spinbutton', { name: 'Capo fret' }), {
+    await fireEvent.change(instrumentPanel().getByRole('spinbutton', { name: 'Capo fret' }), {
       target: { value: '5' },
     });
     expect(screen.getByText('Capo 5 (fret numbers are absolute)')).toBeInTheDocument();

@@ -6,24 +6,30 @@ Contributing: [CONTRIBUTING.md](CONTRIBUTING.md) · design decisions: [ADR.md](A
 
 ## Using it
 
-Pick a root from the dropdown (all 17 names, both spellings of each black key) or type one
-(`A`, `F#`, `Db`), and pick a scale from the list on the left (search by name or alias); the
-neck shows the scale over every fret. **New scale** under the list makes
+The toolbar at the top has the three pages, **Scales**, **Chords** and **Sheet**; the app opens
+on the page you left. On **Scales**, **☰ Choose scale** slides the scale picker in from the
+left (✕, Escape or a click outside closes it). Pick a root from the dropdown (all 17 names,
+both spellings of each black key) or type one (`A`, `F#`, `Db`), and pick a scale from the
+list (search by name or alias); the neck, across the whole window, shows the scale over every
+fret. **New scale** under the list makes
 your own scale: pick intervals on the 12-semitone picker or click notes on the neck, then
 give it a name and, if you like, a family. Your scales are listed with the others (under
 *Custom* unless you named a family) and can be edited and deleted there. Above the neck,
 switch the dot labels between note names, intervals and none, and the spelling between
-sharps and flats (the root keeps the spelling you chose). On the right, pick the number of
-strings (4–9) and a tuning, set the fret count and a capo, mirror the neck for left-handed
-playing; under **Appearance**, pick a theme (Default, High contrast, Atom One, Catppuccin, Dracula, Nord,
+sharps and flats (the root keeps the spelling you chose). The instrument button in the
+toolbar sums up the neck ("6-string guitar · Standard · 24 frets · capo 2"); click it to pick
+the number of strings (4–9) and a tuning, set the fret count and a capo, and mirror the neck
+for left-handed playing. One instrument serves every page. **⚙ Settings** opens **Sound** and
+**Appearance**: under **Appearance**, pick a theme (Default, High contrast, Atom One, Catppuccin, Dracula, Nord,
 Print or your own) and
 light, dark or follow the system. Under the neck, the scale is shown as tab
 in one position: a 3-notes-per-string pattern (those that fit the neck) or a fret window you
 set with a start fret and a width, played up, down or up and back down; the position's notes
 are highlighted on the neck. **New tuning** makes your own tuning, a note and octave per
 string; your tunings can be edited and deleted there too. Click a dot to hear the note, or
-press **Play** next to the tab to hear the position; volume and mute are under **Sound** on
-the right. The **Chords** panel under the neck shows a chord on the neck: pick a root and a
+press **Play** next to the tab to hear the position; volume and mute are under **Sound** in
+⚙ Settings. The **Chords** page has the chord panel, which shows a chord on the Scales page's
+neck: pick a root and a
 chord quality, a degree of the current scale as a triad or 7th chord, which shows the chord
 emphasized over the dimmed scale, or type a symbol such as `F#m7b5`, `CΔ7` or `G7/B` (a
 symbol it can't read is marked where it goes wrong). **Harmonize**, next to the scale's
@@ -43,9 +49,6 @@ its lowest fret), best first; set the widest fret span and whether open strings,
 strings and inversions are allowed. Click a shape to hear it and to see just that shape on
 the neck; click it again (or **Show all positions**) to see the whole neck again.
 **Collapse** and the panel's top edge (drag, or the arrow keys) fold and resize the panel.
-The scale picker on the left and the settings on the right have a **Collapse** button too: a
-collapsed one is a narrow strip with its title and **Expand**, and the neck gets its width. The
-app remembers which panels are collapsed.
 **New chord**, under the chord quality, makes your own chord: pick intervals over two octaves
 (`♭9`, `♯11`, `13` above the octave) or click notes on the neck, give it a name, the symbol
 written after the root (`m7b5`) and, if you like, a Jazz symbol and a family. Your chords are
@@ -58,8 +61,8 @@ For a practice prompt, **Random scale** (in the scale picker) and **Random chord
 chord quality) pick a random root and an item from what the tags let through: a random dark
 scale, a random jazzy chord.
 To collect things for printing or sharing, use **Add scale to sheet**, **Add tab to sheet**,
-**Add chord to sheet** and, with a voicing chosen, **Add shape to sheet**; **Sheet** at the
-top shows the sheet, where you set its title and its own theme (Print by default), and move
+**Add chord to sheet** and, with a voicing chosen, **Add shape to sheet**; the **Sheet** page
+(with the number of items on its tab) shows the sheet, where you set its title and its own theme (Print by default), and move
 or remove items. Each item is drawn as it was when you added it. **Export sheet as SVG**,
 **Export sheet as PNG** and **Export sheet as HTML** save the whole sheet, and **Export SVG**
 and **Export PNG** next to an item save just that item; the files keep the sheet's theme and

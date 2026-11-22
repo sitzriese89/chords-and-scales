@@ -17,6 +17,7 @@ const custom: Settings = {
   leftHanded: true,
   chordSymbols: 'jazz',
   instrument: { kind: 'bass', strings: 5, tuning: 'bass-5-standard', frets: 21, capo: 3 },
+  page: 'chords',
   lastView: { root: 'Db', scale: 'dorian' },
   tab: {
     system: 'window',
@@ -28,8 +29,6 @@ const custom: Settings = {
   },
   audio: { volume: 35, muted: true },
   chordPanel: { collapsed: true, height: 300 },
-  scalePicker: { collapsed: true },
-  settingsPanel: { collapsed: true },
   voicings: { maxSpan: 6, openStrings: false, mutedStrings: false, inversions: true, startFret: 9 },
 };
 
@@ -63,6 +62,7 @@ describe('serializeSettings', () => {
     const doc = parse(serializeSettings(custom));
     expect(doc).toEqual({
       version: SETTINGS_VERSION,
+      page: 'chords',
       display: {
         accidentals: 'flats',
         labels: 'intervals',
@@ -83,8 +83,6 @@ describe('serializeSettings', () => {
       },
       audio: { volume: 35, muted: true },
       chord_panel: { collapsed: true, height: 300 },
-      scale_picker: { collapsed: true },
-      settings_panel: { collapsed: true },
       voicings: {
         max_span: 6,
         open_strings: false,
@@ -212,23 +210,30 @@ direction = "both"
     expect(result.settings.chordPanel).toEqual({ collapsed: false, height: 220 });
   });
 
-  it('reads whether the side panels are collapsed, and falls back per value (ADR-50)', () => {
-    const result = parsed(
-      'version = 1\n[scale_picker]\ncollapsed = true\n[settings_panel]\ncollapsed = "yes"\nwidth = 3\n',
-    );
-    expect(result.settings.scalePicker).toEqual({ collapsed: true });
-    expect(result.settings.settingsPanel).toEqual({ collapsed: false });
+  it('reads the page and falls back to Scales for one it does not know (ADR-51)', () => {
+    expect(parsed('version = 1\npage = "sheet"\n')).toMatchObject({
+      settings: { page: 'sheet' },
+      problems: [],
+    });
+    const result = parsed('version = 1\npage = "explorer"\n');
+    expect(result.settings.page).toBe('scales');
     expect(result.problems).toEqual([
-      'settings_panel.collapsed should be true or false, not "yes"',
-      'settings_panel.width is not a known setting',
+      'page should be "scales" or "chords" or "sheet", not "explorer"',
     ]);
   });
 
-  it('reads a version 1 file written before the side panel tables existed: both expanded', () => {
+  it('opens a file written before the pages existed on Scales', () => {
     const result = parsed('version = 1\n[chord_panel]\ncollapsed = true\n');
     expect(result.problems).toEqual([]);
-    expect(result.settings.scalePicker).toEqual({ collapsed: false });
-    expect(result.settings.settingsPanel).toEqual({ collapsed: false });
+    expect(result.settings.page).toBe('scales');
+  });
+
+  it('skips the retired side panel tables (ADR-50) without a problem, whatever they hold', () => {
+    const result = parsed(
+      'version = 1\n[scale_picker]\ncollapsed = true\n[settings_panel]\ncollapsed = "yes"\nwidth = 3\n',
+    );
+    expect(result.problems).toEqual([]);
+    expect(result.settings).toEqual(defaultSettings());
   });
 
   it('reads the voicing constraints and falls back per value', () => {

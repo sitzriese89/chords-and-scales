@@ -2,6 +2,7 @@
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import App from '../../App.svelte';
+import { settingsDialog } from '../../test-shell';
 import { SETTINGS_DOCUMENT } from '../settings';
 import { BrowserStorage, TauriStorage, type Storage } from '../storage';
 import { fakeCommands } from '../storage/fake-commands';
@@ -24,7 +25,7 @@ async function startApp(storage: Storage) {
   return result;
 }
 
-const panel = () => within(screen.getByRole('complementary', { name: 'Settings' }));
+const panel = settingsDialog;
 const themeSelect = () => panel().getByRole('combobox', { name: 'Theme' });
 const offered = () =>
   [...themeSelect().querySelectorAll('optgroup')].map((group) => [

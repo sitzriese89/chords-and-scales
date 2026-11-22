@@ -3,6 +3,7 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import App from '../../App.svelte';
+import { appReady, chordPanel } from '../../test-shell';
 import { BrowserStorage, TauriStorage, type Storage } from '../storage';
 import { fakeCommands } from '../storage/fake-commands';
 import { lookupChords, setUserChords, setUserScales, setUserTunings } from '../theory';
@@ -28,10 +29,10 @@ const implementations: [label: string, open: () => () => Storage][] = [
 
 async function startApp(storage: Storage) {
   render(App, { storage });
-  await screen.findByRole('grid', { name: /^Fretboard/ });
+  await appReady();
 }
 
-const panel = () => within(screen.getByRole('complementary', { name: 'Chords' }));
+const panel = chordPanel;
 const quality = () => panel().getByRole('combobox', { name: 'Chord quality' });
 const dialog = () => within(screen.getByRole('dialog'));
 const lower = () => within(dialog().getByRole('group', { name: 'Intervals up to the octave' }));

@@ -60,6 +60,7 @@ ADR-1 to ADR-13 come from the design interview behind [SPEC.md](SPEC.md) (decisi
 | 50 | [Collapsible side panels: one stateless component, the parent keeps the state and the width, a table per panel](#adr-50-collapsible-side-panels-one-stateless-component-the-parent-keeps-the-state-and-the-width-a-table-per-panel) | Superseded by ADR-51 |
 | 51 | [Three pages under one toolbar, pickers in a drawer, instrument in the toolbar, Sound and Appearance in a dialog](#adr-51-three-pages-under-one-toolbar-pickers-in-a-drawer-instrument-in-the-toolbar-sound-and-appearance-in-a-dialog) | Accepted |
 | 52 | [The Scales tool row: the toggles in one row, their panels under it, in button order](#adr-52-the-scales-tool-row-the-toggles-in-one-row-their-panels-under-it-in-button-order) | Accepted |
+| 53 | [The app shell: stateless drawer, light-dismiss overlays, a native Settings dialog, pages kept mounted, `page` at the top of the settings](#adr-53-the-app-shell-stateless-drawer-light-dismiss-overlays-a-native-settings-dialog-pages-kept-mounted-page-at-the-top-of-the-settings) | Accepted |
 
 ---
 
@@ -2100,3 +2101,65 @@ the two components side by side in a flex row.
 - The "Find chords and scales" region exists only while select mode is on, and the Select
   notes button is outside it; the lookup tests find the button in the row.
 - M6.3 changes what a Harmonize click does, inside `HarmonizeView`; the row is unaffected.
+
+## ADR-53: The app shell: stateless drawer, light-dismiss overlays, a native Settings dialog, pages kept mounted, `page` at the top of the settings
+
+**Context.** M6.1 (#94) builds the shell ADR-51 decided on: the toolbar, the Scales / Chords /
+Sheet pages, the scale picker in a drawer, the instrument in a popover and Sound and
+Appearance in a dialog. The drawer must also hold the chord picker in M6.3. Some parts of the
+app assumed one page: the scale and chord editors were mounted inside the picker and the
+chord panel, which are now hidden or on another page, and the chosen voicing reset only while
+the scale neck read it.
+
+**Decision.**
+- **One `Drawer` component** (`lib/panels`), stateless like `CollapsiblePanel` was: the
+  parent passes `open`, sets it false in `onclose` and owns the opening button (`opener`,
+  with `aria-expanded` / `aria-controls`). It is a non-modal `role="dialog"` named by its
+  title, with a ✕ button "Close <title>". Closed it is `hidden` but stays mounted, so a typed
+  search survives; it slides in with `@starting-style` (no animation where unsupported, none
+  with reduced motion). It sits against its nearest positioned ancestor at `--drawer-top`,
+  measures its own height down to the window's bottom edge, and is full width under 40rem.
+  The app hangs it under the sticky toolbar.
+- **Light dismiss is shared** (`lib/panels/dismiss.ts`) by the drawer and the `Popover` (the
+  instrument button): Escape and a captured click outside close; a click on the opener is
+  its own toggle; events inside a modal dialog above (`[aria-modal="true"]` or a `<dialog>`:
+  the editors, Settings) and an Escape another handler already took are left alone. Focus
+  moves to the first control on opening and back to the opener on ✕ or Escape; after a click
+  outside only if it would otherwise be lost (on the body or in the closing overlay), so a
+  click on the neck keeps focus on the neck.
+- **Settings is a native modal `<dialog>`** (`showModal`), so the browser gives the focus
+  trap, the top layer and the backdrop. Escape is handled on keydown as well, a click on the
+  dialog element itself is a backdrop click, and closing always returns focus to ⚙ Settings.
+  jsdom has no `showModal`/`close`; `test-setup.ts` adds a minimal stand-in (the `open`
+  attribute and the `close` event).
+- **The page is the top-level key `page`** (`"scales" | "chords" | "sheet"`) of
+  `settings.toml`, missing means Scales. Not in `[last_view]`: the export sheet copies that
+  table into its scale items. The retired `[scale_picker]` / `[settings_panel]` tables are
+  skipped without a problem (listed as retired in the schema) and not written back; no
+  version bump (ADR-17).
+- **Scales and Chords stay mounted, hidden** while another page is shown, so the reverse
+  lookup's selection, the open Harmonize row or a typed symbol are still there on coming
+  back. The Sheet page is mounted only while shown, because its print styles print the sheet
+  alone whenever it is in the document (ADR-45). The drawer closes on a page switch.
+- **The editors live outside the pages.** `ScaleEditorDialog` (split out of `ScalePicker`) and
+  `ChordEditorDialog` (no longer inside `ChordPanel`) are mounted once by `App`, so reverse
+  lookup's Save as scale / Save as chord open them on the Scales page with the drawer closed
+  and the chord panel on another page.
+- **`ChordState` keeps reading its voicing.** The chosen voicing is a derived that resets when
+  its key changes, but only notices while read; the scale neck that always read it is no
+  longer on the page with the voicing browser, so the state reads it in its own
+  `$effect.root`. Without it Clear chord and the same chord again brought the old shape back.
+- Rejected: unmounting every hidden page (loses the lookup selection and the row, and a test
+  of the chord on the neck needs both pages); the HTML `popover` attribute for the instrument
+  panel (no jsdom support, and the light-dismiss rules above still needed code); measuring
+  the toolbar with a `ResizeObserver` for the drawer's height (none in jsdom, and the drawer
+  can measure itself).
+
+**Consequences.**
+- M6.3 puts the chord picker in a second `Drawer` with its own button; nothing in the
+  component is scale-specific.
+- Tests reach the shell through `src/test-shell.ts` (`scalePicker()`, `chordPanel()`,
+  `instrumentPanel()`, `settingsDialog()`, `goTo(page)`), which opens what is needed as a user
+  would.
+- Both pages' components run while hidden; a page with expensive work would need to pause
+  it when hidden.

@@ -1,8 +1,9 @@
 // The voicing browser in the real app: the real WASM core, settings and storage, a fake
 // AudioContext and the C major fixture for the harmonize seam.
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/svelte';
+import { cleanup, fireEvent, render, within } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import App from '../../App.svelte';
+import { appReady, chordPanel, goTo, instrumentPanel, on } from '../../test-shell';
 import { AudioEngine, midiToHz } from '../audio';
 import { FakeAudioContext, FakeGesture } from '../audio/fake-context';
 import { cMajorHarmonizer } from '../chords/fixture-harmonizer';
@@ -38,16 +39,19 @@ async function startApp(
     harmonizer: cMajorHarmonizer,
     ...(options.audio ? { audio: options.audio } : {}),
   });
-  await screen.findByRole('grid', { name: /^Fretboard/ });
+  await appReady();
   return storage;
 }
 
 const pick = (name: string, value: string) =>
-  fireEvent.change(screen.getByRole('combobox', { name }), { target: { value } });
+  fireEvent.change(
+    (name === 'Tuning' ? instrumentPanel() : chordPanel()).getByRole('combobox', { name }),
+    { target: { value } },
+  );
 
 /** The shapes in the list, as their names write them: `1. x32010, bass 3` is `x32010`. */
 function shapes(): string[] {
-  const list = screen.queryByRole('list', { name: /^Voicings of/ });
+  const list = on('Chords').queryByRole('list', { name: /^Voicings of/ });
   if (!list) return [];
   return within(list)
     .getAllByRole('button')
@@ -61,10 +65,11 @@ function shapes(): string[] {
 }
 
 const shapeButton = (shape: string) =>
-  screen.getByRole('button', { name: new RegExp(`^\\d+\\. ${shape}(,|$)`) });
+  on('Chords').getByRole('button', { name: new RegExp(`^\\d+\\. ${shape}(,|$)`) });
 
 /** The neck's dots as `string:fret`, sorted. */
 function neck(): string[] {
+  goTo('Scales');
   return [...document.querySelectorAll<SVGGElement>('svg.fretboard g.dot')]
     .map((g) => `${g.dataset.string}:${g.dataset.fret}`)
     .sort();
@@ -76,23 +81,23 @@ describe('voicing browser', () => {
 
   it('shows nothing until a chord is chosen, then the ranked shapes as diagrams', async () => {
     await startApp();
-    expect(screen.queryByRole('heading', { name: /^Voicings/ })).not.toBeInTheDocument();
+    expect(on('Chords').queryByRole('heading', { name: /^Voicings/ })).not.toBeInTheDocument();
 
     await pick('Chord quality', 'major');
-    expect(screen.getByRole('heading', { name: 'Voicings of C' })).toBeInTheDocument();
-    expect(screen.getByText('50 shapes, best first')).toBeInTheDocument();
+    expect(on('Chords').getByRole('heading', { name: 'Voicings of C' })).toBeInTheDocument();
+    expect(on('Chords').getByText('50 shapes, best first')).toBeInTheDocument();
     const list = shapes();
     expect(list).toHaveLength(50);
     expect(list.slice(0, 5)).toContain('x32010');
     // Every shape is a diagram with a name.
-    expect(screen.getAllByRole('img', { name: /^C: / })).toHaveLength(50);
-    expect(screen.getByRole('img', { name: 'C: x32010' })).toBeInTheDocument();
+    expect(on('Chords').getAllByRole('img', { name: /^C: / })).toHaveLength(50);
+    expect(on('Chords').getByRole('img', { name: 'C: x32010' })).toBeInTheDocument();
   });
 
   it('writes no shape text under the diagrams; the shape is in their names', async () => {
     await startApp();
     await pick('Chord quality', 'major');
-    const list = screen.getByRole('list', { name: 'Voicings of C' });
+    const list = on('Chords').getByRole('list', { name: 'Voicings of C' });
     const button = within(list).getByRole('button', { name: /^\d+\. x32010$/ });
     // The diagram and the button carry the shape for screen readers…
     expect(within(button).getByRole('img', { name: 'C: x32010' })).toBeInTheDocument();
@@ -108,17 +113,19 @@ describe('voicing browser', () => {
   it('heads a slash chord by the chord alone and says its bass is not voiced', async () => {
     await startApp();
     await pick('Chord quality', 'major');
-    expect(screen.queryByText(/bass isn't voiced/)).not.toBeInTheDocument();
+    expect(on('Chords').queryByText(/bass isn't voiced/)).not.toBeInTheDocument();
 
-    await fireEvent.click(screen.getByRole('radio', { name: 'Typed symbol' }));
-    await fireEvent.input(screen.getByRole('textbox', { name: 'Chord symbol' }), {
+    await fireEvent.click(on('Chords').getByRole('radio', { name: 'Typed symbol' }));
+    await fireEvent.input(on('Chords').getByRole('textbox', { name: 'Chord symbol' }), {
       target: { value: 'Am7/G' },
     });
-    expect(screen.getByRole('heading', { name: 'Voicings of Am7' })).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: /^Voicings of Am7\/G/ })).not.toBeInTheDocument();
-    expect(screen.getByText("Shapes of Am7; the G bass isn't voiced.")).toBeInTheDocument();
-    expect(screen.getByRole('list', { name: 'Voicings of Am7' })).toBeInTheDocument();
-    expect(screen.getAllByRole('img', { name: /^Am7: / }).length).toBeGreaterThan(0);
+    expect(on('Chords').getByRole('heading', { name: 'Voicings of Am7' })).toBeInTheDocument();
+    expect(
+      on('Chords').queryByRole('heading', { name: /^Voicings of Am7\/G/ }),
+    ).not.toBeInTheDocument();
+    expect(on('Chords').getByText("Shapes of Am7; the G bass isn't voiced.")).toBeInTheDocument();
+    expect(on('Chords').getByRole('list', { name: 'Voicings of Am7' })).toBeInTheDocument();
+    expect(on('Chords').getAllByRole('img', { name: /^Am7: / }).length).toBeGreaterThan(0);
   });
 
   it('updates the list when a constraint changes, and saves the constraints', async () => {
@@ -126,7 +133,7 @@ describe('voicing browser', () => {
     await pick('Chord quality', 'major');
     const before = shapes();
 
-    await fireEvent.click(screen.getByRole('checkbox', { name: 'Open strings' }));
+    await fireEvent.click(on('Chords').getByRole('checkbox', { name: 'Open strings' }));
     const closed = shapes();
     expect(closed).not.toEqual(before);
     expect(closed).not.toContain('x32010');
@@ -136,7 +143,7 @@ describe('voicing browser', () => {
     expect(shapes().length).toBeGreaterThan(0);
     expect(shapes()).not.toEqual(closed);
 
-    await fireEvent.click(screen.getByRole('checkbox', { name: 'Muted strings' }));
+    await fireEvent.click(on('Chords').getByRole('checkbox', { name: 'Muted strings' }));
     expect(document.querySelectorAll('.voicings [data-marker="muted"]')).toHaveLength(0);
 
     expect(await storage.read(SETTINGS_DOCUMENT)).toMatch(
@@ -147,7 +154,7 @@ describe('voicing browser', () => {
   it('keeps the shapes on or above the start fret, and keeps the start fret over a restart', async () => {
     const storage = await startApp();
     await pick('Chord quality', 'major');
-    const startFret = () => screen.getByRole('spinbutton', { name: 'Start fret' });
+    const startFret = () => on('Chords').getByRole('spinbutton', { name: 'Start fret' });
     expect(startFret()).toHaveValue(0);
     expect(startFret()).toHaveAttribute('max', '24');
     expect(shapes()).toContain('x32010');
@@ -179,22 +186,24 @@ describe('voicing browser', () => {
   it('refuses a start fret off the neck and puts the saved one back', async () => {
     const storage = await startApp({ change: (s) => (s.instrument.frets = 22) });
     await pick('Chord quality', 'major');
-    const startFret = screen.getByRole('spinbutton', { name: 'Start fret' });
+    const startFret = on('Chords').getByRole('spinbutton', { name: 'Start fret' });
     await fireEvent.change(startFret, { target: { value: '3' } });
     await fireEvent.change(startFret, { target: { value: '23' } });
-    expect(screen.getByRole('alert')).toHaveTextContent('The start fret is a fret from 0 to 22.');
+    expect(on('Chords').getByRole('alert')).toHaveTextContent(
+      'The start fret is a fret from 0 to 22.',
+    );
     expect(startFret).toHaveValue(3);
     expect(await storage.read(SETTINGS_DOCUMENT)).toMatch(/\nstart_fret = 3\n/);
     await fireEvent.change(startFret, { target: { value: '7' } });
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(on('Chords').queryByRole('alert')).not.toBeInTheDocument();
   });
 
   it('lists inversions only when asked, naming their bass', async () => {
     await startApp();
     await pick('Chord quality', 'major');
-    expect(screen.queryByText(/^bass /)).not.toBeInTheDocument();
-    await fireEvent.click(screen.getByRole('checkbox', { name: 'Inversions' }));
-    expect(screen.getAllByRole('button', { name: /, bass (3|5)/ }).length).toBeGreaterThan(0);
+    expect(on('Chords').queryByText(/^bass /)).not.toBeInTheDocument();
+    await fireEvent.click(on('Chords').getByRole('checkbox', { name: 'Inversions' }));
+    expect(on('Chords').getAllByRole('button', { name: /, bass (3|5)/ }).length).toBeGreaterThan(0);
   });
 
   it('says so when no shape fits', async () => {
@@ -207,9 +216,9 @@ describe('voicing browser', () => {
     });
     await pick('Chord root', 'G');
     await pick('Chord quality', 'dom7');
-    expect(screen.getByText('No shapes')).toBeInTheDocument();
+    expect(on('Chords').getByText('No shapes')).toBeInTheDocument();
     expect(
-      screen.getByText('No playable shape of G7 fits these constraints on this neck.'),
+      on('Chords').getByText('No playable shape of G7 fits these constraints on this neck.'),
     ).toBeInTheDocument();
   });
 
@@ -225,7 +234,7 @@ describe('voicing browser', () => {
     expect(shapeButton('x32010')).toHaveAttribute('aria-pressed', 'true');
     expect(neck()).toEqual(['1:0', '2:1', '3:0', '4:2', '5:3']);
     // Still drawn and named as the chord.
-    expect(screen.getByRole('grid', { name: /^Fretboard: C chord/ })).toBeInTheDocument();
+    expect(on('Scales').getByRole('grid', { name: /^Fretboard: C chord/ })).toBeInTheDocument();
     // C3 E3 G3 C4 E4, lowest string first: pitches from the core.
     expect(frequencies).toEqual([48, 52, 55, 60, 64].map(midiToHz));
 
@@ -234,21 +243,23 @@ describe('voicing browser', () => {
     expect(neck()).toEqual(everywhere);
 
     await fireEvent.click(shapeButton('x32010'));
-    await fireEvent.click(screen.getByRole('button', { name: 'Show all positions' }));
+    await fireEvent.click(on('Chords').getByRole('button', { name: 'Show all positions' }));
     expect(neck()).toEqual(everywhere);
   });
 
   it('draws the shape without the scale for a chord on a degree', async () => {
     await startApp();
-    await fireEvent.click(screen.getByRole('radio', { name: 'Degree of the scale' }));
+    await fireEvent.click(on('Chords').getByRole('radio', { name: 'Degree of the scale' }));
     await pick('Degree of C Major', '4');
+    goTo('Scales');
     expect(
       document.querySelectorAll('svg.fretboard g.dot[data-role="dim"]').length,
     ).toBeGreaterThan(0);
     await fireEvent.click(shapeButton('320003'));
     expect(neck()).toEqual(['1:3', '2:0', '3:0', '4:0', '5:2', '6:3']);
+    goTo('Scales');
     expect(document.querySelectorAll('svg.fretboard g.dot[data-role="dim"]')).toHaveLength(0);
-    expect(screen.getByRole('grid', { name: /^Fretboard: G chord/ })).toBeInTheDocument();
+    expect(on('Scales').getByRole('grid', { name: /^Fretboard: G chord/ })).toBeInTheDocument();
   });
 
   it('drops the chosen shape when the chord, the tuning or a constraint changes', async () => {
@@ -258,39 +269,39 @@ describe('voicing browser', () => {
 
     await fireEvent.click(shapeButton('x32010'));
     await pick('Chord quality', 'minor');
-    expect(screen.getByRole('heading', { name: 'Voicings of Cm' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { pressed: true })).not.toBeInTheDocument();
+    expect(on('Chords').getByRole('heading', { name: 'Voicings of Cm' })).toBeInTheDocument();
+    expect(chordPanel().queryByRole('button', { pressed: true })).not.toBeInTheDocument();
     // Back to C major: the shape is not chosen again.
     await pick('Chord quality', 'major');
     expect(neck()).toEqual(everywhere);
 
     await fireEvent.click(shapeButton('x32010'));
-    await fireEvent.click(screen.getByRole('button', { name: 'Clear chord' }));
+    await fireEvent.click(on('Chords').getByRole('button', { name: 'Clear chord' }));
     await pick('Chord quality', 'major');
-    expect(screen.queryByRole('button', { pressed: true })).not.toBeInTheDocument();
+    expect(chordPanel().queryByRole('button', { pressed: true })).not.toBeInTheDocument();
     expect(neck()).toEqual(everywhere);
 
     await fireEvent.click(shapeButton('x32010'));
     await pick('Tuning', 'guitar-6-drop-d');
-    expect(screen.queryByRole('button', { pressed: true })).not.toBeInTheDocument();
+    expect(chordPanel().queryByRole('button', { pressed: true })).not.toBeInTheDocument();
     await pick('Tuning', 'guitar-6-standard');
     expect(neck()).toEqual(everywhere);
 
     await fireEvent.click(shapeButton('x32010'));
-    await fireEvent.click(screen.getByRole('checkbox', { name: 'Inversions' }));
-    expect(screen.queryByRole('button', { pressed: true })).not.toBeInTheDocument();
+    await fireEvent.click(on('Chords').getByRole('checkbox', { name: 'Inversions' }));
+    expect(chordPanel().queryByRole('button', { pressed: true })).not.toBeInTheDocument();
     expect(neck().length).toBeGreaterThan(20);
   });
 
   it('keeps the chosen shape when only the labels change, and labels the dots alike', async () => {
     await startApp();
     await pick('Chord quality', 'major');
-    const diagram = () => screen.getByRole('img', { name: 'C: x32010' });
+    const diagram = () => on('Chords').getByRole('img', { name: 'C: x32010' });
     const labels = () => [...diagram().querySelectorAll('g.dot text')].map((t) => t.textContent);
     expect(labels()).toEqual(['C', 'E', 'C']);
     await fireEvent.click(shapeButton('x32010'));
 
-    await fireEvent.click(screen.getByRole('radio', { name: 'Intervals' }));
+    await fireEvent.click(on('Scales').getByRole('radio', { name: 'Intervals' }));
     expect(labels()).toEqual(['1', '3', '1']);
     expect(shapeButton('x32010')).toHaveAttribute('aria-pressed', 'true');
     expect(neck()).toEqual(['1:0', '2:1', '3:0', '4:2', '5:3']);
@@ -299,7 +310,7 @@ describe('voicing browser', () => {
   it('mirrors the diagrams when left-handed', async () => {
     await startApp({ change: (s) => (s.leftHanded = true) });
     await pick('Chord quality', 'major');
-    const diagram = screen.getByRole('img', { name: 'C: x32010' });
+    const diagram = on('Chords').getByRole('img', { name: 'C: x32010' });
     const at = (string: number, name: string) =>
       Number(diagram.querySelector(`g.dot[data-string="${string}"] text`)!.getAttribute(name));
     // The nut on the right, as on the neck: fret 3 (string 5) left of fret 1 (string 2).

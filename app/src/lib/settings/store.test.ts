@@ -153,24 +153,38 @@ describe('audio and chord panel settings in both Storage implementations (ADR-4)
   );
 
   it.each(implementations)(
-    'keeps the side panels collapsed across a restart: %s',
+    'keeps the chosen page across a restart (ADR-51): %s',
     async (_, make) => {
       const open = make();
       const first = new SettingsStore(open());
       await first.load();
-      expect(first.current.scalePicker).toEqual({ collapsed: false });
-      expect(first.current.settingsPanel).toEqual({ collapsed: false });
-      await first.update({ scalePicker: { collapsed: true } });
-      await first.update({ settingsPanel: { collapsed: true } });
+      expect(first.current.page).toBe('scales');
+      await first.update({ page: 'chords' });
 
       const second = new SettingsStore(open());
       await second.load();
       expect(second.warning).toBeNull();
-      expect(second.current.scalePicker).toEqual({ collapsed: true });
-      expect(second.current.settingsPanel).toEqual({ collapsed: true });
-      expect(await open().read(SETTINGS_DOCUMENT)).toMatch(
-        /\[scale_picker\]\ncollapsed = true\n\n\[settings_panel\]\ncollapsed = true/,
+      expect(second.current.page).toBe('chords');
+      expect(await open().read(SETTINGS_DOCUMENT)).toMatch(/^page = "chords"$/m);
+    },
+  );
+
+  it.each(implementations)(
+    'opens an old file with the side panel tables on Scales, without a warning, and drops them on the next save: %s',
+    async (_, make) => {
+      const open = make();
+      await open().write(
+        SETTINGS_DOCUMENT,
+        'version = 1\n[scale_picker]\ncollapsed = true\n[settings_panel]\ncollapsed = true\n',
       );
+      const store = new SettingsStore(open());
+      await store.load();
+      expect(store.warning).toBeNull();
+      expect(store.current).toEqual(defaultSettings());
+      await store.update({ page: 'sheet' });
+      const text = await open().read(SETTINGS_DOCUMENT);
+      expect(text).not.toMatch(/scale_picker|settings_panel/);
+      expect(text).toMatch(/^page = "sheet"$/m);
     },
   );
 

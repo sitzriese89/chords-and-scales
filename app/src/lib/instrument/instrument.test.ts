@@ -2,6 +2,7 @@
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import App from '../../App.svelte';
+import { instrumentPanel } from '../../test-shell';
 import { defaultSettings, SETTINGS_DOCUMENT, serializeSettings, type Settings } from '../settings';
 import { BrowserStorage } from '../storage';
 import { getTuning, setUserTunings } from '../theory';
@@ -46,7 +47,7 @@ async function startApp(storage = new BrowserStorage(window.localStorage)) {
   return result;
 }
 
-const panel = () => within(screen.getByRole('complementary', { name: 'Settings' }));
+const panel = instrumentPanel;
 const tuningSelect = () => panel().getByRole('combobox', { name: 'Tuning' });
 const stringsSelect = () => panel().getByRole('combobox', { name: 'Strings' });
 const offered = () =>

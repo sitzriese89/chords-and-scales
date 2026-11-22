@@ -3,6 +3,7 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import App from '../../App.svelte';
+import { on } from '../../test-shell';
 import { AudioEngine, midiToHz } from '../audio';
 import { FakeAudioContext, FakeGesture } from '../audio/fake-context';
 import { defaultSettings, SETTINGS_DOCUMENT, serializeSettings, type Settings } from '../settings';
@@ -39,10 +40,10 @@ async function startApp(
   return storage;
 }
 
-const lookup = () => within(screen.getByRole('region', { name: 'Find chords and scales' }));
+const lookup = () => within(on('Scales').getByRole('region', { name: 'Find chords and scales' }));
 // Select notes sits in the explorer's tool row, outside the panel it opens (ADR-52).
-const selectMode = () => screen.getByRole('button', { name: 'Select notes' });
-const board = () => screen.getByRole('grid', { name: /^Fretboard/ });
+const selectMode = () => on('Scales').getByRole('button', { name: 'Select notes' });
+const board = () => on('Scales').getByRole('grid', { name: /^Fretboard/ });
 const cell = (string: number, fret: number) =>
   within(board()).getByRole('gridcell', {
     name: new RegExp(`^String ${string}, ${fret === 0 ? 'open' : `fret ${fret}`}(,|$)`),
@@ -192,8 +193,8 @@ describe('reverse lookup on the fretboard', () => {
 
     await fireEvent.click(result);
     expect(result).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByRole('combobox', { name: 'Chord root' })).toHaveValue('A');
-    expect(screen.getByRole('combobox', { name: 'Chord quality' })).toHaveValue('major');
+    expect(on('Chords').getByRole('combobox', { name: 'Chord root' })).toHaveValue('A');
+    expect(on('Chords').getByRole('combobox', { name: 'Chord quality' })).toHaveValue('major');
     expect(board()).toHaveAccessibleName(/^Fretboard: A chord/);
     // The chord's tones across the neck, the selection still ringed over them.
     expect(cell(6, 5)).toHaveAccessibleName('String 6, fret 5, A, root');
@@ -216,9 +217,9 @@ describe('reverse lookup on the fretboard', () => {
       .find((b) => b.textContent!.includes('Odd'))!;
     await fireEvent.click(odd);
 
-    expect(screen.getByRole('radio', { name: 'Root and quality' })).toBeChecked();
-    expect(screen.getByRole('combobox', { name: 'Chord root' })).toHaveValue('C');
-    expect(screen.getByRole('combobox', { name: 'Chord quality' })).toHaveValue('odd');
+    expect(on('Chords').getByRole('radio', { name: 'Root and quality' })).toBeChecked();
+    expect(on('Chords').getByRole('combobox', { name: 'Chord root' })).toHaveValue('C');
+    expect(on('Chords').getByRole('combobox', { name: 'Chord quality' })).toHaveValue('odd');
   });
 
   it('shows a slash chord as its typed symbol, with the bass', async () => {
@@ -230,9 +231,9 @@ describe('reverse lookup on the fretboard', () => {
     await fireEvent.click(lookup().getByRole('button', { name: /^C\/E/ }));
 
     // The panel opens on the typed symbol.
-    expect(screen.getByRole('button', { name: 'Collapse' })).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: 'Typed symbol' })).toBeChecked();
-    expect(screen.getByRole('textbox', { name: 'Chord symbol' })).toHaveValue('C/E');
+    expect(on('Chords').getByRole('button', { name: 'Collapse' })).toBeInTheDocument();
+    expect(on('Chords').getByRole('radio', { name: 'Typed symbol' })).toBeChecked();
+    expect(on('Chords').getByRole('textbox', { name: 'Chord symbol' })).toHaveValue('C/E');
     expect(board()).toHaveAccessibleName(/^Fretboard: C\/E chord/);
     expect(lookup().getByRole('button', { name: /^C\/E/ })).toHaveAttribute('aria-pressed', 'true');
   });
@@ -246,15 +247,15 @@ describe('reverse lookup on the fretboard', () => {
 
   it('makes a clicked scale the explorer’s scale and root', async () => {
     await startApp();
-    await fireEvent.click(screen.getByRole('radio', { name: 'Root and quality' }));
-    await fireEvent.change(screen.getByRole('combobox', { name: 'Chord quality' }), {
+    await fireEvent.click(on('Chords').getByRole('radio', { name: 'Root and quality' }));
+    await fireEvent.change(on('Chords').getByRole('combobox', { name: 'Chord quality' }), {
       target: { value: 'minor' },
     });
     await fireEvent.click(selectMode());
     await play('x02220');
     await fireEvent.click(lookup().getByRole('button', { name: /^A Major pentatonic/ }));
 
-    expect(screen.getByRole('heading', { name: 'A Major pentatonic' })).toBeInTheDocument();
+    expect(on('Scales').getByRole('heading', { name: 'A Major pentatonic' })).toBeInTheDocument();
     expect(lookup().getByRole('button', { name: /^A Major pentatonic/ })).toHaveAttribute(
       'aria-pressed',
       'true',

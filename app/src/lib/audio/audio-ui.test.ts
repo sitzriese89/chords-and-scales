@@ -2,6 +2,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '../../App.svelte';
+import { settingsDialog } from '../../test-shell';
 import { defaultSettings, SETTINGS_DOCUMENT, serializeSettings, type Settings } from '../settings';
 import { BrowserStorage } from '../storage';
 import { AudioEngine, volumeToGain } from './engine';
@@ -141,10 +142,13 @@ describe('sound in the app', () => {
     const first = setup();
     const storage = await startApp(first.audio);
     first.gesture.happen();
-    const mute = screen.getByRole('checkbox', { name: 'Mute' });
+    const mute = settingsDialog().getByRole('checkbox', { name: 'Mute' });
     expect(mute).not.toBeChecked();
     await fireEvent.click(mute);
     await expect.poll(() => storage.read(SETTINGS_DOCUMENT)).toMatch(/muted = true/);
+    // Back to the page: Escape closes the Settings dialog.
+    await fireEvent.keyDown(mute, { key: 'Escape' });
+    expect(screen.queryByRole('dialog', { name: 'Settings' })).toBeNull();
     expect(screen.getByText('Sound is muted.')).toBeInTheDocument();
 
     await fireEvent.click(screen.getByRole('gridcell', { name: /^String 1, fret 5, A/ }));
@@ -158,7 +162,7 @@ describe('sound in the app', () => {
     render(App, { storage, audio: second.audio });
     await screen.findByRole('grid', { name: /^Fretboard/ });
     second.gesture.happen();
-    expect(screen.getByRole('checkbox', { name: 'Mute' })).toBeChecked();
+    expect(settingsDialog().getByRole('checkbox', { name: 'Mute' })).toBeChecked();
     await fireEvent.click(screen.getByRole('gridcell', { name: /^String 1, fret 5, A/ }));
     expect(second.frequencies).toEqual([]);
   });
@@ -169,7 +173,7 @@ describe('sound in the app', () => {
       s.audio.volume = 50;
     });
     gesture.happen();
-    const slider = screen.getByRole('slider', { name: 'Volume' });
+    const slider = settingsDialog().getByRole('slider', { name: 'Volume' });
     expect(slider).toHaveValue('50');
 
     await fireEvent.click(screen.getByRole('gridcell', { name: /^String 1, fret 5, A/ }));

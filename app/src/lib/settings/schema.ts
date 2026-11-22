@@ -3,8 +3,9 @@
  *
  * Tables: `display`, `instrument`, `last_view`, `tab` (the tab view's position, ADR-25),
  * `audio` (volume and mute, ADR-28), `chord_panel` (collapsed and height, ADR-32),
- * `voicings` (the voicing browser's constraints, ADR-37), and `scale_picker` and
- * `settings_panel` (whether the side panels are collapsed, ADR-50).
+ * `voicings` (the voicing browser's constraints, ADR-37), and the top-level `page`: the page
+ * shown under the toolbar (Scales, Chords or Sheet, ADR-51). The retired `scale_picker` and `settings_panel` tables
+ * (ADR-50) are read without a warning and not written back (ADR-53).
  * `display.chord_symbols` is the style chord names are written in (ADR-33).
  * `display.theme` is the colour scheme (light, dark or the OS's) and `display.theme_id` the
  * theme shown in it (ADR-40).
@@ -34,6 +35,8 @@ export const INSTRUMENT_KINDS = ['guitar', 'bass'] as const;
 export const POSITION_SYSTEMS = ['3nps', 'window'] as const;
 /** The order the tab plays a position in. */
 export const DIRECTIONS = ['ascending', 'descending', 'both'] as const;
+/** The app's pages under the toolbar (ADR-51). */
+export const PAGES = ['scales', 'chords', 'sheet'] as const;
 
 /** Volume is a whole percent. */
 export const MAX_VOLUME = 100;
@@ -62,6 +65,7 @@ export type ChordSymbolStyle = (typeof CHORD_SYMBOL_STYLES)[number];
 export type InstrumentKind = (typeof INSTRUMENT_KINDS)[number];
 export type PositionSystem = (typeof POSITION_SYSTEMS)[number];
 export type Direction = (typeof DIRECTIONS)[number];
+export type Page = (typeof PAGES)[number];
 
 export interface Settings {
   /** How non-root notes are spelled (ADR-6). */
@@ -87,6 +91,8 @@ export interface Settings {
     /** Capo fret; 0 is no capo. Always below `frets`. */
     capo: number;
   };
+  /** The page shown under the toolbar (ADR-51); a file without it opens on Scales. */
+  page: Page;
   lastView: {
     /** Root as the user typed or picked it; its spelling is kept (ADR-6). */
     root: string;
@@ -123,16 +129,6 @@ export interface Settings {
     /** Height of the open panel in pixels. */
     height: number;
   };
-  /** The scale picker, the left side panel (ADR-50). */
-  scalePicker: {
-    /** Only a narrow strip with its title and expand button is shown. */
-    collapsed: boolean;
-  };
-  /** The settings panel (instrument, sound, appearance), the right side panel (ADR-50). */
-  settingsPanel: {
-    /** Only a narrow strip with its title and expand button is shown. */
-    collapsed: boolean;
-  };
   /** The voicing browser's constraints (SPEC §5.6, ADR-37); the defaults are the core's. */
   voicings: {
     /** The most frets the fretted notes may cover, 1 to `MAX_VOICING_SPAN`. */
@@ -165,6 +161,7 @@ export const DEFAULT_SETTINGS: Readonly<Settings> = Object.freeze({
     frets: 24,
     capo: 0,
   }),
+  page: 'scales',
   lastView: Object.freeze({ root: 'C', scale: 'major' }),
   tab: Object.freeze({
     system: '3nps',
@@ -176,8 +173,6 @@ export const DEFAULT_SETTINGS: Readonly<Settings> = Object.freeze({
   }),
   audio: Object.freeze({ volume: 70, muted: false }),
   chordPanel: Object.freeze({ collapsed: false, height: DEFAULT_PANEL_HEIGHT }),
-  scalePicker: Object.freeze({ collapsed: false }),
-  settingsPanel: Object.freeze({ collapsed: false }),
   voicings: Object.freeze({
     maxSpan: 4,
     openStrings: true,
@@ -193,6 +188,13 @@ export function defaultSettings(): Settings {
 
 /** Longest accepted id or root string. */
 const MAX_TEXT = 64;
+
+/**
+ * Tables older versions of the app wrote and this one no longer uses: the collapsible side
+ * panels' (ADR-50, retired by ADR-51). They are skipped without a warning, so an old file
+ * opens cleanly, and the next save leaves them out (ADR-53).
+ */
+const RETIRED_TABLES = ['scale_picker', 'settings_panel'] as const;
 
 /** The outcome of reading a settings file. */
 export type ParsedSettings =
@@ -347,6 +349,7 @@ export function parseSettings(text: string): ParsedSettings {
   const d = DEFAULT_SETTINGS;
   const root = new TableReader(migrated.doc, '', problems);
   root.skip('version'); // checked by migrate()
+  const page = root.oneOf('page', PAGES, d.page);
 
   const display = root.section('display');
   const accidentals = display.oneOf('accidentals', ACCIDENTALS, d.accidentals);
@@ -395,17 +398,7 @@ export function parseSettings(text: string): ParsedSettings {
   };
   panelTable.unknownKeys();
 
-  const pickerTable = root.section('scale_picker');
-  const scalePicker: Settings['scalePicker'] = {
-    collapsed: pickerTable.boolean('collapsed', d.scalePicker.collapsed),
-  };
-  pickerTable.unknownKeys();
-
-  const settingsPanelTable = root.section('settings_panel');
-  const settingsPanel: Settings['settingsPanel'] = {
-    collapsed: settingsPanelTable.boolean('collapsed', d.settingsPanel.collapsed),
-  };
-  settingsPanelTable.unknownKeys();
+  for (const table of RETIRED_TABLES) root.skip(table);
 
   const voicingTable = root.section('voicings');
   const voicings: Settings['voicings'] = {
@@ -429,12 +422,11 @@ export function parseSettings(text: string): ParsedSettings {
       leftHanded,
       chordSymbols,
       instrument: { kind, strings, tuning, frets, capo },
+      page,
       lastView: { root: rootNote, scale },
       tab,
       audio,
       chordPanel,
-      scalePicker,
-      settingsPanel,
       voicings,
     },
     problems,
@@ -449,6 +441,7 @@ const HEADER = `# Chords & Scales settings. You can edit this file while the app
 export function serializeSettings(settings: Settings): string {
   const doc = {
     version: SETTINGS_VERSION,
+    page: settings.page,
     display: {
       accidentals: settings.accidentals,
       labels: settings.labels,
@@ -472,8 +465,6 @@ export function serializeSettings(settings: Settings): string {
       collapsed: settings.chordPanel.collapsed,
       height: settings.chordPanel.height,
     },
-    scale_picker: { collapsed: settings.scalePicker.collapsed },
-    settings_panel: { collapsed: settings.settingsPanel.collapsed },
     voicings: {
       max_span: settings.voicings.maxSpan,
       open_strings: settings.voicings.openStrings,

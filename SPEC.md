@@ -89,9 +89,12 @@ Files are hand-editable and shareable; the UI offers import/export of them.
   light/dark, left-handed), the last instrument (kind, string count, tuning, fret count, capo) and the
   last view (root, scale) and the tab view's position (system, 3NPS pattern, fret window,
   direction, highlight; ADR-25), the sound (volume 0–100, mute; ADR-28), the voicing
-  browser's constraints (`[voicings]`; ADR-37) and which panels are collapsed
-  (`[chord_panel]`, `[scale_picker]`, `[settings_panel]`; ADR-32, ADR-50). It is created with
-  the defaults on first start, read once at start and saved on every change.
+  browser's constraints (`[voicings]`; ADR-37), whether the chord panel is collapsed and its
+  height (`[chord_panel]`; ADR-32) and the page shown (`page = "scales" | "chords" | "sheet"`
+  at the top; ADR-51). It is created with
+  the defaults on first start, read once at start and saved on every change. A file without
+  `page` opens on Scales. The `[scale_picker]` and `[settings_panel]` tables of older
+  versions (ADR-50) are skipped without a warning and left out on the next save (ADR-53).
 - The user's own scales, chords and tunings are `scales.toml`, `chords.toml` and
   `tunings.toml`, in the format of the built-in catalogs (§4.2, §4.3, §5.1). They are read at
   start; a broken item is skipped and listed in a collapsed note in the window, and the rest
@@ -319,22 +322,37 @@ intervals = ["1", "b3", "b5", "b7"]
   aliases; the neck shows every note of the scale across all frets of the current
   instrument, the root as a square, with the scale spelled out above it. The label and sharp/flat toggles sit next to the neck; interval
   labels are the scale's own (`♯4` in Lydian). Root, scale, labels and sharps/flats are saved
-  on every change and come back at the next start. The window has regions for the picker,
-  the neck, the instrument settings and the docked chord panel (§5.3); on a narrow window
-  they stack.
-- **Side panels** (ADR-50): the picker (left) and the settings (right, below) each have a
-  Collapse button in a bar with their title. A collapsed side panel is a narrow strip with
-  its title and an Expand button, and the neck's column takes the width; on a narrow window,
-  where the regions stack, it is just its title bar. The button is a real button with
-  `aria-expanded` and `aria-controls`, named "Collapse Scale picker" / "Expand Settings" and
-  so on. Whether each is collapsed is saved in `settings.toml` (`[scale_picker]` and
-  `[settings_panel]`, `collapsed`) and comes back at the next start; a file without them
-  opens both expanded.
-- **Instrument panel** (the `settings` region, ADR-24): string count 4–9, the tuning presets
-  for that count grouped by kind (guitar, bass) with the user's own tunings in a group of
-  their own, fret count (12–27), capo (below the last fret; a shorter neck moves it down),
-  left-handed. The same region holds the sound and the appearance (theme, light/dark;
-  §5.11). Changing the string count picks that count's standard preset.
+  on every change and come back at the next start.
+- **Layout** (ADR-51, ADR-53): one toolbar, which stays at the top while the page scrolls,
+  and the page under it at the full width of the window. The toolbar holds, left to right:
+  the title; the page tabs **Scales**, **Chords** and **Sheet (n)** (n items on the sheet);
+  **☰ Choose scale** on the Scales page; a gap; the instrument button; **⚙ Settings**. On a
+  narrow window it wraps.
+  - **Pages.** Scales: the view toggles and the scale explorer. Chords: the chord panel and
+    the voicing browser (§5.3, §5.6). Sheet: the export sheet (§5.10). The tabs are buttons;
+    the current one has `aria-current="page"`. The page shown is saved (`page` in
+    `settings.toml`, §3.2) and the app opens on it; a file without it opens on Scales.
+    Scales and Chords keep their state while another page is shown.
+  - **Scale picker drawer.** "Choose scale" (`aria-expanded`, `aria-controls`) slides the
+    picker in from the left over the page, under the toolbar, at most as tall as the window
+    below it; on a window narrower than 40rem it is full width. It closes with its ✕
+    ("Close Choose scale"), Escape, a click outside it or a second click on the button;
+    focus moves to its first control when it opens and back to the button when it closes
+    (after a click outside, only when focus would otherwise be lost). Closed, it keeps what
+    was typed in it. It is closed at start and when another page is shown, and is not saved.
+    The scale editor's dialog is outside the drawer, so reverse lookup opens it while the
+    drawer is closed. The same drawer component holds the chord picker on Chords (M6.3).
+  - **Instrument button.** A summary of the neck, "6-string guitar · Standard · 24 frets ·
+    capo 2" (no capo part without a capo), named "Instrument: …". It opens the instrument
+    panel in a popover under it, which closes like the drawer. One instrument for the whole
+    app.
+  - **⚙ Settings** opens a modal dialog with **Sound** (volume, mute; §5.9) and
+    **Appearance** (theme, light/dark; §5.11). It closes with ✕, Escape or a click on its
+    backdrop, and focus returns to the button. Changes are saved as they are made.
+- **Instrument panel** (in the toolbar's popover, ADR-24, ADR-51): string count 4–9, the
+  tuning presets for that count grouped by kind (guitar, bass) with the user's own tunings in
+  a group of their own, fret count (12–27), capo (below the last fret; a shorter neck moves
+  it down), left-handed. Changing the string count picks that count's standard preset.
   Every change is saved and the neck follows at once.
   - **Custom tunings:** "New tuning" opens an editor seeded with the selected tuning: a name,
     guitar or bass, and a note and octave per string (string 1, the highest, first). Saving
@@ -395,8 +413,9 @@ How the tab is shown (`app/src/lib/tab/`, ADR-25):
 
 ### 5.3 Chords (Q5, Q16, Q19, Q26)
 
-- Displayed in a **docked panel** (resizable/collapsible) in the main window,
-  not a separate OS window.
+- Displayed in a **panel** (resizable/collapsible) on the **Chords** page of the main window
+  (§5.1), not a separate OS window; the chosen chord is drawn on the Scales page's neck
+  (until M6.3 reworks the page, ADR-51).
 - **Display:** all chord tones highlighted across the whole neck.
 - **Input modes:**
   1. Root + quality
@@ -631,7 +650,7 @@ Algorithmic (works for any tuning and 4–9 strings; no static shape library).
   tuning and fret. **Play**, next to the tab, plays the position the tab shows, in its
   direction (up, down, or up and back down). Chords get a strum from the chord panel (§5.3)
   through the same engine; it takes the notes lowest string first.
-- **Sound** in the settings region: a volume slider (0–100) and **Mute**. Both are saved in
+- **Sound** in the ⚙ Settings dialog (§5.1): a volume slider (0–100) and **Mute**. Both are saved in
   `settings.toml` (`[audio]`) and come back at the next start. Muted, nothing plays.
 - Nothing is made audible, and no audio is set up, until the first click, touch or key press
   in the window (browsers require it); a play call before then does nothing (ADR-28).
@@ -687,7 +706,7 @@ Algorithmic (works for any tuning and 4–9 strings; no static shape library).
   (ADR-48): **Atom One** (One Light, One Dark), **Catppuccin** (Latte, Mocha), **Dracula**
   (Alucard, Dracula) and **Nord** (Snow Storm, Polar Night), and **Print** (light only: white
   paper, black ink, a white fingerboard).
-- **Appearance** in the settings region: a theme picker (built-in themes, then the user's
+- **Appearance** in the ⚙ Settings dialog (§5.1): a theme picker (built-in themes, then the user's
   under *Your themes*) and light/dark/system. System follows the OS as it changes; a theme
   with one scheme always shows it. Both are saved in `settings.toml` (`display.theme_id`,
   `display.theme`); a missing `theme_id` is the Default theme.

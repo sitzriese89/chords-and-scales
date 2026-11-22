@@ -4,6 +4,7 @@
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import App from '../../App.svelte';
+import { chordPanel, scalePicker } from '../../test-shell';
 import { defaultSettings, SETTINGS_DOCUMENT, serializeSettings } from '../settings';
 import { BrowserStorage, TauriStorage, type Storage } from '../storage';
 import { fakeCommands } from '../storage/fake-commands';
@@ -41,10 +42,10 @@ async function startApp(storage: Storage) {
   return result;
 }
 
-const picker = () => within(screen.getByRole('navigation', { name: 'Scale picker' }));
+const picker = scalePicker;
 const scaleList = () => picker().getByRole('listbox', { name: 'Scale' });
 const scaleChips = () => within(picker().getByRole('group', { name: 'Filter scales by tag' }));
-const panel = () => within(screen.getByRole('complementary', { name: 'Chords' }));
+const panel = chordPanel;
 const quality = () => panel().getByRole('combobox', { name: 'Chord quality' });
 const chordChips = () => within(panel().getByRole('group', { name: 'Filter chords by tag' }));
 
