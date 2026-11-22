@@ -27,8 +27,9 @@ each PR names its issue with `Fixes #n`.
 4. **M3**, with M4.1 (themes) pulled forward, then release **v0.3.0** (released 2026-11-21).
 5. **M4**, one item at a time (M4.2 → M4.3 → M4.4), then release **v0.4.0** (released 2026-11-21).
 6. **M5**, small adjustments before the UI redesign, then release **v0.5.0** (released 2026-11-22).
-7. **M6**, the UI redesign (M6.1 and M6.2, then M6.3), then release **v0.6.0**. **Now**
-8. Next scope: not planned yet. New items get a row and an issue before work starts.
+7. **M6**, the UI redesign (M6.1 and M6.2, then M6.3), then release **v0.6.0**.
+8. **M7**, the Scales page layout (M7.1). **Now**
+9. Next scope: not planned yet. New items get a row and an issue before work starts.
 
 Items whose dependencies are done can run in parallel. The coordinator groups them into waves
 of issues that don't touch the same files (`implement` skill). Suggested waves from the
@@ -140,6 +141,15 @@ toolbar, Sound and Appearance in a Settings dialog (ADR-51, prototype variant C3
 Suggested waves: (1) M6.1, M6.2 → (2) M6.3. M6.1 owns `App.svelte` and the settings, M6.2
 `ScaleExplorer.svelte`; M6.3 changes both, so it waits.
 
+## M7 · Scales page layout
+
+The Scales page with the neck first: one summary row, the neck, the tools under it, then the
+tab (ADR-55, Scales page mockup layout B · Neck first).
+
+| Item | Issue | Depends on | Status |
+|---|---|---|---|
+| M7.1 Scales page: neck first | [#102][102] |  | Open |
+
 ## Release gates
 
 A milestone is released when all its items are Done, main is green, and the release workflow
@@ -194,3 +204,4 @@ A milestone is released when all its items are Done, main is green, and the rele
 [94]: https://github.com/sitzriese89/chords-and-scales/issues/94
 [95]: https://github.com/sitzriese89/chords-and-scales/issues/95
 [96]: https://github.com/sitzriese89/chords-and-scales/issues/96
+[102]: https://github.com/sitzriese89/chords-and-scales/issues/102

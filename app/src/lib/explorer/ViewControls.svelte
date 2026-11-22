@@ -1,6 +1,7 @@
 <!--
   @component
-  The display toggles that belong to the view, next to the fretboard: what the dots show
+  The display toggles that belong to the view, at the end of the Scales page's summary row
+  (ADR-55): what the dots show
   (note names, intervals, nothing) and how notes are spelled (sharps or flats; the root keeps
   its own spelling, ADR-6). Both are settings and are saved on change.
 -->

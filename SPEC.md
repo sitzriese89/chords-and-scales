@@ -308,7 +308,8 @@ intervals = ["1", "b3", "b5", "b7"]
   - Optional per-interval/degree coloring
   - Dimmed notes (e.g. the scale behind a chord) drawn smaller
   - Inlay markers at frets 3, 5, 7, 9, 12 (and octave repeats; double at 12 and 24)
-  - Realistic fret spacing; the neck scales to the window width
+  - Realistic fret spacing; the neck scales to the window width, down to a minimum width
+    below which it scrolls sideways (ADR-55)
   - Accessible palette; never rely on color alone (shape/label redundancy)
 - **Interaction:** click a position, or use the keyboard: Tab reaches the
   fretboard, arrow keys move between positions, Enter/Space activate. Every
@@ -320,16 +321,27 @@ intervals = ["1", "b3", "b5", "b7"]
   (C, C♯, D♭, D, … B♭, B in pitch order, never filtered by what is typed) or type one
   (ADR-46), and pick a scale from a list grouped by family, with a search over names and
   aliases; the neck shows every note of the scale across all frets of the current
-  instrument, the root as a square, with the scale spelled out above it. The label and sharp/flat toggles sit next to the neck; interval
+  instrument, the root as a square, with the scale spelled out above it. The label and
+  sharp/flat toggles sit in the summary row above the neck (ADR-55); interval
   labels are the scale's own (`♯4` in Lydian). Root, scale, labels and sharps/flats are saved
   on every change and come back at the next start.
+- **Scales page** (ADR-55), top to bottom:
+  - **Summary row:** the scale's name, then its notes on one line, each note name in bold
+    with its interval after it (`A 1 · C ♭3 · D 4 · E 5 · G ♭7`), the root underlined; the
+    Labels and Accidentals toggles at the right end, wrapping below on a narrow window.
+  - **The neck** on a raised panel. It keeps a minimum width (about 950 px); on a narrower
+    window it scrolls sideways inside the panel rather than shrinking the dots.
+  - **The tool row** (§5.4, §5.5): Harmonize and Select notes on the left, "Add scale to
+    sheet" at the right end; what a tool opens unfolds under the row.
+  - **The tab** (§5.2), under a line: heading, Play, "Add tab to sheet" and the position
+    controls on the left, the tab on the right; one column on a narrow window.
 - **Layout** (ADR-51, ADR-53): one toolbar, which stays at the top while the page scrolls,
   and the page under it at the full width of the window. The toolbar holds, left to right:
   the title; the page tabs **Scales**, **Chords** and **Sheet (n)** (n items on the sheet);
   **☰ Choose scale** on the Scales page or **☰ Choose chord** on the Chords page; a gap; the
   instrument button; **⚙ Settings**. On a narrow window it wraps.
-  - **Pages.** Scales: the view toggles and the scale explorer; its neck shows the scale only,
-    never a chord. Chords: no fretboard; the chosen chord's heading row and its shapes (§5.3,
+  - **Pages.** Scales: the scale explorer, its neck first (ADR-55); its neck shows the scale
+    only, never a chord. Chords: no fretboard; the chosen chord's heading row and its shapes (§5.3,
     §5.6). Sheet: the export sheet (§5.10). The tabs are buttons;
     the current one has `aria-current="page"`. The page shown is saved (`page` in
     `settings.toml`, §3.2) and the app opens on it; a file without it opens on Scales.
@@ -456,7 +468,7 @@ How the tab is shown (`app/src/lib/tab/`, ADR-25):
     if the symbol stops too early), with the parser's reason and the character's number. An
     empty field is no error. A slash chord's bass is written in the name (`Am7/G`, "Minor
     seventh, bass G"); its shapes are the chord's own and do not add the bass (§5.6).
-  - **Reverse lookup** (ADR-38): **Select notes** above the explorer's neck; the chords the
+  - **Reverse lookup** (ADR-38): **Select notes** under the explorer's neck; the chords the
     selected notes make are listed there (§5.4). Clicking one chooses it, as root and
     quality, or as a typed symbol for a slash chord (`C/E`), so the bass is kept, and shows
     the Chords page.
@@ -534,9 +546,9 @@ The core does both searches (ADR-31). The input is a set of pitch classes with a
   Examples: the minor pentatonic has Cm (and Cm7) on its root and E♭ on the ♭III
   as triads, and no chord on the other degrees; the whole tone scale has an
   augmented triad on every degree and no seventh chords (ADR-30).
-- **The tool row** (ADR-52): **Harmonize** and **Select notes** sit side by side in one row
-  that wraps on a narrow window, between the scale's notes (with "Add scale to sheet") and the
-  neck. What a tool opens unfolds under the row across the full width, Harmonize's first, so
+- **The tool row** (ADR-52, ADR-55): **Harmonize** and **Select notes** sit side by side in
+  one row that wraps on a narrow window, under the neck, with "Add scale to sheet" at the
+  row's right end. What a tool opens unfolds under the row across the full width, Harmonize's first, so
   it never squeezes the other button; both can be open at once.
 - **In the app** (ADR-34): the **Harmonize** button in the explorer's tool row opens, under
   the row, a row with the chord on every degree of the current scale, its Roman numeral above

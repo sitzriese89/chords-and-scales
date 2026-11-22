@@ -1,11 +1,20 @@
 <!--
   @component
-  The neck for the current last view: the scale's notes on the root across the whole neck of
-  the current instrument (tuning, fret count, capo, left-handed from the settings), and never a
-  chord: the chosen chord and its shapes are on the Chords page (ADR-54). It comes with a
-  summary of the scale above it, then the tool row (`ScaleTools`, ADR-52: Harmonize, ADR-34, and
-  Select notes, ADR-38) between the summary and the neck, and under the neck the tab of one
-  position with its controls (ADR-25); the position's notes are highlighted on the neck.
+  The Scales page (ADR-55, "neck first"): the scale's notes on the root across the whole neck
+  of the current instrument (tuning, fret count, capo, left-handed from the settings), and
+  never a chord: the chosen chord and its shapes are on the Chords page (ADR-54). Top to
+  bottom, which is also the reading and tab order:
+
+  1. the summary row: the scale's name, its notes as one inline line, and at its right end the
+     view toggles (`ViewControls`: labels, accidentals), which wrap below on a narrow window;
+  2. the neck on a raised panel; on a narrow window it keeps a minimum width and scrolls
+     sideways inside the panel instead of shrinking the dots;
+  3. the tool row (`ScaleTools`, ADR-52: Harmonize, ADR-34, and Select notes, ADR-38, with
+     "Add scale to sheet" at its right end) and the panels the tools open;
+  4. the tab of one position (ADR-25): heading, Play, "Add tab to sheet" and the position
+     controls on the left, the tab on the right; one column on a narrow window. The
+     position's notes are highlighted on the neck.
+
   Everything shown comes from the core (`explorerView`). "Add scale to sheet" and "Add tab to
   sheet" put the neck or the tab, as shown, on the export sheet (ADR-43).
 
@@ -15,7 +24,7 @@
 -->
 <script lang="ts">
   import { getAudio } from '../audio';
-  import { Fretboard, type FretPosition } from '../fretboard';
+  import { Fretboard, MIN_NECK_WIDTH, type FretPosition } from '../fretboard';
   import { NoteSelection, withSelection } from '../lookup';
   import { getSettings } from '../settings';
   import AddToSheet from '../sheet/AddToSheet.svelte';
@@ -23,6 +32,7 @@
   import { PositionControls, TabView } from '../tab';
   import { getUserCatalogs } from '../user-catalogs.svelte';
   import ScaleTools from './ScaleTools.svelte';
+  import ViewControls from './ViewControls.svelte';
   import { explorerView, positionKey } from './view';
 
   const settings = getSettings();
@@ -66,67 +76,80 @@
 <section class="explorer" aria-labelledby="explorer-title">
   <div class="summary">
     <h2 id="explorer-title">{title}</h2>
-    <dl class="notes" aria-label="Notes of {title}">
+    <!-- One inline line, "A 1 · C ♭3 · …"; the root is underlined as well as coloured. -->
+    <ul class="notes" aria-label="Notes of {title}">
       {#each view.notes as note (note.semitones)}
-        <div class="note" class:root={note.semitones === 0}>
-          <dt>{note.interval}</dt>
-          <dd>{note.name}</dd>
-        </div>
+        <li class:root={note.semitones === 0}>
+          <span class="name">{note.name}</span>
+          <span class="interval">{note.interval}</span>
+        </li>
       {/each}
-    </dl>
-    <AddToSheet what="scale" make={() => scaleItem(settings.current)} />
+    </ul>
+    <div class="view-controls">
+      <ViewControls />
+    </div>
   </div>
-
-  <ScaleTools {selection} />
 
   {#each view.fallbacks as fallback (fallback)}
     <p class="fallback">{fallback}</p>
   {/each}
 
   <div class="neck">
-    <Fretboard
-      strings={view.tuning.notes.length}
-      frets={view.frets}
-      capo={view.capo}
-      {dots}
-      selected={selecting ? selection.notes : []}
-      leftHanded={settings.current.leftHanded}
-      ariaLabel="Fretboard: {title}, {view.tuning.name} tuning{selecting
-        ? ', selecting notes'
-        : ''}"
-      onactivate={activate}
-    />
+    <div class="neck-drawing" style:min-width="{MIN_NECK_WIDTH}px">
+      <Fretboard
+        strings={view.tuning.notes.length}
+        frets={view.frets}
+        capo={view.capo}
+        {dots}
+        selected={selecting ? selection.notes : []}
+        leftHanded={settings.current.leftHanded}
+        ariaLabel="Fretboard: {title}, {view.tuning.name} tuning{selecting
+          ? ', selecting notes'
+          : ''}"
+        onactivate={activate}
+      />
+    </div>
   </div>
 
+  <ScaleTools {selection}>
+    {#snippet end()}
+      <AddToSheet what="scale" make={() => scaleItem(settings.current)} />
+    {/snippet}
+  </ScaleTools>
+
   <section class="tab-section" aria-labelledby="tab-title">
-    <div class="tab-heading">
-      <h3 id="tab-title">Tab: {view.position.description}</h3>
-      <button
-        type="button"
-        class="play"
-        disabled={view.tabNotes.length === 0}
-        aria-label="Play {view.position.description}"
-        onclick={playPosition}
-      >
-        <span aria-hidden="true">▶</span> Play
-      </button>
-      <AddToSheet
-        what="tab"
-        disabled={view.tabNotes.length === 0}
-        make={() => tabItem(settings.current, view.position.pattern)}
-      />
-      {#if settings.current.audio.muted}
-        <span class="muted-note">Sound is muted.</span>
-      {/if}
+    <div class="tab-side">
+      <div class="tab-heading">
+        <h3 id="tab-title">Tab: {view.position.description}</h3>
+        <button
+          type="button"
+          class="play"
+          disabled={view.tabNotes.length === 0}
+          aria-label="Play {view.position.description}"
+          onclick={playPosition}
+        >
+          <span aria-hidden="true">▶</span> Play
+        </button>
+        <AddToSheet
+          what="tab"
+          disabled={view.tabNotes.length === 0}
+          make={() => tabItem(settings.current, view.position.pattern)}
+        />
+        {#if settings.current.audio.muted}
+          <span class="muted-note">Sound is muted.</span>
+        {/if}
+      </div>
+      <PositionControls position={view.position} />
     </div>
-    <PositionControls position={view.position} />
     {#if view.tabNotes.length > 0}
-      <TabView
-        strings={view.tabStrings}
-        notes={view.tabNotes}
-        capo={view.capo}
-        ariaLabel="Tab: {title}, {view.position.description}"
-      />
+      <div class="tab-main">
+        <TabView
+          strings={view.tabStrings}
+          notes={view.tabNotes}
+          capo={view.capo}
+          ariaLabel="Tab: {title}, {view.position.description}"
+        />
+      </div>
     {/if}
   </section>
 </section>
@@ -148,40 +171,48 @@
 
   h2 {
     margin: 0;
-    font-size: 1.25rem;
+    font-size: 1.5rem;
   }
 
   .notes {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.375rem;
+    align-items: baseline;
+    gap: 0.25rem 0;
     margin: 0;
+    padding: 0;
+    list-style: none;
   }
 
-  .note {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    min-width: 2.25rem;
-    padding: 0.125rem 0.375rem;
-    border: 1px solid var(--border);
-    border-radius: 0.375rem;
-    background: var(--surface-raised);
+  .notes li {
+    white-space: nowrap;
   }
 
-  .note.root {
-    border-color: var(--fretboard-root);
-    border-width: 2px;
-  }
-
-  dt {
+  /* " · " between the notes; generated, so screen readers read the list, not the dots. */
+  .notes li + li::before {
+    content: '·';
+    content: '·' / '';
+    padding: 0 0.5em;
     color: var(--text-muted);
-    font-size: 0.75rem;
   }
 
-  dd {
-    margin: 0;
-    font-weight: 600;
+  .name {
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .interval {
+    color: var(--text-muted);
+  }
+
+  /* The root is underlined, not only coloured (SPEC §5.1: never colour alone). */
+  .root .name {
+    text-decoration: underline 2px var(--fretboard-root);
+    text-underline-offset: 0.2em;
+  }
+
+  .view-controls {
+    margin-left: auto;
   }
 
   .fallback {
@@ -191,14 +222,38 @@
   }
 
   .neck {
+    padding: 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    background: var(--surface-raised);
     overflow-x: auto;
   }
 
   .tab-section {
+    display: grid;
+    grid-template-columns: minmax(0, 24rem) minmax(0, 1fr);
+    align-items: start;
+    gap: 0.75rem 1.5rem;
+    min-width: 0;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .tab-side {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
     min-width: 0;
+  }
+
+  .tab-main {
+    min-width: 0;
+  }
+
+  @media (max-width: 40rem) {
+    .tab-section {
+      grid-template-columns: minmax(0, 1fr);
+    }
   }
 
   h3 {
