@@ -535,16 +535,19 @@ Algorithmic (works for any tuning and 4–9 strings; no static shape library).
 - **Output:** chord diagrams (SVG).
 - **In the app** (ADR-37): the chord panel (§5.3) lists the voicings of its chord under the
   chord, on the current instrument, tuning, fret count and capo, best first (the best 50),
-  each as a chord diagram with the shape written under it (`x32010`, lowest string first),
-  plus its bass when it is an inversion and the tones it leaves out. The list is headed by the
+  each as a chord diagram, plus its bass when it is an inversion and the tones it leaves out.
+  No shape text is written under a diagram; its accessible name gives the shape (`x32010`,
+  lowest string first) for screen readers. The list is headed by the
   chord's name; a slash chord's bass is not voiced, so `Am7/G` is headed "Voicings of Am7"
   with a note that the G bass isn't voiced.
-  - **Diagrams:** upright, one column per string, the lowest on the left (mirrored when
-    left-handed, like the neck), four fret rows or as many as the shape spans. A shape within
-    the first four frets is drawn from the nut (drawn thick); with a capo, from the capo,
-    numbered with the first fret above it; any other shape from its lowest fretted fret, with
-    that fret's number beside it. Frets keep their numbers (ADR-18). × above a string mutes
-    it, ○ plays it open (at the capo fret, with a capo). Dots carry the dot label setting
+  - **Diagrams** (ADR-49): lying like the neck, one row per string with the lowest at the
+    bottom, the nut on the left and one column per fret to the right (mirrored when
+    left-handed, like the neck: the nut on the right), four fret columns or as many as the
+    shape spans. A shape within the first four frets is drawn from the nut (drawn thick);
+    with a capo, from the capo, numbered with the first fret above it; any other shape from
+    its lowest fretted fret, with that fret's number under its column. Frets keep their
+    numbers (ADR-18). × at the nut end of a string mutes it, ○ plays it open (at the capo
+    fret, with a capo). Dots carry the dot label setting
     (note names, intervals or none), the root as a square; a barre is a bar across its
     strings. Works for 4–9 strings, in both themes.
   - **Constraints:** max fret span (1–6), start fret (0 to the neck's last fret, typed like the
