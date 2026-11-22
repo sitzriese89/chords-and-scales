@@ -133,7 +133,7 @@ toolbar, Sound and Appearance in a Settings dialog (ADR-51, prototype variant C3
 
 | Item | Issue | Depends on | Status |
 |---|---|---|---|
-| M6.1 App shell: pages, toolbar, scale picker drawer, Settings dialog | [#94][94] |  | Open |
+| M6.1 App shell: pages, toolbar, scale picker drawer, Settings dialog | [#94][94] |  | Done (#99) |
 | M6.2 Scales page: Harmonize and Select notes in one row | [#95][95] |  | Done (#98) |
 | M6.3 Chords page: chord picker drawer, full-width shapes, no chord on the neck | [#96][96] | M6.1, M6.2 | Open |
 
