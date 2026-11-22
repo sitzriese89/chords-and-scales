@@ -45,13 +45,19 @@ async function startApp(
 const pick = (name: string, value: string) =>
   fireEvent.change(screen.getByRole('combobox', { name }), { target: { value } });
 
-/** The shapes in the list, as written: `x32010`. */
+/** The shapes in the list, as their names write them: `1. x32010, bass 3` is `x32010`. */
 function shapes(): string[] {
   const list = screen.queryByRole('list', { name: /^Voicings of/ });
   if (!list) return [];
   return within(list)
     .getAllByRole('button')
-    .map((b) => b.querySelector('.shape')!.textContent!);
+    .map(
+      (b) =>
+        b
+          .getAttribute('aria-label')!
+          .replace(/^\d+\. /, '')
+          .split(',')[0],
+    );
 }
 
 const shapeButton = (shape: string) =>
@@ -81,6 +87,22 @@ describe('voicing browser', () => {
     // Every shape is a diagram with a name.
     expect(screen.getAllByRole('img', { name: /^C: / })).toHaveLength(50);
     expect(screen.getByRole('img', { name: 'C: x32010' })).toBeInTheDocument();
+  });
+
+  it('writes no shape text under the diagrams; the shape is in their names', async () => {
+    await startApp();
+    await pick('Chord quality', 'major');
+    const list = screen.getByRole('list', { name: 'Voicings of C' });
+    const button = within(list).getByRole('button', { name: /^\d+\. x32010$/ });
+    // The diagram and the button carry the shape for screen readers…
+    expect(within(button).getByRole('img', { name: 'C: x32010' })).toBeInTheDocument();
+    // …but no visible text spells it out: only the diagram's own numbers and labels.
+    const visible = [...button.childNodes]
+      .filter((n) => !(n instanceof SVGElement))
+      .map((n) => n.textContent!.trim())
+      .join('');
+    expect(visible).toBe('');
+    expect(list.textContent).not.toMatch(/x32010/);
   });
 
   it('heads a slash chord by the chord alone and says its bass is not voiced', async () => {
@@ -278,8 +300,14 @@ describe('voicing browser', () => {
     await startApp({ change: (s) => (s.leftHanded = true) });
     await pick('Chord quality', 'major');
     const diagram = screen.getByRole('img', { name: 'C: x32010' });
-    const x = (string: number) =>
-      Number(diagram.querySelector(`g.dot[data-string="${string}"] text`)!.getAttribute('x'));
-    expect(x(5)).toBeGreaterThan(x(2));
+    const at = (string: number, name: string) =>
+      Number(diagram.querySelector(`g.dot[data-string="${string}"] text`)!.getAttribute(name));
+    // The nut on the right, as on the neck: fret 3 (string 5) left of fret 1 (string 2).
+    expect(at(5, 'x')).toBeLessThan(at(2, 'x'));
+    expect(diagram.querySelector('rect.nut')!.getAttribute('x')).toSatisfy(
+      (x: string) => Number(x) > at(2, 'x'),
+    );
+    // The strings are not mirrored: the lowest stays at the bottom.
+    expect(at(5, 'y')).toBeGreaterThan(at(2, 'y'));
   });
 });

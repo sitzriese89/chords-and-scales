@@ -1,11 +1,12 @@
 <!--
   @component
-  A chord diagram drawn as SVG (SPEC §5.6, ADR-3, ADR-37): the neck upright, one column per
-  string (the lowest on the left, mirrored when left-handed), one row per fret. Above each
-  string × marks a muted string and ○ an open one (the capo fret, with a capo); a dot marks
-  each fretted note, the root as a square (ADR-18), and a barre is a bar across its strings.
-  The window starts at the nut (drawn thick) or the capo, or at the shape's lowest fret with
-  that fret's number beside it.
+  A chord diagram drawn as SVG (SPEC §5.6, ADR-3, ADR-37, ADR-49), lying like the neck: one
+  row per string, the lowest at the bottom, the nut (drawn thick) or the capo on the left and
+  one column per fret to the right; left-handed the diagram is mirrored, the nut on the right,
+  as the fretboard is. At each string's nut end × marks a muted string and ○ an open one (the
+  capo fret, with a capo); a dot marks each fretted note, the root as a square (ADR-18), and a
+  barre is a bar across its strings. A shape higher up the neck starts at its lowest fret, with
+  that fret's number under its column instead of the nut.
 
   Presentational: it draws a `ChordVoicing` from the core as given and knows no theory. Works
   for any number of strings. Colours are the theme's fretboard tokens (ADR-11).
@@ -14,20 +15,21 @@
   import type { ChordVoicing, VoicedString } from '../theory';
   import {
     DOT_RADIUS,
-    ROW_HEIGHT,
-    TOP,
     diagramSize,
     diagramWindow,
-    fretY,
+    fretX,
+    labelY,
+    markerX,
     stringIndex,
-    stringX,
+    stringY,
+    wireX,
   } from './diagram';
 
   interface Props {
     voicing: ChordVoicing;
     /** Capo fret; 0 = none. Frets are absolute (ADR-18). */
     capo?: number;
-    /** Mirror the diagram: the lowest string on the right. */
+    /** Mirror the diagram: the nut on the right. */
     leftHanded?: boolean;
     /** The text in a dot; by default the chord tone (`1`, `♭7`). */
     label?: (note: VoicedString) => string;
@@ -45,13 +47,17 @@
 
   const count = $derived(voicing.strings.length);
   const frame = $derived(diagramWindow(voicing, capo));
-  const size = $derived(diagramSize(count, frame.rows));
-  const x = (index: number) => stringX(index, count, leftHanded);
-  const left = $derived(x(leftHanded ? count - 1 : 0));
-  const right = $derived(x(leftHanded ? 0 : count - 1));
-  const bottom = $derived(TOP + frame.rows * ROW_HEIGHT);
-  const fretLines = $derived(Array.from({ length: frame.rows + 1 }, (_, i) => i));
-  const columns = $derived(Array.from({ length: count }, (_, i) => i));
+  const size = $derived(diagramSize(count, frame.frets));
+  const y = (index: number) => stringY(index, count);
+  const x = (fret: number) => fretX(fret, frame, leftHanded);
+  const wire = (column: number) => wireX(column, frame, leftHanded);
+  const top = $derived(y(count - 1));
+  const bottom = $derived(y(0));
+  /** The board's left and right edge, whichever side the nut is on. */
+  const left = $derived(Math.min(wire(0), wire(frame.frets)));
+  const right = $derived(Math.max(wire(0), wire(frame.frets)));
+  const wires = $derived(Array.from({ length: frame.frets + 1 }, (_, i) => i));
+  const rows = $derived(Array.from({ length: count }, (_, i) => i));
 
   const markers = $derived(
     voicing.strings.flatMap((note, index): { index: number; kind: 'muted' | 'open' }[] =>
@@ -68,16 +74,16 @@
   const barre = $derived.by(() => {
     const b = voicing.barre;
     if (!b) return null;
-    const xs = [b.lowestString, b.highestString].map((s) => x(stringIndex(s, count)));
+    const ys = [b.lowestString, b.highestString].map((s) => y(stringIndex(s, count)));
     return {
       fret: b.fret,
-      x: Math.min(...xs) - DOT_RADIUS,
-      width: Math.abs(xs[1] - xs[0]) + 2 * DOT_RADIUS,
-      y: fretY(b.fret, frame) - DOT_RADIUS,
+      x: x(b.fret) - DOT_RADIUS,
+      y: Math.min(...ys) - DOT_RADIUS,
+      height: Math.abs(ys[1] - ys[0]) + 2 * DOT_RADIUS,
     };
   });
-  /** The fret number sits outside the bass side of the first row. */
-  const labelX = $derived(leftHanded ? right + 10 : left - 10);
+  /** The nut or capo: a thick bar on the starting edge, reaching a little past it. */
+  const edgeX = $derived(leftHanded ? wire(0) - 1 : wire(0) - 4);
 </script>
 
 <svg
@@ -87,31 +93,25 @@
   width={size.width}
   height={size.height}
   viewBox="0 0 {size.width} {size.height}"
-  data-top={frame.top}
+  data-start={frame.start}
   data-first-fret={frame.firstFret}
 >
-  <rect class="wood" x={left} y={TOP} width={right - left} height={bottom - TOP} />
-  {#each fretLines as row (row)}
-    <line
-      class="fret"
-      x1={left}
-      x2={right}
-      y1={TOP + row * ROW_HEIGHT}
-      y2={TOP + row * ROW_HEIGHT}
-    />
+  <rect class="wood" x={left} y={top} width={right - left} height={bottom - top} />
+  {#each wires as column (column)}
+    <line class="fret" x1={wire(column)} x2={wire(column)} y1={top} y2={bottom} />
   {/each}
-  {#each columns as index (index)}
-    <line class="string" x1={x(index)} x2={x(index)} y1={TOP} y2={bottom} />
+  {#each rows as index (index)}
+    <line class="string" x1={left} x2={right} y1={y(index)} y2={y(index)} />
   {/each}
-  {#if frame.top !== 'fret'}
-    <rect class={frame.top} x={left - 1} y={TOP - 4} width={right - left + 2} height={5} />
+  {#if frame.start !== 'fret'}
+    <rect class={frame.start} x={edgeX} y={top - 1} width={5} height={bottom - top + 2} />
   {/if}
   {#if frame.label !== null}
     <text
       class="fret-label"
-      x={labelX}
-      y={fretY(frame.firstFret, frame)}
-      text-anchor={leftHanded ? 'start' : 'end'}
+      x={x(frame.firstFret)}
+      y={labelY(count)}
+      text-anchor="middle"
       dominant-baseline="central">{frame.label}</text
     >
   {/if}
@@ -120,8 +120,8 @@
     <text
       class="marker"
       data-marker={marker.kind}
-      x={x(marker.index)}
-      y={TOP - 12}
+      x={markerX(frame, leftHanded)}
+      y={y(marker.index)}
       text-anchor="middle"
       dominant-baseline="central">{marker.kind === 'muted' ? '×' : '○'}</text
     >
@@ -133,15 +133,15 @@
       data-fret={barre.fret}
       x={barre.x}
       y={barre.y}
-      width={barre.width}
-      height={2 * DOT_RADIUS}
+      width={2 * DOT_RADIUS}
+      height={barre.height}
       rx={DOT_RADIUS}
     />
   {/if}
 
   {#each dots as note (note.string)}
-    {@const cx = x(stringIndex(note.string, count))}
-    {@const cy = fretY(note.fret, frame)}
+    {@const cx = x(note.fret)}
+    {@const cy = y(stringIndex(note.string, count))}
     {@const root = note.interval === '1'}
     <g
       class="dot"

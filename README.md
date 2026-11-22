@@ -38,7 +38,8 @@ chord** open the editors with your notes, on the lowest one; **Clear selection**
 **Chord names** switches every chord name between
 Standard (`Cmaj7`, `Cm7♭5`) and Jazz (`CΔ7`, `Cø`). **Strum** plays the chord. Under it,
 **Voicings** lists the best playable shapes of the chord on your instrument, tuning and capo
-as chord diagrams, best first; set the widest fret span and whether open strings, muted
+as chord diagrams that lie like the neck (nut on the left, a shape higher up numbered under
+its lowest fret), best first; set the widest fret span and whether open strings, muted
 strings and inversions are allowed. Click a shape to hear it and to see just that shape on
 the neck; click it again (or **Show all positions**) to see the whole neck again.
 **Collapse** and the panel's top edge (drag, or the arrow keys) fold and resize the panel.
