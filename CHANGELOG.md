@@ -8,6 +8,10 @@ into its GitHub Release, and refuses to build a tag without one
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-11-22
+
+Fixes PNG export in the installed app.
+
 ### Fixed
 
 - **PNG export in the installed app.** Every PNG export failed with "the SVG could not be
@@ -154,7 +158,8 @@ folder.
   `.deb`). They are not code-signed yet, so Windows SmartScreen and macOS Gatekeeper will warn
   on first start.
 
-[Unreleased]: https://github.com/sitzriese89/chords-and-scales/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/sitzriese89/chords-and-scales/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/sitzriese89/chords-and-scales/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/sitzriese89/chords-and-scales/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/sitzriese89/chords-and-scales/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/sitzriese89/chords-and-scales/compare/v0.1.0...v0.2.0
