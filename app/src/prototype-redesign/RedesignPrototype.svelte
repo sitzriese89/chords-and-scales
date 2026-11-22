@@ -35,6 +35,8 @@
     { key: 'A', name: 'Top tabs, instrument bar per page' },
     { key: 'B', name: 'Side rail, instrument in the rail' },
     { key: 'C', name: 'One toolbar, pickers as drawers' },
+    { key: 'C2', name: 'C, Harmonize + Select notes at the bottom' },
+    { key: 'C3', name: 'C, Harmonize + Select notes in one row' },
   ] as const;
   type Key = (typeof VARIANTS)[number]['key'];
 
@@ -130,7 +132,10 @@
 {#snippet scalesMain()}
   <div class="main">
     <ViewControls />
-    <ScaleExplorer showChord={false} />
+    <ScaleExplorer
+      showChord={false}
+      tools={variant === 'C2' ? 'bottom' : variant === 'C3' ? 'row' : 'top'}
+    />
   </div>
 {/snippet}
 

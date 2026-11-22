@@ -29,7 +29,10 @@
   const audio = getAudio();
   const chords = getChordState();
   // PROTOTYPE (redesign): the prototype shell turns the chord overlay off.
-  const { showChord = true }: { showChord?: boolean } = $props();
+  const {
+    showChord = true,
+    tools = 'top',
+  }: { showChord?: boolean; tools?: 'top' | 'bottom' | 'row' } = $props();
   const view = $derived.by(() => {
     // Re-read the catalogs when a user scale or tuning was saved or deleted (ADR-24).
     void catalogs.revision;
@@ -86,9 +89,16 @@
     <AddToSheet what="scale" make={() => scaleItem(settings.current)} />
   </div>
 
-  <HarmonizeView />
+  {#if tools === 'top'}
+    <HarmonizeView />
 
-  <FretboardLookup {selection} />
+    <FretboardLookup {selection} />
+  {:else if tools === 'row'}
+    <div class="tools-row">
+      <HarmonizeView />
+      <FretboardLookup {selection} />
+    </div>
+  {/if}
 
   {#each view.fallbacks as fallback (fallback)}
     <p class="fallback">{fallback}</p>
@@ -140,9 +150,30 @@
       />
     {/if}
   </section>
+
+  {#if tools === 'bottom'}
+    <div class="tools-bottom">
+      <HarmonizeView />
+      <FretboardLookup {selection} />
+    </div>
+  {/if}
 </section>
 
 <style>
+  /* PROTOTYPE (redesign) */
+  .tools-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+    align-items: flex-start;
+  }
+
+  .tools-bottom {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+  }
+
   .explorer {
     display: flex;
     flex-direction: column;
