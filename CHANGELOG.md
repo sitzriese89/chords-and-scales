@@ -8,6 +8,33 @@ into its GitHub Release, and refuses to build a tag without one
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-22
+
+Small adjustments: an easier root picker, more room for the fretboard, chord shapes higher up
+the neck, chord diagrams that lie like the neck, and four new themes.
+
+### Added
+
+- **Start fret for chord shapes.** "Start fret" next to "Max fret span" lists only shapes whose
+  fretted notes are all on that fret or higher; open strings still follow "Open strings". The
+  list still fills up with shapes from there, and the setting is saved.
+- **Collapsible side panels.** The scale picker and the settings (instrument, sound,
+  appearance) can each be collapsed to a narrow strip, so the fretboard gets their width. On
+  narrow windows a collapsed panel is a title bar. Whether each is collapsed is saved.
+- **Four new themes:** Catppuccin (Latte and Mocha), Dracula (Alucard and Dracula), Nord
+  (Snow Storm and Polar Night) and Atom One (One Light and One Dark), each with a light and a
+  dark scheme, for the app and the export sheet. Some colours are slightly adjusted from the
+  originals so every theme keeps the app's contrast rules.
+
+### Changed
+
+- **Root picker.** The ▾ button next to the root (or ↓ in the field) opens a list of all 17
+  note names, C, C♯, D♭ … B, whatever is typed. Typing a root still works.
+- **Chord diagrams lie like the neck.** Strings run across with the lowest at the bottom, the
+  nut or capo on the left, and a shape higher up shows its lowest fret's number under that
+  fret. Left-handed mirrors them like the neck. The fret numbers (`x32010`) under each diagram
+  in the shape list are gone. The export sheet and its exports use the new diagrams.
+
 ## [0.4.1] - 2026-11-22
 
 Fixes PNG export in the installed app.
@@ -158,7 +185,8 @@ folder.
   `.deb`). They are not code-signed yet, so Windows SmartScreen and macOS Gatekeeper will warn
   on first start.
 
-[Unreleased]: https://github.com/sitzriese89/chords-and-scales/compare/v0.4.1...HEAD
+[Unreleased]: https://github.com/sitzriese89/chords-and-scales/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/sitzriese89/chords-and-scales/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/sitzriese89/chords-and-scales/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/sitzriese89/chords-and-scales/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/sitzriese89/chords-and-scales/compare/v0.2.0...v0.3.0
