@@ -54,6 +54,7 @@ ADR-1 to ADR-13 come from the design interview behind [SPEC.md](SPEC.md) (decisi
 | 41 | [Tag filters: chips per picker, AND, the choice never jumps, `tags.toml` read with the user catalogs](#adr-41-tag-filters-chips-per-picker-and-the-choice-never-jumps-tagstoml-read-with-the-user-catalogs) | Accepted |
 | 42 | [Random pick: a button per picker, from what the picker shows, never the pair on screen](#adr-42-random-pick-a-button-per-picker-from-what-the-picker-shows-never-the-pair-on-screen) | Accepted |
 | 43 | [The export sheet: items store their inputs, one `sheet.toml`, its own scoped theme](#adr-43-the-export-sheet-items-store-their-inputs-one-sheettoml-its-own-scoped-theme) | Accepted |
+| 46 | [The root picker is an editable combobox whose list always shows all 17 names](#adr-46-the-root-picker-is-an-editable-combobox-whose-list-always-shows-all-17-names) | Accepted |
 
 ---
 
@@ -1808,7 +1809,37 @@ when `sheet.svg` existed replaced `sheet.svg` without the dialog ever asking abo
 - Typing a name without an extension over an existing file shows the save dialog twice, the
   second time with the full name and the overwrite question.
 
-## ADR-46: A start fret for voicings: a constraint in the core, applied where the search starts
+## ADR-46: The root picker is an editable combobox whose list always shows all 17 names
+
+**Context.** The explorer's root was an `<input list>` with a `<datalist>` of `rootChoices()`.
+Browsers filter a datalist by the text in the field, so with `A` chosen the suggestions were
+`A`, `A♯`, `A♭` and never the whole list (M5.1, #81). The user wants a dropdown of every note
+name, both spellings of each black key, and typing a root (`Db`, `f#`, `E♭`) must keep working.
+
+**Decision.**
+- **One control, `RootCombobox.svelte`**, following the WAI-ARIA editable combobox pattern
+  with a list and no autocomplete: a text field (`role="combobox"`, still labelled "Root"),
+  a "Show all roots" button beside it, and a popup `listbox` of the 17 names in pitch order.
+  The list is never filtered: it shows the same 17 whatever is typed or chosen, and opens on
+  the current root. ↓ or Alt+↓ opens it, ↑ / ↓ / Home / End move (`aria-activedescendant`),
+  Enter chooses, Escape and leaving the control close it; typing closes it and edits the
+  text, committed with Enter or on leaving the field as before. The button is out of the tab
+  order (the field opens the list), as in the pattern's examples.
+- **No theory in the control.** It gets its names from `rootChoices()` (the core's spelling)
+  and hands chosen or typed text to the picker, which reads it with `displayRoot()` through
+  the core. A chosen name is saved as it is listed, so its spelling is kept (ADR-6); the error
+  for text that isn't a note is unchanged.
+- Rejected: a native `<select>` of the 17 names next to a separate "type a root" field. It is
+  the most robust widget, but it is two controls for one value, and a typed root like `E𝄫` or
+  `F##` would have no option to show in the select.
+
+**Consequences.**
+- The popup is drawn by the app, so it looks the same in every webview and follows the theme;
+  in exchange the app owns its keyboard and screen-reader behaviour, which the explorer tests
+  cover (choosing by mouse and keyboard, typing, the error).
+- The chord panel's root stays a native `<select>` of the same names: it has no typing.
+
+## ADR-47: A start fret for voicings: a constraint in the core, applied where the search starts
 
 **Context.** M5.3: players want chord shapes higher up the neck. The voicing browser (ADR-37)
 lists the best 50 shapes from the nut up, and ADR-35's ranking favours low shapes, so shapes

@@ -1,7 +1,7 @@
 <!--
   @component
   Root and scale picker of the scale explorer. Writes the choice to the settings' last view,
-  which saves it (ADR-17). The root can be picked from the list or typed (`Db`, `f#`, `E♭`);
+  which saves it (ADR-17). The root can be picked from a list of all 17 names or typed (`Db`, `f#`, `E♭`, ADR-46);
   it is checked by the core and keeps its spelling (ADR-6). Scales are grouped by family and
   can be searched by name, alias or id, and filtered by mood tag with the chips (ADR-41); each
   shows its tags. A current scale the filter hides stays the current scale.
@@ -23,6 +23,7 @@
   import { randomPick, rootPitchClass, spellRoot, type Random } from '../random';
   import { getUserCatalogs } from '../user-catalogs.svelte';
   import { getScaleEditor } from './scale-editor.svelte';
+  import RootCombobox from './RootCombobox.svelte';
   import { displayRoot, rootChoices } from './view';
 
   const { random = Math.random }: { random?: Random } = $props();
@@ -201,16 +202,16 @@
     rootError = error instanceof Error ? error.message : String(error);
   }
 
-  function setRoot(event: Event & { currentTarget: HTMLInputElement }) {
-    const input = event.currentTarget;
-    const root = displayRoot(input.value);
+  /** Checks a picked or typed root through the core and saves it; returns it as shown. */
+  function setRoot(text: string): string | undefined {
+    const root = displayRoot(text);
     if (root === undefined) {
-      rootError = `“${input.value}” is not a note name. Try C, F♯, Bb or Db.`;
-      return;
+      rootError = `“${text}” is not a note name. Try C, F♯, Bb or Db.`;
+      return undefined;
     }
     rootError = null;
-    input.value = root;
     settings.update({ lastView: { root } }).catch(report);
+    return root;
   }
 
   function setScale(event: Event & { currentTarget: HTMLSelectElement }) {
@@ -222,22 +223,14 @@
 <div class="picker">
   <div class="field">
     <label for="root-input">Root</label>
-    <input
+    <RootCombobox
       id="root-input"
-      type="text"
-      list="root-choices"
-      autocomplete="off"
-      spellcheck="false"
       value={currentRoot}
-      aria-invalid={rootError ? 'true' : undefined}
-      aria-describedby="root-help"
-      onchange={setRoot}
+      choices={roots}
+      invalid={rootError !== null}
+      describedby="root-help"
+      oncommit={setRoot}
     />
-    <datalist id="root-choices">
-      {#each roots as root (root)}
-        <option value={root}></option>
-      {/each}
-    </datalist>
     {#if rootError}
       <p id="root-help" class="error" role="alert">{rootError}</p>
     {:else}
@@ -379,10 +372,6 @@
     border: 1px solid var(--border-strong);
     border-radius: 0.375rem;
     padding: 0.375rem 0.5rem;
-  }
-
-  input[aria-invalid='true'] {
-    border-color: var(--text-danger);
   }
 
   select {

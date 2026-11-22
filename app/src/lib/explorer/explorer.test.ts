@@ -1,5 +1,5 @@
 // The scale explorer in the real app, with the real WASM core (loaded in test-setup.ts).
-import { cleanup, fireEvent, render, screen } from '@testing-library/svelte';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import App from '../../App.svelte';
 import { defaultSettings, SETTINGS_DOCUMENT, serializeSettings, type Settings } from '../settings';
@@ -174,6 +174,84 @@ describe('scale explorer', () => {
     expect(sorted(dots()).filter((d) => d.string === 1)).toEqual(
       expected({ 1: '0:E 3:G 5:A 7:B 10:D 12:E 15:G 17:A 19:B 22:D 24:E' }, 'E'),
     );
+  });
+
+  it('lists all 17 roots whatever is typed or chosen, and keeps the chosen spelling', async () => {
+    await startApp(storage);
+    const root = screen.getByRole('combobox', { name: 'Root' });
+    const toggle = screen.getByRole('button', { name: 'Show all roots' });
+    const ALL = [
+      'C',
+      'C♯',
+      'D♭',
+      'D',
+      'D♯',
+      'E♭',
+      'E',
+      'F',
+      'F♯',
+      'G♭',
+      'G',
+      'G♯',
+      'A♭',
+      'A',
+      'A♯',
+      'B♭',
+      'B',
+    ];
+    // The list is hidden while closed, so it is found with `hidden`.
+    const list = () => within(screen.getByRole('listbox', { name: 'Roots', hidden: true }));
+    const option = (name: string) => list().getByRole('option', { name, hidden: true });
+    const listed = () =>
+      list()
+        .getAllByRole('option', { hidden: true })
+        .map((o) => o.textContent?.trim());
+    expect(root).toHaveAttribute('aria-expanded', 'false');
+
+    // Text that would make a datalist suggest only D♭/D♯/D: the list still shows every name.
+    await fireEvent.input(root, { target: { value: 'D' } });
+    await fireEvent.click(toggle);
+    expect(root).toHaveAttribute('aria-expanded', 'true');
+    expect(listed()).toEqual(ALL);
+
+    await fireEvent.click(option('G♭'));
+    expect(root).toHaveAttribute('aria-expanded', 'false');
+    expect(root).toHaveValue('G♭');
+    expect(screen.getByRole('heading', { name: 'G♭ Dorian' })).toBeInTheDocument();
+    await expect.poll(() => storage.read(SETTINGS_DOCUMENT)).toMatch(/root = "G♭"/);
+
+    // Opened again on another root, it still lists all 17, with the current one highlighted.
+    await fireEvent.keyDown(root, { key: 'ArrowDown', altKey: true });
+    expect(listed()).toEqual(ALL);
+    expect(root).toHaveAttribute('aria-activedescendant', 'root-input-option-9');
+    expect(option('G♭')).toHaveAttribute('aria-selected', 'true');
+
+    // Keyboard: two down from G♭ is G♯, Enter chooses it; Escape closes without choosing.
+    await fireEvent.keyDown(root, { key: 'ArrowDown' });
+    await fireEvent.keyDown(root, { key: 'ArrowDown' });
+    await fireEvent.keyDown(root, { key: 'Enter' });
+    expect(root).toHaveValue('G♯');
+    expect(screen.getByRole('heading', { name: 'G♯ Dorian' })).toBeInTheDocument();
+    await fireEvent.keyDown(root, { key: 'ArrowDown' });
+    await fireEvent.keyDown(root, { key: 'Home' });
+    expect(root).toHaveAttribute('aria-activedescendant', 'root-input-option-0');
+    await fireEvent.keyDown(root, { key: 'Escape' });
+    expect(root).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByRole('heading', { name: 'G♯ Dorian' })).toBeInTheDocument();
+
+    // Typing and Enter still sets the root; a name that isn't a note still errors.
+    await fireEvent.input(root, { target: { value: 'eb' } });
+    await fireEvent.keyDown(root, { key: 'Enter' });
+    expect(root).toHaveValue('E♭');
+    expect(screen.getByRole('heading', { name: 'E♭ Dorian' })).toBeInTheDocument();
+    await fireEvent.input(root, { target: { value: 'X#' } });
+    await fireEvent.keyDown(root, { key: 'Enter' });
+    expect(screen.getByRole('alert')).toHaveTextContent('“X#” is not a note name');
+    expect(root).toHaveAttribute('aria-invalid', 'true');
+    await fireEvent.click(toggle);
+    await fireEvent.click(option('B'));
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'B Dorian' })).toBeInTheDocument();
   });
 
   it('searches the scales by name and alias, grouped by family', async () => {

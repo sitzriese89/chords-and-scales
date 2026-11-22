@@ -312,10 +312,11 @@ intervals = ["1", "b3", "b5", "b7"]
   note; in reverse lookup's select mode it selects or unselects it, and a selected position
   is ringed and named "selected" (§5.4, ADR-38).
 - **Dot labels (toggle):** note names / intervals (scale degrees: 1, ♭3, 5…) / none.
-- **Scale explorer** (the main view, ADR-23): pick or type a root and pick a scale from a
-  list grouped by family, with a search over names and aliases; the neck shows every note of
-  the scale across all frets of the current instrument, the root as a square, with the scale
-  spelled out above it. The label and sharp/flat toggles sit next to the neck; interval
+- **Scale explorer** (the main view, ADR-23): pick a root from a dropdown of all 17 names
+  (C, C♯, D♭, D, … B♭, B in pitch order, never filtered by what is typed) or type one
+  (ADR-46), and pick a scale from a list grouped by family, with a search over names and
+  aliases; the neck shows every note of the scale across all frets of the current
+  instrument, the root as a square, with the scale spelled out above it. The label and sharp/flat toggles sit next to the neck; interval
   labels are the scale's own (`♯4` in Lydian). Root, scale, labels and sharps/flats are saved
   on every change and come back at the next start. The window has regions for the picker,
   the neck, the instrument settings and the docked chord panel (§5.3); on a narrow window
@@ -518,7 +519,7 @@ Algorithmic (works for any tuning and 4–9 strings; no static shape library).
   - Start fret (default 0: none): every fretted note is on this fret or higher, so the list
     holds the best shapes from there up the neck. Open strings are not fretted and still ring
     when allowed. Frets are absolute (ADR-18): with a capo, a start fret at or below the capo
-    changes nothing. (ADR-46)
+    changes nothing. (ADR-47)
   - Allow/forbid open strings (with a capo: the capo fret)
   - Allow/forbid inversions (default forbidden: the root is the lowest note)
   - Allow/forbid muted strings (default allowed)
