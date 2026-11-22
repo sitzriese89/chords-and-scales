@@ -516,6 +516,10 @@ Algorithmic (works for any tuning and 4–9 strings; no static shape library).
 
 - **Constraints (user-adjustable):**
   - Max fret span (default 4, up to 6; open strings don't count)
+  - Start fret (default 0: none): every fretted note is on this fret or higher, so the list
+    holds the best shapes from there up the neck. Open strings are not fretted and still ring
+    when allowed. Frets are absolute (ADR-18): with a capo, a start fret at or below the capo
+    changes nothing. (ADR-47)
   - Allow/forbid open strings (with a capo: the capo fret)
   - Allow/forbid inversions (default forbidden: the root is the lowest note)
   - Allow/forbid muted strings (default allowed)
@@ -543,10 +547,10 @@ Algorithmic (works for any tuning and 4–9 strings; no static shape library).
     it, ○ plays it open (at the capo fret, with a capo). Dots carry the dot label setting
     (note names, intervals or none), the root as a square; a barre is a bar across its
     strings. Works for 4–9 strings, in both themes.
-  - **Constraints:** max fret span (1–6), open strings, muted strings and inversions, as
-    above; changing one updates the list at once. They are saved in `settings.toml`
-    (`[voicings]`: `max_span`, `open_strings`, `muted_strings`, `inversions`; missing keys
-    take the defaults above).
+  - **Constraints:** max fret span (1–6), start fret (0 to the neck's last fret, typed like the
+    tab view's), open strings, muted strings and inversions, as above; changing one updates the
+    list at once. They are saved in `settings.toml` (`[voicings]`: `max_span`, `start_fret`,
+    `open_strings`, `muted_strings`, `inversions`; missing keys take the defaults above).
   - **Choosing a shape** shows only its positions on the explorer's neck, still named as the
     chord and without the scale behind it, and strums it lowest string first; while it is
     chosen, the panel's **Strum** plays it too. Choosing it again, or **Show all positions**,

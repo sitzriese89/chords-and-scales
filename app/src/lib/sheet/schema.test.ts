@@ -45,7 +45,7 @@ const slash: SheetItem = {
 };
 const voicing: SheetItem = {
   kind: 'voicing',
-  view: view((s) => (s.voicings = { ...s.voicings, maxSpan: 5, openStrings: false })),
+  view: view((s) => (s.voicings = { ...s.voicings, maxSpan: 5, openStrings: false, startFret: 5 })),
   chord: { root: 'C', id: 'major', overScale: false, shape: 'x,3,2,0,1,0' },
 };
 

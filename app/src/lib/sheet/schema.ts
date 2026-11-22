@@ -191,6 +191,7 @@ function readView(item: TableReader): SheetSettings {
     openStrings: voicingTable.boolean('open_strings', d.voicings.openStrings),
     mutedStrings: voicingTable.boolean('muted_strings', d.voicings.mutedStrings),
     inversions: voicingTable.boolean('inversions', d.voicings.inversions),
+    startFret: voicingTable.integer('start_fret', 0, MAX_FRETS, d.voicings.startFret),
   };
   voicingTable.unknownKeys();
 
@@ -390,6 +391,7 @@ function itemDoc(item: SheetItem): Doc {
         open_strings: view.voicings.openStrings,
         muted_strings: view.voicings.mutedStrings,
         inversions: view.voicings.inversions,
+        start_fret: view.voicings.startFret,
       },
     };
   }

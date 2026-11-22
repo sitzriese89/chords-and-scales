@@ -1838,3 +1838,39 @@ name, both spellings of each black key, and typing a root (`Db`, `f#`, `E♭`) m
   in exchange the app owns its keyboard and screen-reader behaviour, which the explorer tests
   cover (choosing by mouse and keyboard, typing, the error).
 - The chord panel's root stays a native `<select>` of the same names: it has no typing.
+
+## ADR-47: A start fret for voicings: a constraint in the core, applied where the search starts
+
+**Context.** M5.3: players want chord shapes higher up the neck. The voicing browser (ADR-37)
+lists the best 50 shapes from the nut up, and ADR-35's ranking favours low shapes, so shapes
+past the first few frets rarely make the list. The scale view's tab already has a start fret
+(ADR-25). Open were what "from a fret" means for open strings and a capo, where the rule
+lives, and whether filtering the list is enough.
+
+**Decision.**
+- **A core constraint.** `VoicingOptions.start_fret` (default 0): a shape is kept only if every
+  fretted note is on the start fret or higher. Open strings (the capo fret) are not fretted, so
+  they follow `open_strings` alone: with it on, `0 7 9 9 9 0` is an E above fret 7. Frets are
+  absolute (ADR-18), so a start fret at or below the first fret above the capo changes nothing;
+  one past the neck leaves only shapes with open strings alone. No value is an error in the
+  core; the binding takes `startFret` (0 … 255).
+- **Applied where the search starts, not as a filter.** The search already walks one window per
+  lowest fretted fret, from the capo up (ADR-35); it now starts at the start fret. Filtering the
+  default 50 afterwards would leave a few shapes, or none, since the better low shapes fill the
+  list and its pruning stops before the high frets; starting there fills the list with the best
+  50 from that fret up. The ranking is unchanged (the position term still counts from the capo),
+  so the order among the kept shapes is the one the full list has.
+- **Saved with the other constraints.** `settings.toml` `[voicings]` gains `start_fret`, 0 to
+  the longest neck (27); a file without it reads as 0, so the version stays 1 (ADR-25). Sheet
+  items store it with the other constraints (ADR-43), so a stored shape is found again. The
+  browser's control is a number input next to "Max fret span", bounded 0 to the current neck's
+  fret count, like the tab view's start fret: anything else is refused with a message and the
+  saved value is put back.
+
+**Consequences.**
+- "Shapes from fret 7" is one setting, and the property tests (brute force on four strings, the
+  limit against the full ranking) cover it with the other options.
+- With open strings on, shapes that ring them under a hand high up the neck rank low (ADR-35
+  counts the open strings' reach), so a high start fret mostly lists closed shapes anyway.
+- Shortening the neck below a saved start fret leaves the setting as it is; the list then has
+  only open-string shapes, or none, until the start fret is lowered.

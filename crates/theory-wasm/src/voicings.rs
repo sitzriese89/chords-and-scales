@@ -27,6 +27,11 @@ export interface VoicingOptions {
   mutedStrings?: boolean;
   /** Whether a chord tone other than the root may be the lowest note. Default false. */
   inversions?: boolean;
+  /**
+   * The lowest fret a fretted note may be on, absolute (ADR-18); open strings follow
+   * `openStrings`. Default 0: no limit, as is any start fret at or below the capo.
+   */
+  startFret?: number;
   /** The most voicings returned. Default 50. */
   limit?: number;
 }
@@ -95,6 +100,7 @@ struct OptionsRecord {
     open_strings: Option<bool>,
     muted_strings: Option<bool>,
     inversions: Option<bool>,
+    start_fret: Option<u32>,
     limit: Option<u32>,
 }
 
@@ -106,11 +112,18 @@ impl OptionsRecord {
                 .map_err(|_| format!("a fret span of {span}; the span is 1 to {MAX_SPAN} frets"))?,
             None => defaults.max_span,
         };
+        let start_fret = match self.start_fret {
+            Some(fret) => {
+                u8::try_from(fret).map_err(|_| format!("start fret {fret} is out of range"))?
+            }
+            None => defaults.start_fret,
+        };
         Ok(VoicingOptions {
             max_span,
             open_strings: self.open_strings.unwrap_or(defaults.open_strings),
             muted_strings: self.muted_strings.unwrap_or(defaults.muted_strings),
             inversions: self.inversions.unwrap_or(defaults.inversions),
+            start_fret,
             limit: self.limit.map_or(defaults.limit, |limit| limit as usize),
         })
     }
@@ -238,6 +251,7 @@ mod tests {
         let record = OptionsRecord {
             max_span: Some(5),
             inversions: Some(true),
+            start_fret: Some(7),
             limit: Some(3),
             ..OptionsRecord::default()
         };
@@ -246,6 +260,7 @@ mod tests {
             Ok(VoicingOptions {
                 max_span: 5,
                 inversions: true,
+                start_fret: 7,
                 limit: 3,
                 ..VoicingOptions::default()
             })
@@ -255,5 +270,10 @@ mod tests {
             ..OptionsRecord::default()
         };
         assert!(wide.into_options().is_err());
+        let high = OptionsRecord {
+            start_fret: Some(256),
+            ..OptionsRecord::default()
+        };
+        assert!(high.into_options().is_err());
     }
 }

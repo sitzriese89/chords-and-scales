@@ -122,6 +122,51 @@ describe('voicing browser', () => {
     );
   });
 
+  it('keeps the shapes on or above the start fret, and keeps the start fret over a restart', async () => {
+    const storage = await startApp();
+    await pick('Chord quality', 'major');
+    const startFret = () => screen.getByRole('spinbutton', { name: 'Start fret' });
+    expect(startFret()).toHaveValue(0);
+    expect(startFret()).toHaveAttribute('max', '24');
+    expect(shapes()).toContain('x32010');
+
+    await fireEvent.change(startFret(), { target: { value: '5' } });
+    const high = shapes();
+    expect(high).toHaveLength(50);
+    expect(high).not.toContain('x32010');
+    expect(high).not.toContain('x35553');
+    expect(high).toContain('8 10 10 9 8 8');
+    // Every fretted note is on fret 5 or higher; open strings may still ring.
+    const frets = [...document.querySelectorAll<SVGGElement>('.voicings g.dot')].map((g) =>
+      Number(g.dataset.fret),
+    );
+    expect(frets.length).toBeGreaterThan(0);
+    expect(frets.every((fret) => fret >= 5)).toBe(true);
+    expect(await storage.read(SETTINGS_DOCUMENT)).toMatch(/\[voicings\][^[]*\nstart_fret = 5\n/);
+
+    cleanup();
+    await startApp({ storage });
+    await pick('Chord quality', 'major');
+    expect(startFret()).toHaveValue(5);
+    expect(shapes()).toEqual(high);
+
+    await fireEvent.change(startFret(), { target: { value: '0' } });
+    expect(shapes()).toContain('x32010');
+  });
+
+  it('refuses a start fret off the neck and puts the saved one back', async () => {
+    const storage = await startApp({ change: (s) => (s.instrument.frets = 22) });
+    await pick('Chord quality', 'major');
+    const startFret = screen.getByRole('spinbutton', { name: 'Start fret' });
+    await fireEvent.change(startFret, { target: { value: '3' } });
+    await fireEvent.change(startFret, { target: { value: '23' } });
+    expect(screen.getByRole('alert')).toHaveTextContent('The start fret is a fret from 0 to 22.');
+    expect(startFret).toHaveValue(3);
+    expect(await storage.read(SETTINGS_DOCUMENT)).toMatch(/\nstart_fret = 3\n/);
+    await fireEvent.change(startFret, { target: { value: '7' } });
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
   it('lists inversions only when asked, naming their bass', async () => {
     await startApp();
     await pick('Chord quality', 'major');
@@ -135,7 +180,7 @@ describe('voicing browser', () => {
     await startApp({
       change: (s) => {
         s.instrument = { ...s.instrument, strings: 9, tuning: 'guitar-9-standard' };
-        s.voicings = { maxSpan: 1, openStrings: false, mutedStrings: false, inversions: false };
+        s.voicings = { ...s.voicings, maxSpan: 1, openStrings: false, mutedStrings: false };
       },
     });
     await pick('Chord root', 'G');

@@ -15,7 +15,8 @@
 //!   covers the strings from the lowest to the highest one fretted there, and every string
 //!   under it is fretted.
 //! - **Options.** Open strings (the capo fret with a capo), muted strings and inversions (a
-//!   chord tone other than the root as the lowest-sounding note) can each be forbidden.
+//!   chord tone other than the root as the lowest-sounding note) can each be forbidden. A start
+//!   fret keeps every fretted note on it or higher (open strings are not fretted).
 //! - **Ranking.** A score, higher first: [`STRING_WEIGHT`] per played string, minus
 //!   [`SPAN_WEIGHT`] per fret past the first that the shape covers on a chord diagram (from the
 //!   lowest fretted note to the highest, or from the nut when an open string sounds),
@@ -75,6 +76,10 @@ pub struct VoicingOptions {
     pub muted_strings: bool,
     /// Whether the lowest note may be a chord tone other than the root. Default false.
     pub inversions: bool,
+    /// The lowest fret a fretted note may be on (absolute, ADR-18). Open strings (the capo
+    /// fret) are not fretted, so they follow `open_strings` alone. Default 0: no limit, as is
+    /// any start fret at or below the capo; one above the neck leaves only open strings.
+    pub start_fret: u8,
     /// The most voicings returned, best first. Default [`DEFAULT_VOICING_LIMIT`].
     pub limit: usize,
 }
@@ -86,6 +91,7 @@ impl Default for VoicingOptions {
             open_strings: true,
             muted_strings: true,
             inversions: false,
+            start_fret: 0,
             limit: DEFAULT_VOICING_LIMIT,
         }
     }
@@ -363,7 +369,9 @@ impl<'a> Search<'a> {
     }
 
     /// Searches the shapes with only open strings, then those whose lowest fretted note is on
-    /// each fret from the capo up, and keeps the best.
+    /// each fret from the capo (or the start fret, if higher) up, and keeps the best. Starting
+    /// there, rather than dropping lower shapes afterwards, lets the list fill with the shapes
+    /// up the neck instead of being cut short by better ones below it.
     fn run(&self) -> Vec<Voicing> {
         if self.options.limit == 0 {
             return Vec::new();
@@ -373,7 +381,8 @@ impl<'a> Search<'a> {
             limit: self.options.limit,
         };
         self.window(None, &mut best);
-        for low in self.capo + 1..=self.frets {
+        let first = (self.capo + 1).max(self.options.start_fret);
+        for low in first..=self.frets {
             // Every string played, no stretch: the most a shape this high can score.
             let ceiling = Measures {
                 played: self.open.len(),
