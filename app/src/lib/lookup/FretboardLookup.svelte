@@ -1,6 +1,7 @@
 <!--
   @component
-  Reverse lookup on the explorer's neck (SPEC §5.3 input mode 3, §5.4, ADR-38). **Select notes**
+  Reverse lookup on the explorer's neck (SPEC §5.3 input mode 3, §5.4, ADR-38): the panel shown
+  while select mode is on. **Select notes** in the explorer's tool row (`ScaleTools`, ADR-52)
   turns select mode on: clicks on the neck then add or remove notes (the explorer routes them to
   `selection`), the lowest selected note is the bass, and the chords and scales the core finds
   are listed under the selected notes, best first, on every click. Clicking a chord chooses it in
@@ -71,93 +72,81 @@
   }
 </script>
 
-<section class="lookup" aria-label="Find chords and scales">
+<section id="lookup-panel" class="lookup" aria-label="Find chords and scales">
   <div class="controls">
-    <button
-      type="button"
-      class="mode"
-      aria-pressed={selection.selecting}
-      onclick={() => (selection.selecting = !selection.selecting)}
-    >
-      Select notes
+    <button type="button" disabled={notes.length === 0} onclick={() => selection.clear()}>
+      Clear selection
     </button>
-    {#if selection.selecting}
-      <button type="button" disabled={notes.length === 0} onclick={() => selection.clear()}>
-        Clear selection
-      </button>
-      <button type="button" disabled={!enough} onclick={() => saveAs('scale')}>
-        Save as scale
-      </button>
-      <button type="button" disabled={!enough} onclick={() => saveAs('chord')}>
-        Save as chord
-      </button>
-    {/if}
+    <button type="button" disabled={!enough} onclick={() => saveAs('scale')}>
+      Save as scale
+    </button>
+    <button type="button" disabled={!enough} onclick={() => saveAs('chord')}>
+      Save as chord
+    </button>
   </div>
 
-  {#if selection.selecting}
-    <p class="selected" aria-live="polite">
-      {#if notes.length === 0}
-        Click notes on the neck to find the chords and scales they make.
-      {:else}
-        <span class="label">Selected:</span>
-        <span class="note">{notesText}</span>
-      {/if}
-    </p>
-
-    {#if notes.length > 0 && !enough}
-      <p class="hint">Select at least two different notes.</p>
-    {:else if enough}
-      <div class="results">
-        <section aria-labelledby="lookup-chords">
-          <h3 id="lookup-chords">Chords</h3>
-          {#if results.chords.length === 0}
-            <p class="hint">No chord in the catalog has exactly these notes.</p>
-          {:else}
-            <ol aria-label="Chords of the selected notes">
-              {#each results.chords as result (result.key)}
-                <li>
-                  <button
-                    type="button"
-                    class="result"
-                    aria-pressed={isChosen(result)}
-                    onclick={() => chooseChord(result)}
-                  >
-                    <span class="name">{result.symbol}</span>
-                    <span class="detail">{result.description}</span>
-                  </button>
-                </li>
-              {/each}
-            </ol>
-          {/if}
-        </section>
-        <section aria-labelledby="lookup-scales">
-          <h3 id="lookup-scales">Scales</h3>
-          {#if results.scales.length === 0}
-            <p class="hint">No scale in the catalog has all these notes.</p>
-          {:else}
-            <ol aria-label="Scales with the selected notes">
-              {#each results.scales as result (result.key)}
-                <li>
-                  <button
-                    type="button"
-                    class="result"
-                    aria-pressed={isShown(result)}
-                    onclick={() => chooseScale(result)}
-                  >
-                    <span class="name">{result.name}</span>
-                    <span class="detail"
-                      >{result.extra === 0
-                        ? 'no other notes'
-                        : `${result.extra} other note${result.extra === 1 ? '' : 's'}`}</span
-                    >
-                  </button>
-                </li>
-              {/each}
-            </ol>
-          {/if}
-        </section>
-      </div>
+  <p class="selected" aria-live="polite">
+    {#if notes.length === 0}
+      Click notes on the neck to find the chords and scales they make.
+    {:else}
+      <span class="label">Selected:</span>
+      <span class="note">{notesText}</span>
     {/if}
+  </p>
+
+  {#if notes.length > 0 && !enough}
+    <p class="hint">Select at least two different notes.</p>
+  {:else if enough}
+    <div class="results">
+      <section aria-labelledby="lookup-chords">
+        <h3 id="lookup-chords">Chords</h3>
+        {#if results.chords.length === 0}
+          <p class="hint">No chord in the catalog has exactly these notes.</p>
+        {:else}
+          <ol aria-label="Chords of the selected notes">
+            {#each results.chords as result (result.key)}
+              <li>
+                <button
+                  type="button"
+                  class="result"
+                  aria-pressed={isChosen(result)}
+                  onclick={() => chooseChord(result)}
+                >
+                  <span class="name">{result.symbol}</span>
+                  <span class="detail">{result.description}</span>
+                </button>
+              </li>
+            {/each}
+          </ol>
+        {/if}
+      </section>
+      <section aria-labelledby="lookup-scales">
+        <h3 id="lookup-scales">Scales</h3>
+        {#if results.scales.length === 0}
+          <p class="hint">No scale in the catalog has all these notes.</p>
+        {:else}
+          <ol aria-label="Scales with the selected notes">
+            {#each results.scales as result (result.key)}
+              <li>
+                <button
+                  type="button"
+                  class="result"
+                  aria-pressed={isShown(result)}
+                  onclick={() => chooseScale(result)}
+                >
+                  <span class="name">{result.name}</span>
+                  <span class="detail"
+                    >{result.extra === 0
+                      ? 'no other notes'
+                      : `${result.extra} other note${result.extra === 1 ? '' : 's'}`}</span
+                  >
+                </button>
+              </li>
+            {/each}
+          </ol>
+        {/if}
+      </section>
+    </div>
   {/if}
 </section>
 
@@ -199,12 +188,6 @@
   button:focus-visible {
     outline: 2px solid var(--focus-ring);
     outline-offset: 2px;
-  }
-
-  .mode[aria-pressed='true'] {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: var(--accent-text);
   }
 
   .selected,

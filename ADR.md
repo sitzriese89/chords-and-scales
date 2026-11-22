@@ -44,11 +44,11 @@ ADR-1 to ADR-13 come from the design interview behind [SPEC.md](SPEC.md) (decisi
 | 31 | [Reverse lookup and the scale finder: contain every note, inversions are cheap, omissions cost more](#adr-31-reverse-lookup-and-the-scale-finder-contain-every-note-inversions-are-cheap-omissions-cost-more) | Accepted |
 | 32 | [The chord panel: one chosen chord drawn on the explorer neck, degrees behind a seam](#adr-32-the-chord-panel-one-chosen-chord-drawn-on-the-explorer-neck-degrees-behind-a-seam) | Accepted |
 | 33 | [Chord names: the style is passed to one formatter call; typed symbols are read as you type](#adr-33-chord-names-the-style-is-passed-to-one-formatter-call-typed-symbols-are-read-as-you-type) | Accepted |
-| 34 | [The harmonize view: a row over the panel's seam, one chord size, clicks choose a degree](#adr-34-the-harmonize-view-a-row-over-the-panels-seam-one-chord-size-clicks-choose-a-degree) | Accepted |
+| 34 | [The harmonize view: a row over the panel's seam, one chord size, clicks choose a degree](#adr-34-the-harmonize-view-a-row-over-the-panels-seam-one-chord-size-clicks-choose-a-degree) | Accepted; the Harmonize button moved to the tool row by ADR-52 |
 | 35 | [Voicings: a pruned search over one fret per string, a hand model, one score](#adr-35-voicings-a-pruned-search-over-one-fret-per-string-a-hand-model-one-score) | Accepted |
 | 36 | [Custom chords: the scale editor on two octaves, suffixes unique and readable, checks in the core](#adr-36-custom-chords-the-scale-editor-on-two-octaves-suffixes-unique-and-readable-checks-in-the-core) | Accepted |
 | 37 | [The voicing browser: diagrams from the core's result, saved constraints, one chosen shape on the neck](#adr-37-the-voicing-browser-diagrams-from-the-cores-result-saved-constraints-one-chosen-shape-on-the-neck) | Accepted; diagram orientation and the shape text under each diagram superseded by ADR-49 |
-| 38 | [Reverse lookup on the neck: a select mode, the lowest pitch as the bass, results chosen through the existing inputs](#adr-38-reverse-lookup-on-the-neck-a-select-mode-the-lowest-pitch-as-the-bass-results-chosen-through-the-existing-inputs) | Accepted |
+| 38 | [Reverse lookup on the neck: a select mode, the lowest pitch as the bass, results chosen through the existing inputs](#adr-38-reverse-lookup-on-the-neck-a-select-mode-the-lowest-pitch-as-the-bass-results-chosen-through-the-existing-inputs) | Accepted; the Select notes button moved to the tool row by ADR-52 |
 | 39 | [Mood tags: features from semitones, one weight table per tag, a threshold per kind, user rules merged per key](#adr-39-mood-tags-features-from-semitones-one-weight-table-per-tag-a-threshold-per-kind-user-rules-merged-per-key) | Accepted |
 | 40 | [Themes: CSS files with a light and/or dark scheme, applied at runtime, user themes as CSS documents](#adr-40-themes-css-files-with-a-light-andor-dark-scheme-applied-at-runtime-user-themes-as-css-documents) | Accepted |
 | 41 | [Tag filters: chips per picker, AND, the choice never jumps, `tags.toml` read with the user catalogs](#adr-41-tag-filters-chips-per-picker-and-the-choice-never-jumps-tagstoml-read-with-the-user-catalogs) | Accepted |
@@ -59,6 +59,7 @@ ADR-1 to ADR-13 come from the design interview behind [SPEC.md](SPEC.md) (decisi
 | 49 | [Chord diagrams lie like the neck: strings across, the nut on the left, the lowest fret numbered under its column](#adr-49-chord-diagrams-lie-like-the-neck-strings-across-the-nut-on-the-left-the-lowest-fret-numbered-under-its-column) | Accepted |
 | 50 | [Collapsible side panels: one stateless component, the parent keeps the state and the width, a table per panel](#adr-50-collapsible-side-panels-one-stateless-component-the-parent-keeps-the-state-and-the-width-a-table-per-panel) | Superseded by ADR-51 |
 | 51 | [Three pages under one toolbar, pickers in a drawer, instrument in the toolbar, Sound and Appearance in a dialog](#adr-51-three-pages-under-one-toolbar-pickers-in-a-drawer-instrument-in-the-toolbar-sound-and-appearance-in-a-dialog) | Accepted |
+| 52 | [The Scales tool row: the toggles in one row, their panels under it, in button order](#adr-52-the-scales-tool-row-the-toggles-in-one-row-their-panels-under-it-in-button-order) | Accepted |
 
 ---
 
@@ -1109,6 +1110,9 @@ harmonized chord over the scale, through the `Harmonizer` seam and `ChordState`.
 - Switching the Standard/Jazz style renames the row with everything else, since the row reads
   the style from the settings like every other caller of `chordSymbol`.
 
+*Superseded in part by ADR-52:* the **Harmonize** button is no longer in `HarmonizeView`; it
+sits in the explorer's tool row next to Select notes, and the component is the panel it opens.
+
 ## ADR-35: Voicings: a pruned search over one fret per string, a hand model, one score
 
 **Context.** M2.11 builds the voicing generator of ADR-8 and SPEC §5.6: playable shapes of a
@@ -1392,6 +1396,9 @@ editors are given.
   the user move it up, as a click on the editor's own neck would (ADR-36).
 - A slash chord chosen from the list leaves its text in the typed-symbol field, where the user
   can edit it like any typed symbol.
+
+*Superseded in part by ADR-52:* the **Select notes** toggle is no longer in `FretboardLookup`;
+it sits in the explorer's tool row next to Harmonize, and the component is the panel it opens.
 
 ## ADR-39: Mood tags: features from semitones, one weight table per tag, a threshold per kind, user rules merged per key
 
@@ -2062,3 +2069,34 @@ crowded and asked for Scales, Chords and Sheet as separate tabs. A throwaway pro
   get the whole window. Choosing several scales in a row means keeping the drawer open over
   part of the neck.
 - Implemented as M6.1 (shell), M6.2 (Scales tool row) and M6.3 (Chords page), #94–#96.
+
+## ADR-52: The Scales tool row: the toggles in one row, their panels under it, in button order
+
+**Context.** ADR-51 puts Harmonize and Select notes side by side in one row between the scale's
+notes and the neck (M6.2). Each was one component holding its own button and what the button
+opens (ADR-34, ADR-38), so two of them next to each other would put Harmonize's size choice and
+chords between the two buttons, or squeeze them into half the width. The prototype only laid
+the two components side by side in a flex row.
+
+**Decision.**
+- **`ScaleTools` owns the row.** `app/src/lib/explorer/ScaleTools.svelte` renders a wrapping
+  row (`role="group"`, "Scale tools") with the **Harmonize** button (a disclosure,
+  `aria-expanded` and `aria-controls`; offered only with a harmonizer) and the **Select notes**
+  toggle (`aria-pressed`, the `NoteSelection`'s mode). Under the row, across the full width
+  and in the order of the buttons, come what is open: `HarmonizeView` (size choice and degree
+  chords) and `FretboardLookup` (its buttons, the selected notes and the results). Both can be
+  open at once; opening one never moves the other button.
+- **The panels lose their buttons.** `HarmonizeView` and `FretboardLookup` are now only what a
+  button opens, rendered by `ScaleTools` while open. Whether Harmonize is open is local state
+  in `ScaleTools`, still not saved (ADR-34); select mode stays on the explorer's
+  `NoteSelection` (ADR-38). What either tool does is unchanged.
+- Rejected: keeping each component whole and reordering with CSS (`display: contents` and
+  `order`), which would look the same but make the tab order jump from Harmonize into its
+  panel and back up to Select notes.
+
+**Consequences.**
+- The DOM order is the reading and tab order: summary, the two buttons, the open panels, the
+  neck. Tests pin it.
+- The "Find chords and scales" region exists only while select mode is on, and the Select
+  notes button is outside it; the lookup tests find the button in the row.
+- M6.3 changes what a Harmonize click does, inside `HarmonizeView`; the row is unaffected.

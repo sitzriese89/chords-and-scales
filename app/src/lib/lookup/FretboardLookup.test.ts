@@ -40,7 +40,8 @@ async function startApp(
 }
 
 const lookup = () => within(screen.getByRole('region', { name: 'Find chords and scales' }));
-const selectMode = () => lookup().getByRole('button', { name: 'Select notes' });
+// Select notes sits in the explorer's tool row, outside the panel it opens (ADR-52).
+const selectMode = () => screen.getByRole('button', { name: 'Select notes' });
 const board = () => screen.getByRole('grid', { name: /^Fretboard/ });
 const cell = (string: number, fret: number) =>
   within(board()).getByRole('gridcell', {
@@ -174,7 +175,8 @@ describe('reverse lookup on the fretboard', () => {
     await fireEvent.click(cell(5, 4));
     await fireEvent.click(selectMode());
     expect(ringed()).toEqual([]);
-    expect(lookup().queryByRole('button', { name: 'Clear selection' })).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Find chords and scales' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Clear selection' })).toBeNull();
     await fireEvent.click(selectMode());
     expect(ringed()).toEqual(['5:4']);
   });

@@ -466,7 +466,8 @@ The core does both searches (ADR-31). The input is a set of pitch classes with a
 
 **In the app** (ADR-38):
 
-- **Select notes**, a toggle above the explorer's neck, turns on select mode: a click (or
+- **Select notes**, a toggle in the explorer's tool row next to Harmonize (§5.5, ADR-52),
+  turns on select mode and shows its buttons and results under the row: a click (or
   Enter/Space) on a position adds that note, or takes it out if it is selected, and sounds a
   note it adds. Any position can be selected, in the scale or not. Selected positions are
   ringed on the neck, over whatever it shows (the scale, or a chosen chord); a selected note
@@ -507,8 +508,12 @@ The core does both searches (ADR-31). The input is a set of pitch classes with a
   Examples: the minor pentatonic has Cm (and Cm7) on its root and E♭ on the ♭III
   as triads, and no chord on the other degrees; the whole tone scale has an
   augmented triad on every degree and no seventh chords (ADR-30).
-- **In the app** (ADR-34): a **Harmonize** button next to the scale's notes in the explorer
-  opens a row with the chord on every degree of the current scale, its Roman numeral above
+- **The tool row** (ADR-52): **Harmonize** and **Select notes** sit side by side in one row
+  that wraps on a narrow window, between the scale's notes (with "Add scale to sheet") and the
+  neck. What a tool opens unfolds under the row across the full width, Harmonize's first, so
+  it never squeezes the other button; both can be open at once.
+- **In the app** (ADR-34): the **Harmonize** button in the explorer's tool row opens, under
+  the row, a row with the chord on every degree of the current scale, its Roman numeral above
   its symbol (D Dorian as 7th chords: i7 Dm7, ii7 Em7, IIImaj7 Fmaj7, IV7 G7, v7 Am7,
   viø7 Bm7♭5, VIImaj7 Cmaj7; in the Jazz style FΔ7, Bø and CΔ7). The row has its own
   **Triads** / **7th chords** toggle, which is the chord panel's size (§5.3): changing one

@@ -1,13 +1,14 @@
 <!--
   @component
-  Harmonize for the explorer's scale (SPEC §5.5, ADR-34). The Harmonize button opens a row with
-  the chord on every degree, as triads or 7th chords, each with its Roman numeral; degrees where
+  Harmonize for the explorer's scale (SPEC §5.5, ADR-34): the panel that the **Harmonize** button
+  in the explorer's tool row (`ScaleTools`, ADR-52) opens. It shows the chord on every degree, as triads or 7th chords, each with its Roman numeral; degrees where
   no chord forms are marked "no chord". Clicking a chord chooses it in the chord panel by its
   degree, so the neck shows it over the dimmed scale (ADR-32), and expands the panel if it is
   collapsed. The size is the chord panel's: the toggle here and the one there are the same.
   Chord names follow the Standard/Jazz setting (ADR-33).
 
-  Shown only when the app has a harmonizer (the chord panel's degree input is on).
+  Shown only when the app has a harmonizer (the chord panel's degree input is on); the tool row
+  offers the button only then.
 -->
 <script lang="ts">
   import { getChordState, type ChordSize } from '../chords';
@@ -25,13 +26,12 @@
     ['sevenths', '7th chords'],
   ];
 
-  let open = $state(false);
   const scale = $derived(chordState.scale);
   const title = $derived(`${scale.root} ${scale.info.name}`);
   const row = $derived.by(() => {
     // Re-read the catalogs when a user scale or chord was saved or deleted (ADR-24).
     void catalogs.revision;
-    if (!open || !harmonizer) return [];
+    if (!harmonizer) return [];
     return harmonizeRow(
       harmonizer,
       { id: scale.info.id, root: scale.root, notes: scale.notes },
@@ -54,61 +54,46 @@
 </script>
 
 {#if harmonizer}
-  <section class="harmonize" aria-label="Harmonize {title}">
-    <div class="controls">
-      <button
-        type="button"
-        class="open"
-        aria-expanded={open}
-        aria-controls="harmonize-row"
-        onclick={() => (open = !open)}
-      >
-        Harmonize
-      </button>
-      {#if open}
-        <fieldset class="sizes">
-          <legend>Harmonize as</legend>
-          {#each SIZES as [size, text] (size)}
-            <label>
-              <input
-                type="radio"
-                name="harmonize-size"
-                value={size}
-                checked={chordState.size === size}
-                onchange={() => (chordState.size = size)}
-              />
-              {text}
-            </label>
-          {/each}
-        </fieldset>
-      {/if}
-    </div>
+  <section id="harmonize-panel" class="harmonize" aria-label="Harmonize {title}">
+    <fieldset class="sizes">
+      <legend>Harmonize as</legend>
+      {#each SIZES as [size, text] (size)}
+        <label>
+          <input
+            type="radio"
+            name="harmonize-size"
+            value={size}
+            checked={chordState.size === size}
+            onchange={() => (chordState.size = size)}
+          />
+          {text}
+        </label>
+      {/each}
+    </fieldset>
 
-    {#if open}
-      <ol id="harmonize-row" class="row" aria-label="Chords of {title}">
-        {#each row as cell (cell.degree)}
-          <li>
-            {#if cell.chord}
-              <button
-                type="button"
-                class="cell chord"
-                aria-pressed={chosen === cell.degree}
-                title="{cell.chord.name} on degree {cell.degree + 1}"
-                onclick={() => choose(cell.degree)}
-              >
-                <span class="numeral">{cell.chord.numeral}</span>
-                <span class="symbol">{cell.chord.symbol}</span>
-              </button>
-            {:else}
-              <div class="cell none" title="No chord forms on degree {cell.degree + 1}">
-                <span class="numeral">{cell.note.name}</span>
-                <span class="symbol">no chord</span>
-              </div>
-            {/if}
-          </li>
-        {/each}
-      </ol>
-    {/if}
+    <ol class="row" aria-label="Chords of {title}">
+      {#each row as cell (cell.degree)}
+        <li>
+          {#if cell.chord}
+            <button
+              type="button"
+              class="cell chord"
+              aria-pressed={chosen === cell.degree}
+              title="{cell.chord.name} on degree {cell.degree + 1}"
+              onclick={() => choose(cell.degree)}
+            >
+              <span class="numeral">{cell.chord.numeral}</span>
+              <span class="symbol">{cell.chord.symbol}</span>
+            </button>
+          {:else}
+            <div class="cell none" title="No chord forms on degree {cell.degree + 1}">
+              <span class="numeral">{cell.note.name}</span>
+              <span class="symbol">no chord</span>
+            </div>
+          {/if}
+        </li>
+      {/each}
+    </ol>
   </section>
 {/if}
 
@@ -118,13 +103,6 @@
     flex-direction: column;
     gap: 0.5rem;
     min-width: 0;
-  }
-
-  .controls {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.5rem 1rem;
   }
 
   button {
@@ -137,15 +115,6 @@
   }
 
   button:hover {
-    border-color: var(--accent);
-  }
-
-  .open {
-    font-size: 0.875rem;
-    padding: 0.25rem 0.75rem;
-  }
-
-  .open[aria-expanded='true'] {
     border-color: var(--accent);
   }
 
