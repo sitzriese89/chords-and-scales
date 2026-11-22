@@ -47,7 +47,7 @@ ADR-1 to ADR-13 come from the design interview behind [SPEC.md](SPEC.md) (decisi
 | 34 | [The harmonize view: a row over the panel's seam, one chord size, clicks choose a degree](#adr-34-the-harmonize-view-a-row-over-the-panels-seam-one-chord-size-clicks-choose-a-degree) | Accepted |
 | 35 | [Voicings: a pruned search over one fret per string, a hand model, one score](#adr-35-voicings-a-pruned-search-over-one-fret-per-string-a-hand-model-one-score) | Accepted |
 | 36 | [Custom chords: the scale editor on two octaves, suffixes unique and readable, checks in the core](#adr-36-custom-chords-the-scale-editor-on-two-octaves-suffixes-unique-and-readable-checks-in-the-core) | Accepted |
-| 37 | [The voicing browser: diagrams from the core's result, saved constraints, one chosen shape on the neck](#adr-37-the-voicing-browser-diagrams-from-the-cores-result-saved-constraints-one-chosen-shape-on-the-neck) | Accepted |
+| 37 | [The voicing browser: diagrams from the core's result, saved constraints, one chosen shape on the neck](#adr-37-the-voicing-browser-diagrams-from-the-cores-result-saved-constraints-one-chosen-shape-on-the-neck) | Accepted; diagram orientation and the shape text under each diagram superseded by ADR-49 |
 | 38 | [Reverse lookup on the neck: a select mode, the lowest pitch as the bass, results chosen through the existing inputs](#adr-38-reverse-lookup-on-the-neck-a-select-mode-the-lowest-pitch-as-the-bass-results-chosen-through-the-existing-inputs) | Accepted |
 | 39 | [Mood tags: features from semitones, one weight table per tag, a threshold per kind, user rules merged per key](#adr-39-mood-tags-features-from-semitones-one-weight-table-per-tag-a-threshold-per-kind-user-rules-merged-per-key) | Accepted |
 | 40 | [Themes: CSS files with a light and/or dark scheme, applied at runtime, user themes as CSS documents](#adr-40-themes-css-files-with-a-light-andor-dark-scheme-applied-at-runtime-user-themes-as-css-documents) | Accepted |
@@ -56,6 +56,7 @@ ADR-1 to ADR-13 come from the design interview behind [SPEC.md](SPEC.md) (decisi
 | 43 | [The export sheet: items store their inputs, one `sheet.toml`, its own scoped theme](#adr-43-the-export-sheet-items-store-their-inputs-one-sheettoml-its-own-scoped-theme) | Accepted |
 | 46 | [The root picker is an editable combobox whose list always shows all 17 names](#adr-46-the-root-picker-is-an-editable-combobox-whose-list-always-shows-all-17-names) | Accepted |
 | 48 | [Built-in themes after editor palettes: the original's own variants, nudged to pass the rules, credited in the file](#adr-48-built-in-themes-after-editor-palettes-the-originals-own-variants-nudged-to-pass-the-rules-credited-in-the-file) | Accepted |
+| 49 | [Chord diagrams lie like the neck: strings across, the nut on the left, the lowest fret numbered under its column](#adr-49-chord-diagrams-lie-like-the-neck-strings-across-the-nut-on-the-left-the-lowest-fret-numbered-under-its-column) | Accepted |
 | 50 | [Collapsible side panels: one stateless component, the parent keeps the state and the width, a table per panel](#adr-50-collapsible-side-panels-one-stateless-component-the-parent-keeps-the-state-and-the-width-a-table-per-panel) | Accepted |
 
 ---
@@ -1316,6 +1317,12 @@ a chosen shape reaches the neck and when it goes away.
   live in `chords/` (`shapePositions`, `shapePitches`), so `chords/` imports nothing from
   `voicings/`; the browser still reads `ChordState` itself.
 
+*Superseded in part by ADR-49:* diagrams no longer stand upright with one column per string;
+they lie like the neck, the nut or capo on the left (on the right when left-handed), and a
+shape higher up is numbered under its lowest fret's column. The list no longer writes the
+shape (`x32010`) under each diagram. The window rules (four frets from the nut or capo, else
+from the lowest fretted fret, up to six), the capo, markers, barre, dots and labels stay.
+
 ## ADR-38: Reverse lookup on the neck: a select mode, the lowest pitch as the bass, results chosen through the existing inputs
 
 **Context.** M2.8 puts reverse lookup and the scale finder (ADR-31) on the fretboard (SPEC
@@ -1919,6 +1926,53 @@ and how the two variants relate to the light/dark setting.
   warnings (ADR-40).
 - Editing one of these files means re-checking the rules with `tokens.test.ts`; the script
   that found the nudged values isn't kept.
+
+## ADR-49: Chord diagrams lie like the neck: strings across, the nut on the left, the lowest fret numbered under its column
+
+**Context.** M5.4: ADR-37 drew chord diagrams upright, as chord books do, one column per
+string with the nut on top, and the voicing list wrote each shape under its diagram
+(`x32010`). Players read the app's neck the other way: strings across, the lowest at the
+bottom, the nut on the left and the frets counting up to the right (ADR-18), mirrored when
+left-handed. Turning between the two to find a shape on the neck is work, and the written
+shape repeats what the diagram shows. Open were which way the diagram turns, where the fret
+number of a shape higher up goes, where × and ○ sit, what happens to the shape text, and what
+it does to the list's cards and the sheet.
+
+**Decision.**
+- **The diagram is the neck turned to fit, not a chord book turned over.** It is ADR-37's
+  diagram turned 90° counter-clockwise: one row per string, the lowest at the bottom; the nut
+  (or the capo, drawn the same in the capo colour) is the left edge; one column per fret,
+  counting up to the right. That is how `Fretboard` draws the neck, so a shape reads the same
+  in the list and on the neck.
+- **Left-handed mirrors the frets, not the strings**, as the neck does: the nut and the ×/○
+  markers on the right, frets counting up to the left, the lowest string still at the bottom.
+  Text is not mirrored.
+- **The lowest fret is numbered under its column.** A shape that doesn't start at the nut
+  starts at its lowest fretted fret, as before, and that fret's number sits under its column,
+  below the lowest string, like the neck's fret numbers under the board. With a capo the first
+  fret above it is numbered there too, since frets stay absolute (ADR-18). At the nut there is
+  no number. The window rules of ADR-37 are unchanged (four frets, more for a wide shape, six
+  at most).
+- **× and ○ sit at the nut end of their string**, left of the nut (right of it when
+  left-handed), where an open string's dot sits on the neck.
+- **No shape text under the diagrams in the list.** The diagram and its fret number say where
+  the shape is. The shape stays in the button's and the diagram's accessible names
+  (`1. x32010`, `C: x32010`), so screen readers still get it and the list is still findable by
+  it. The sheet keeps the shape in an item's title (`C: x32010`): it names the item, its export
+  file (`c-x32010.svg`) and a missing item's reason, and is a caption, not text under the
+  drawing.
+- **Geometry stays in `diagram.ts`** (`stringY`, `fretX`, `wireX`, `markerX`, `labelY`,
+  `diagramSize`), presentational and theory-free (ADR-3); `diagramWindow` now reports
+  `frets` and `start` (`nut`, `capo`, `fret`) for what were `rows` and `top`.
+
+**Consequences.**
+- A diagram's width now follows its fret count (four to six columns) and its height the
+  string count, so a 9-string diagram is taller, not wider: list cards stay narrow (about 130
+  px for four frets) whatever the instrument, and the list's rows stay the same height for one
+  instrument. A wide shape (five or six frets) makes a wider card.
+- The sheet and its SVG, HTML and PNG exports draw the same component, so they turned with it;
+  stored sheet items are unchanged (they store the shape, not the drawing, ADR-43).
+- Players used to chord books read a turned diagram; the neck beside it is the reference.
 
 ## ADR-50: Collapsible side panels: one stateless component, the parent keeps the state and the width, a table per panel
 

@@ -3,7 +3,8 @@
   The voicing browser in the chord panel (SPEC §5.6, ADR-37): the constraints (max fret span,
   start fret, open strings, muted strings, inversions), saved in the settings, and the core's
   ranked shapes of the panel's chord on the current instrument, tuning, fret count and capo, best
-  first, each as a chord diagram. Choosing a shape shows only its positions on the explorer's
+  first, each as a chord diagram (ADR-49) with no shape text under it: the shape (`x32010`)
+  is the button's and the diagram's accessible name. Choosing a shape shows only its positions on the explorer's
   neck and strums it; choosing it again shows every position of the chord again. Nothing is
   shown while no chord is chosen. "Add shape to sheet", while a shape is chosen, puts its diagram on the
   export sheet (ADR-43).
@@ -196,7 +197,6 @@
                 {label}
                 ariaLabel="{symbol}: {text}"
               />
-              <span class="shape">{shapeText(voicing)}</span>
               {#if voicing.bass !== '1' || voicing.omitted.length > 0}
                 <span class="note">
                   {[
@@ -328,11 +328,6 @@
   .voicing:focus-visible {
     outline: 2px solid var(--focus-ring);
     outline-offset: 2px;
-  }
-
-  .shape {
-    font-family: monospace;
-    font-size: 0.8125rem;
   }
 
   .note {
