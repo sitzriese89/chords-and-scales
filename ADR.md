@@ -33,7 +33,7 @@ ADR-1 to ADR-13 come from the design interview behind [SPEC.md](SPEC.md) (decisi
 | 20 | [The scale catalog: one shared formula type, per-item errors, user ids replace built-ins](#adr-20-the-scale-catalog-one-shared-formula-type-per-item-errors-user-ids-replace-built-ins) | Accepted |
 | 21 | [Tunings list strings low to high; positions come out in fretboard coordinates](#adr-21-tunings-list-strings-low-to-high-positions-come-out-in-fretboard-coordinates) | Accepted; WASM tuning API superseded by ADR-23 |
 | 22 | [Scale positions filter the fretboard mapping; 3NPS patterns take the lowest octave that fits](#adr-22-scale-positions-filter-the-fretboard-mapping-3nps-patterns-take-the-lowest-octave-that-fits) | Accepted |
-| 23 | [The scale explorer: one layout, user catalogs loaded alike, labels looked up from the core](#adr-23-the-scale-explorer-one-layout-user-catalogs-loaded-alike-labels-looked-up-from-the-core) | Accepted |
+| 23 | [The scale explorer: one layout, user catalogs loaded alike, labels looked up from the core](#adr-23-the-scale-explorer-one-layout-user-catalogs-loaded-alike-labels-looked-up-from-the-core) | Accepted; the single-page layout superseded by ADR-51 |
 | 24 | [Instrument settings: custom tunings saved by the core, stable generated ids, a catalog revision](#adr-24-instrument-settings-custom-tunings-saved-by-the-core-stable-generated-ids-a-catalog-revision) | Accepted |
 | 25 | [The tab view: core positions in playing order, absolute frets, never mirrored, stored without a version bump](#adr-25-the-tab-view-core-positions-in-playing-order-absolute-frets-never-mirrored-stored-without-a-version-bump) | Accepted |
 | 26 | [Custom scales: a generic interval-set editor, names unique in the catalog, checks in the core](#adr-26-custom-scales-a-generic-interval-set-editor-names-unique-in-the-catalog-checks-in-the-core) | Accepted |
@@ -57,7 +57,8 @@ ADR-1 to ADR-13 come from the design interview behind [SPEC.md](SPEC.md) (decisi
 | 46 | [The root picker is an editable combobox whose list always shows all 17 names](#adr-46-the-root-picker-is-an-editable-combobox-whose-list-always-shows-all-17-names) | Accepted |
 | 48 | [Built-in themes after editor palettes: the original's own variants, nudged to pass the rules, credited in the file](#adr-48-built-in-themes-after-editor-palettes-the-originals-own-variants-nudged-to-pass-the-rules-credited-in-the-file) | Accepted |
 | 49 | [Chord diagrams lie like the neck: strings across, the nut on the left, the lowest fret numbered under its column](#adr-49-chord-diagrams-lie-like-the-neck-strings-across-the-nut-on-the-left-the-lowest-fret-numbered-under-its-column) | Accepted |
-| 50 | [Collapsible side panels: one stateless component, the parent keeps the state and the width, a table per panel](#adr-50-collapsible-side-panels-one-stateless-component-the-parent-keeps-the-state-and-the-width-a-table-per-panel) | Accepted |
+| 50 | [Collapsible side panels: one stateless component, the parent keeps the state and the width, a table per panel](#adr-50-collapsible-side-panels-one-stateless-component-the-parent-keeps-the-state-and-the-width-a-table-per-panel) | Superseded by ADR-51 |
+| 51 | [Three pages under one toolbar, pickers in a drawer, instrument in the toolbar, Sound and Appearance in a dialog](#adr-51-three-pages-under-one-toolbar-pickers-in-a-drawer-instrument-in-the-toolbar-sound-and-appearance-in-a-dialog) | Accepted |
 
 ---
 
@@ -605,6 +606,9 @@ file), and the explorer is the first code that loads both.
 - A user who edits `scales.toml` or `tunings.toml` by hand sees the change on the next start.
 - `explorerView` is plain TypeScript over WASM calls, so it is tested without the DOM, and the
   component test checks every dot of A Dorian on standard tuning.
+
+*Superseded in part by ADR-51:* the app is no longer one page with the picker, the neck and
+the settings side by side; it has Scales, Chords and Sheet pages under one toolbar.
 
 ## ADR-24: Instrument settings: custom tunings saved by the core, stable generated ids, a catalog revision
 
@@ -2012,3 +2016,49 @@ the collapsing must not be tied to the current grid.
 - A redesign with several necks can wrap any panel in `CollapsiblePanel` and decide per page
   where the state lives; each new panel needs a settings table, or a shared one if the
   redesign wants it.
+
+*Superseded by ADR-51:* the side panels become a drawer (pickers), the toolbar (instrument)
+and a dialog (sound, appearance); `CollapsiblePanel` and its settings tables go.
+
+## ADR-51: Three pages under one toolbar, pickers in a drawer, instrument in the toolbar, Sound and Appearance in a dialog
+
+**Context.** Through M5 the app was one page (ADR-23): scale picker on the left, the neck in
+the middle, instrument, sound and appearance on the right, the chord panel docked under the
+neck and drawing the chosen chord on the scale's neck (ADR-32, ADR-37). The user found it
+crowded and asked for Scales, Chords and Sheet as separate tabs. A throwaway prototype (branch
+`prototype/redesign`) built five layouts from the real components; the user chose **C3**.
+
+**Decision.**
+- **Three pages, one toolbar.** The toolbar holds the title, the page tabs (Scales, Chords,
+  Sheet), a "☰ Choose scale" / "☰ Choose chord" button for the page's picker, the instrument
+  button and ⚙ Settings. The page under it gets the full width. The current page is saved
+  and restored.
+- **Pickers are drawers.** The scale picker (Scales) and the chord picker (Chords) slide in
+  from the left over the page on demand. They close with ✕, Escape or a click outside, are
+  closed at start, and aren't saved. One drawer component serves both.
+- **The instrument is shared and lives in the toolbar.** A button shows a summary of the neck
+  (strings, kind, tuning, frets, capo) and opens the full instrument settings in a popover.
+- **Sound and Appearance move to a ⚙ Settings dialog** (a modal `<dialog>`). The right-hand
+  settings panel goes.
+- **Scales page:** the view toggles, the scale's notes and "Add scale to sheet", then
+  Harmonize and Select notes side by side in one row, then the neck and the tab. The neck
+  shows the scale only.
+- **Chords page:** no fretboard. A heading with the chord, its notes, Strum and "Add chord to
+  sheet", the voicing constraints, and the shapes across the full width. Choosing a degree
+  chord in Harmonize opens the Chords page with that chord.
+- Rejected: top tabs with a collapsible picker per page and an instrument bar per page (A); a
+  vertical rail with the pages and the instrument (B); Harmonize and Select notes at the
+  bottom of the page (C2), which puts Select notes far from the neck it works on; the tools
+  next to the scale's notes with "Add scale to sheet" by the view toggles (C4).
+
+**Consequences.**
+- Supersedes ADR-23's single-page layout and ADR-50's collapsible side panels:
+  `CollapsiblePanel` and the `[scale_picker]` / `[settings_panel]` tables go, and old
+  settings files that still have them load without a warning.
+- The chord panel's dock (collapse, resize, `[chord_panel]`) goes, and no chord or shape is
+  drawn on a neck any more. ADR-32's and ADR-37's "on the explorer neck" parts are
+  superseded when M6.3 lands.
+- A picker is one click further away than a docked panel; in return, the neck and the shapes
+  get the whole window. Choosing several scales in a row means keeping the drawer open over
+  part of the neck.
+- Implemented as M6.1 (shell), M6.2 (Scales tool row) and M6.3 (Chords page), #94–#96.

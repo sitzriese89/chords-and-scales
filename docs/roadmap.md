@@ -27,8 +27,8 @@ each PR names its issue with `Fixes #n`.
 4. **M3**, with M4.1 (themes) pulled forward, then release **v0.3.0** (released 2026-11-21).
 5. **M4**, one item at a time (M4.2 → M4.3 → M4.4), then release **v0.4.0** (released 2026-11-21).
 6. **M5**, small adjustments before the UI redesign, then release **v0.5.0** (released 2026-11-22).
-7. UI redesign (Scales / Chords / Sheet tabs, each with its own fretboard): not planned yet.
-   New items get a row and an issue before work starts. **Now**
+7. **M6**, the UI redesign (M6.1 and M6.2, then M6.3), then release **v0.6.0**. **Now**
+8. Next scope: not planned yet. New items get a row and an issue before work starts.
 
 Items whose dependencies are done can run in parallel. The coordinator groups them into waves
 of issues that don't touch the same files (`implement` skill). Suggested waves from the
@@ -125,6 +125,21 @@ Small adjustments before the UI redesign.
 Suggested waves: (1) M5.1, M5.3, M5.5 → (2) M5.2, M5.4. M5.2 and M5.3 both add settings
 fields, and M5.3 and M5.4 both change `VoicingBrowser.svelte`, so each pair is split.
 
+## M6 · Redesign (v6)
+
+Scales, Chords and Sheet pages under one toolbar; the pickers in a drawer, the instrument in the
+toolbar, Sound and Appearance in a Settings dialog (ADR-51, prototype variant C3 on branch
+`prototype/redesign`).
+
+| Item | Issue | Depends on | Status |
+|---|---|---|---|
+| M6.1 App shell: pages, toolbar, scale picker drawer, Settings dialog | [#94][94] |  | Open |
+| M6.2 Scales page: Harmonize and Select notes in one row | [#95][95] |  | Open |
+| M6.3 Chords page: chord picker drawer, full-width shapes, no chord on the neck | [#96][96] | M6.1, M6.2 | Open |
+
+Suggested waves: (1) M6.1, M6.2 → (2) M6.3. M6.1 owns `App.svelte` and the settings, M6.2
+`ScaleExplorer.svelte`; M6.3 changes both, so it waits.
+
 ## Release gates
 
 A milestone is released when all its items are Done, main is green, and the release workflow
@@ -176,3 +191,6 @@ A milestone is released when all its items are Done, main is green, and the rele
 [83]: https://github.com/sitzriese89/chords-and-scales/issues/83
 [84]: https://github.com/sitzriese89/chords-and-scales/issues/84
 [85]: https://github.com/sitzriese89/chords-and-scales/issues/85
+[94]: https://github.com/sitzriese89/chords-and-scales/issues/94
+[95]: https://github.com/sitzriese89/chords-and-scales/issues/95
+[96]: https://github.com/sitzriese89/chords-and-scales/issues/96
