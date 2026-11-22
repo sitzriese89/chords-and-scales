@@ -20,6 +20,10 @@ The **Appearance** section of the settings has two choices, both saved in `setti
 |---|---|---|---|
 | Default | `default` | light, dark | [`default.css`](../app/src/styles/themes/default.css) |
 | High contrast | `high-contrast` | light, dark | [`high-contrast.css`](../app/src/styles/themes/high-contrast.css) |
+| Atom One | `atom-one` | light (One Light), dark (One Dark) | [`atom-one.css`](../app/src/styles/themes/atom-one.css) |
+| Catppuccin | `catppuccin` | light (Latte), dark (Mocha) | [`catppuccin.css`](../app/src/styles/themes/catppuccin.css) |
+| Dracula | `dracula` | light (Alucard), dark (Dracula) | [`dracula.css`](../app/src/styles/themes/dracula.css) |
+| Nord | `nord` | light (Snow Storm), dark (Polar Night) | [`nord.css`](../app/src/styles/themes/nord.css) |
 | Print | `print` | light | [`print.css`](../app/src/styles/themes/print.css): white paper, black ink, a white fingerboard |
 
 The app parses the chosen theme, writes it into one `<style>` element and sets

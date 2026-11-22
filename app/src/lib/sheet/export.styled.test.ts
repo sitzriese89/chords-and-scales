@@ -56,7 +56,10 @@ function expectSelfContained(text: string) {
   expect(text).not.toMatch(/svelte-/);
 }
 
-describe('sheet export', () => {
+// Each test starts the whole app with every style in place, and the print checks match every
+// print rule against every element, which jsdom does slowly: on CI runners, with a theme
+// case per built-in scheme before them, they took longer than the default 5 s.
+describe('sheet export', { timeout: 15_000 }, () => {
   let storage: BrowserStorage;
   let files: RecordingFiles;
 

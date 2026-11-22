@@ -55,6 +55,7 @@ ADR-1 to ADR-13 come from the design interview behind [SPEC.md](SPEC.md) (decisi
 | 42 | [Random pick: a button per picker, from what the picker shows, never the pair on screen](#adr-42-random-pick-a-button-per-picker-from-what-the-picker-shows-never-the-pair-on-screen) | Accepted |
 | 43 | [The export sheet: items store their inputs, one `sheet.toml`, its own scoped theme](#adr-43-the-export-sheet-items-store-their-inputs-one-sheettoml-its-own-scoped-theme) | Accepted |
 | 46 | [The root picker is an editable combobox whose list always shows all 17 names](#adr-46-the-root-picker-is-an-editable-combobox-whose-list-always-shows-all-17-names) | Accepted |
+| 48 | [Built-in themes after editor palettes: the original's own variants, nudged to pass the rules, credited in the file](#adr-48-built-in-themes-after-editor-palettes-the-originals-own-variants-nudged-to-pass-the-rules-credited-in-the-file) | Accepted |
 
 ---
 
@@ -1874,3 +1875,46 @@ lives, and whether filtering the list is enough.
   counts the open strings' reach), so a high start fret mostly lists closed shapes anyway.
 - Shortening the neck below a saved start fret leaves the setting as it is; the list then has
   only open-string shapes, or none, until the start fret is lowered.
+
+## ADR-48: Built-in themes after editor palettes: the original's own variants, nudged to pass the rules, credited in the file
+
+**Context.** M5.5 adds built-in themes after four popular editor palettes: Catppuccin,
+Dracula, Nord and Atom One. Each is known for a light and a dark variant under its own names
+(Latte and Mocha, Alucard and Dracula, Snow Storm and Polar Night, One Light and One Dark),
+and none was made for our token set: a palette has a handful of base shades and 5–14
+accents, while a scheme needs 27 tokens plus 12 degree colours that pass the contrast and
+colour-vision rules of ADR-19 and ADR-40. Many upstream accents miss them, mostly in the
+light variants (accents on light backgrounds that must carry white dot labels). The open
+questions were how a palette maps onto the tokens, what to do with a value that fails a rule,
+and how the two variants relate to the light/dark setting.
+
+**Decision.**
+- **One theme per palette, its two variants as the light and dark schemes.** Each is one
+  file (`atom-one.css`, `catppuccin.css`, `dracula.css`, `nord.css`) with both scheme blocks,
+  so it follows *System* like Default does (ADR-40). Catppuccin's Frappé and Macchiato are left
+  out: the format has one dark scheme, and Mocha is the usual dark pick. The picker lists the
+  four after Default and High contrast, alphabetically, with Print last.
+- **Mapping:** surfaces, borders and text from the palette's base shades; accent, link,
+  danger and focus from the accents the palette itself uses for them; the fingerboard from a
+  base shade that sets it off from the surfaces, with frets, strings and inlays from the
+  neutral shades; scale-note dots from a blue or purple, the root from the palette's red. The
+  12 degree colours take the accents in hue order from red, as in the Default theme; where a
+  palette has fewer than 12 (Dracula 7, Atom One 8, Nord 9), the gaps are OKLCH midpoints of
+  their neighbours.
+- **A value that fails a rule is nudged; the rule is never relaxed.** A failing token keeps
+  its hue and chroma and moves in OKLCH lightness by the smallest step that passes. The degree
+  palette is then adjusted as a whole (lightness, chroma, a little hue), as close to the
+  upstream colours as the colour-vision distances allow, the root's colour weighted to move
+  least. The values were found with a one-off script and are written into the files as plain
+  values; each file's header says which tokens are nudged or derived. The files stay
+  hand-editable; there is no build step.
+- **Credit in the file.** Each palette is MIT-licensed; the file's header names the upstream
+  project, its URL and licence, and a test checks that each of these files carries both.
+
+**Consequences.**
+- The themes look like their originals but are not exact: the light variants have darker
+  accents than upstream, and the degree palettes are only loosely the upstream accents. A
+  user who wants the exact colours can copy a file into a user theme and accept the contrast
+  warnings (ADR-40).
+- Editing one of these files means re-checking the rules with `tokens.test.ts`; the script
+  that found the nudged values isn't kept.

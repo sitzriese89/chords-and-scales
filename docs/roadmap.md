@@ -120,7 +120,7 @@ Small adjustments before the UI redesign.
 | M5.2 Collapsible scale picker and settings panels | [#82][82] |  | Open |
 | M5.3 Start fret for chord voicings | [#83][83] |  | Done (#88) |
 | M5.4 Horizontal chord diagrams with the lowest fret number | [#84][84] | M5.3 | Open |
-| M5.5 Built-in themes: Catppuccin, Dracula, Nord, Atom One | [#85][85] |  | Open |
+| M5.5 Built-in themes: Catppuccin, Dracula, Nord, Atom One | [#85][85] |  | Done (#89) |
 
 Suggested waves: (1) M5.1, M5.3, M5.5 → (2) M5.2, M5.4. M5.2 and M5.3 both add settings
 fields, and M5.3 and M5.4 both change `VoicingBrowser.svelte`, so each pair is split.

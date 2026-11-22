@@ -1,0 +1,139 @@
+/*
+ * Catppuccin theme (ADR-40, ADR-48): light is Latte, dark is Mocha.
+ * Palette: Catppuccin, https://github.com/catppuccin/palette, MIT licence.
+ * Mapping: base, mantle and surface0 for the surfaces, text and subtext for text, blue for
+ * links, mauve for the accent and focus, red for danger and the root, lavender (Mocha) or
+ * blue (Latte) for note dots, peach for the selection ring. Degrees: red, maroon, peach,
+ * yellow, green, teal, sky, sapphire, blue, lavender, mauve, pink. The light scheme's
+ * raised surface #ffffff is not in the palette.
+ *
+ * Values that missed the contrast rules in tokens.test.ts were nudged as little as possible
+ * (OKLCH lightness, and for the degree palette the smallest change that keeps the 12
+ * colours apart with colour-vision deficiencies): upstream or derived value → value used.
+ * The root is degree-0; the accent hover is the accent a little darker (light) or lighter
+ * (dark). Format: docs/theme-tokens.md.
+ *
+ * Latte (light):
+ * --border-strong: #8c8fa1 → #818496
+ * --text-link: #1e66f5 → #145deb
+ * --text-danger: #d20f39 → #d00937
+ * --fretboard-dot: #1e66f5 → #1a62f1
+ * --fretboard-dim: #bcc0cc → #c0c4d0
+ * --fretboard-selected: #fe640b → #c54e0e
+ * --degree-1: #e64553 → #ae2363
+ * --degree-2: #fe640b → #983200
+ * --degree-3: #df8e1d → #895e00
+ * --degree-4: #40a02b → #28793a
+ * --degree-5: #179299 → #1d655e
+ * --degree-6: #04a5e5 → #0074a9
+ * --degree-7: #209fb5 → #004c7e
+ * --degree-8: #1e66f5 → #115ffd
+ * --degree-9: #7287fd → #695ecd
+ * --degree-10: #8839ef → #7d27e0
+ * --degree-11: #ea76cb → #bc31a0
+ *
+ * Mocha (dark):
+ * --degree-1: #eba0ac → #e0a282
+ * --degree-2: #fab387 → #fec195
+ * --degree-3: #f9e2af → #fde8b5
+ * --degree-4: #a6e3a1 → #b3f589
+ * --degree-5: #94e2d5 → #5de1c2
+ * --degree-6: #89dceb → #83e9ff
+ * --degree-7: #74c7ec → #64c5db
+ * --degree-8: #89b4fa → #85adf9
+ * --degree-9: #b4befe → #bcc2ff
+ * --degree-10: #cba6f7 → #c08fd8
+ * --degree-11: #f5c2e7 → #fec8e8
+ */
+
+:root {
+  --theme-name: 'Catppuccin';
+}
+
+[data-scheme='light'] {
+  --surface: #eff1f5;
+  --surface-raised: #ffffff;
+  --surface-sunken: #e6e9ef;
+  --border: #bcc0cc;
+  --border-strong: #818496;
+  --text: #4c4f69;
+  --text-muted: #5c5f77;
+  --text-link: #145deb;
+  --text-danger: #d00937;
+  --accent: #8839ef;
+  --accent-hover: #771dda;
+  --accent-text: #eff1f5;
+  --focus-ring: #8839ef;
+
+  --fretboard-wood: #ccd0da;
+  --fretboard-nut: #4c4f69;
+  --fretboard-fret: #6c6f85;
+  --fretboard-string: #5c5f77;
+  --fretboard-inlay: #acb0be;
+  --fretboard-dot: #1a62f1;
+  --fretboard-dot-text: #eff1f5;
+  --fretboard-root: #d20f39;
+  --fretboard-root-text: #eff1f5;
+  --fretboard-dim: #c0c4d0;
+  --fretboard-dim-text: #4c4f69;
+  --fretboard-focus: #8839ef;
+  --fretboard-capo: #4c4f69;
+  --fretboard-selected: #c54e0e;
+
+  --degree-0: #d20f39;
+  --degree-1: #ae2363;
+  --degree-2: #983200;
+  --degree-3: #895e00;
+  --degree-4: #28793a;
+  --degree-5: #1d655e;
+  --degree-6: #0074a9;
+  --degree-7: #004c7e;
+  --degree-8: #115ffd;
+  --degree-9: #695ecd;
+  --degree-10: #7d27e0;
+  --degree-11: #bc31a0;
+}
+
+[data-scheme='dark'] {
+  --surface: #1e1e2e;
+  --surface-raised: #313244;
+  --surface-sunken: #181825;
+  --border: #45475a;
+  --border-strong: #7f849c;
+  --text: #cdd6f4;
+  --text-muted: #a6adc8;
+  --text-link: #89b4fa;
+  --text-danger: #f38ba8;
+  --accent: #cba6f7;
+  --accent-hover: #d8bafd;
+  --accent-text: #11111b;
+  --focus-ring: #cba6f7;
+
+  --fretboard-wood: #181825;
+  --fretboard-nut: #bac2de;
+  --fretboard-fret: #7f849c;
+  --fretboard-string: #a6adc8;
+  --fretboard-inlay: #45475a;
+  --fretboard-dot: #b4befe;
+  --fretboard-dot-text: #11111b;
+  --fretboard-root: #f38ba8;
+  --fretboard-root-text: #11111b;
+  --fretboard-dim: #585b70;
+  --fretboard-dim-text: #cdd6f4;
+  --fretboard-focus: #cba6f7;
+  --fretboard-capo: #9399b2;
+  --fretboard-selected: #fab387;
+
+  --degree-0: #f38ba8;
+  --degree-1: #e0a282;
+  --degree-2: #fec195;
+  --degree-3: #fde8b5;
+  --degree-4: #b3f589;
+  --degree-5: #5de1c2;
+  --degree-6: #83e9ff;
+  --degree-7: #64c5db;
+  --degree-8: #85adf9;
+  --degree-9: #bcc2ff;
+  --degree-10: #c08fd8;
+  --degree-11: #fec8e8;
+}

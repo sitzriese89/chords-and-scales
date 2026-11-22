@@ -46,6 +46,24 @@ describe('built-in themes', () => {
     expect(print.schemes.light!['--fretboard-wood']).toBe('#ffffff');
   });
 
+  it.each([
+    ['atom-one', 'Atom One'],
+    ['catppuccin', 'Catppuccin'],
+    ['dracula', 'Dracula'],
+    ['nord', 'Nord'],
+  ])('include %s after an editor palette, light and dark, crediting it (ADR-48)', (id, name) => {
+    const ids = BUILT_IN_THEMES.map((t) => t.id);
+    const theme = BUILT_IN_THEMES.find((t) => t.id === id)!;
+    expect(theme.name).toBe(name);
+    expect(schemesOf(theme)).toEqual(['light', 'dark']);
+    // After the app's own themes, before Print.
+    expect(ids.indexOf(id)).toBeGreaterThan(ids.indexOf('high-contrast'));
+    expect(ids.indexOf(id)).toBeLessThan(ids.indexOf('print'));
+    const header = BUILT_IN_THEME_FILES[id].slice(0, BUILT_IN_THEME_FILES[id].indexOf('*/'));
+    expect(header).toMatch(/https:\/\//);
+    expect(header).toMatch(/MIT/);
+  });
+
   it('have distinct names', () => {
     const names = BUILT_IN_THEMES.map((t) => t.name);
     expect(new Set(names).size).toBe(names.length);

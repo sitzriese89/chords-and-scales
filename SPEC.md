@@ -665,8 +665,11 @@ Algorithmic (works for any tuning and 4–9 strings; no static shape library).
 
 - One shared **CSS theme system** used for both the app UI and exports.
 - A **theme** is a CSS file setting the tokens for a light scheme, a dark scheme or both
-  (ADR-40). Built-in: **Default** (light and dark), **High contrast** (light and dark) and
-  **Print** (light only: white paper, black ink, a white fingerboard).
+  (ADR-40). Built-in: **Default** (light and dark), **High contrast** (light and dark), four
+  after popular editor palettes, each with the light and dark variants the original has
+  (ADR-48): **Atom One** (One Light, One Dark), **Catppuccin** (Latte, Mocha), **Dracula**
+  (Alucard, Dracula) and **Nord** (Snow Storm, Polar Night), and **Print** (light only: white
+  paper, black ink, a white fingerboard).
 - **Appearance** in the settings region: a theme picker (built-in themes, then the user's
   under *Your themes*) and light/dark/system. System follows the OS as it changes; a theme
   with one scheme always shows it. Both are saved in `settings.toml` (`display.theme_id`,
