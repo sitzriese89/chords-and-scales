@@ -299,6 +299,105 @@ fn a_capo_is_the_new_nut() {
     assert!(closed.iter().all(|v| v.notes().all(|n| n.fret > 2)));
 }
 
+fn from_fret(start_fret: u8, open_strings: bool) -> VoicingOptions {
+    VoicingOptions {
+        start_fret,
+        open_strings,
+        ..VoicingOptions::default()
+    }
+}
+
+/// Every fretted note (above the capo) is on `start` or higher.
+fn fretted_from(found: &[Voicing], capo: u8, start: u8) -> bool {
+    found
+        .iter()
+        .all(|v| v.notes().all(|n| n.fret == capo || n.fret >= start))
+}
+
+#[test]
+fn a_start_fret_keeps_the_fretted_notes_on_it_or_higher() {
+    let found = generate("guitar-6-standard", "major", "C", 0, from_fret(5, true));
+    // The list fills up with shapes up the neck, not just what was left of the default one.
+    assert_eq!(found.len(), DEFAULT_VOICING_LIMIT);
+    assert!(fretted_from(&found, 0, 5), "{:?}", shapes(&found));
+    assert!(found.iter().all(|v| v.lowest_fret.is_some_and(|f| f >= 5)));
+    // The A-shape barre on 3 is gone, the E-shape on 8 is near the top.
+    assert!(rank_of(&found, "x35553").is_none());
+    let e_shape = rank_of(&found, "8(10)(10)988");
+    assert!(e_shape.is_some_and(|r| r < 5), "{:?}", shapes(&found[..10]));
+    assert!(found.windows(2).all(|pair| pair[0].score >= pair[1].score));
+}
+
+#[test]
+fn open_strings_follow_their_setting_above_a_start_fret() {
+    // E major from fret 7 up: open E strings still ring when allowed. They rank low (they
+    // stretch the diagram to the nut), so look at a long list.
+    let long = |open_strings| VoicingOptions {
+        limit: 2000,
+        ..from_fret(7, open_strings)
+    };
+    let open = generate("guitar-6-standard", "major", "E", 0, long(true));
+    assert!(fretted_from(&open, 0, 7));
+    assert!(open.iter().any(|v| v.notes().any(|n| n.fret == 0)));
+    assert!(rank_of(&open, "079990").is_some());
+    let closed = generate("guitar-6-standard", "major", "E", 0, long(false));
+    assert!(!closed.is_empty());
+    assert!(closed.iter().all(|v| v.notes().all(|n| n.fret >= 7)));
+    assert!(closed.len() < open.len());
+}
+
+#[test]
+fn start_fret_zero_or_at_the_capo_changes_nothing() {
+    for (chord_id, root) in [("major", "C"), ("min7", "A"), ("dom7", "G")] {
+        let all = generate(
+            "guitar-6-standard",
+            chord_id,
+            root,
+            0,
+            VoicingOptions::default(),
+        );
+        let zero = generate("guitar-6-standard", chord_id, root, 0, from_fret(0, true));
+        let one = generate("guitar-6-standard", chord_id, root, 0, from_fret(1, true));
+        assert_eq!(zero, all);
+        // Fret 1 is the lowest a note can be fretted on anyway.
+        assert_eq!(one, all);
+    }
+    // With a capo on 3, a start fret up to 4 (the first fret above it) changes nothing.
+    let capo = generate(
+        "guitar-6-standard",
+        "major",
+        "D",
+        3,
+        VoicingOptions::default(),
+    );
+    for start in 0..=4 {
+        let found = generate("guitar-6-standard", "major", "D", 3, from_fret(start, true));
+        assert_eq!(found, capo, "start fret {start}");
+    }
+    let above = generate("guitar-6-standard", "major", "D", 3, from_fret(5, true));
+    assert_ne!(above, capo);
+    assert!(fretted_from(&above, 3, 5));
+}
+
+#[test]
+fn a_start_fret_high_up_the_neck_still_finds_shapes() {
+    let found = generate("guitar-6-standard", "major", "C", 0, from_fret(15, false));
+    assert_eq!(found.len(), DEFAULT_VOICING_LIMIT);
+    assert!(fretted_from(&found, 0, 15));
+    // On the last frets only shapes that fit below fret 24 remain.
+    let top = generate("guitar-6-standard", "major", "C", 0, from_fret(20, false));
+    assert!(!top.is_empty());
+    assert!(
+        top.iter()
+            .all(|v| v.notes().all(|n| (20..=24).contains(&n.fret)))
+    );
+    // Past the neck nothing can be fretted: only open strings are left, and C has none.
+    let past = generate("guitar-6-standard", "major", "C", 0, from_fret(25, true));
+    assert!(past.is_empty());
+    let e = generate("guitar-6-standard", "power", "E", 0, from_fret(25, true));
+    assert!(e.iter().all(|v| v.lowest_fret.is_none()));
+}
+
 #[test]
 fn the_fifth_may_be_left_out_but_not_the_third() {
     let found = generate(
@@ -525,7 +624,11 @@ fn judge(
             None if !options.muted_strings => return None,
             None => None,
             Some(fret) => {
-                if fret < capo || fret > neck || (fret == capo && !options.open_strings) {
+                if fret < capo
+                    || fret > neck
+                    || (fret == capo && !options.open_strings)
+                    || (fret > capo && fret < options.start_fret)
+                {
                     return None;
                 }
                 let note = tuning.notes()[index].transpose(i32::from(fret)).unwrap();
@@ -637,15 +740,20 @@ fn any_options() -> impl Strategy<Value = VoicingOptions> {
         any::<bool>(),
         any::<bool>(),
         any::<bool>(),
+        // Mostly no start fret, as in the app; otherwise anywhere up to past a short neck.
+        prop_oneof![2 => Just(0u8), 1 => 1u8..=14],
         1..=60usize,
     )
         .prop_map(
-            |(max_span, open_strings, muted_strings, inversions, limit)| VoicingOptions {
-                max_span,
-                open_strings,
-                muted_strings,
-                inversions,
-                limit,
+            |(max_span, open_strings, muted_strings, inversions, start_fret, limit)| {
+                VoicingOptions {
+                    max_span,
+                    open_strings,
+                    muted_strings,
+                    inversions,
+                    start_fret,
+                    limit,
+                }
             },
         )
 }

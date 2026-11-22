@@ -91,6 +91,23 @@ describe('chordVoicings (WASM)', () => {
     expect(found.map(written)).toContain('x54232');
   });
 
+  it('keeps fretted notes on the start fret or higher', () => {
+    const standard = tuning('guitar-6-standard');
+    const fretted = (v: ChordVoicing) =>
+      v.strings.flatMap((s) => (s === null || s.fret === 0 ? [] : [s.fret]));
+    const high = chordVoicings(standard, 24, 0, 'major', C, { startFret: 5 });
+    expect(high).toHaveLength(50);
+    expect(high.every((v) => fretted(v).every((fret) => fret >= 5))).toBe(true);
+    expect(high.map(written)).not.toContain('x32010');
+    // 0 is the default list.
+    expect(chordVoicings(standard, 24, 0, 'major', C, { startFret: 0 })).toEqual(
+      chordVoicings(standard, 24, 0, 'major', C),
+    );
+    expect(() => chordVoicings(standard, 24, 0, 'major', C, { startFret: 300 })).toThrow(
+      /start fret/,
+    );
+  });
+
   it('labels tones as the chord does and works on nine strings', () => {
     const nine = tuning('guitar-9-standard');
     const found = chordVoicings(nine, 24, 0, 'dom9', C, { limit: 10 });

@@ -1,11 +1,11 @@
 <!--
   @component
   The voicing browser in the chord panel (SPEC §5.6, ADR-37): the constraints (max fret span,
-  open strings, muted strings, inversions), saved in the settings, and the core's ranked shapes
-  of the panel's chord on the current instrument, tuning, fret count and capo, best first, each
-  as a chord diagram. Choosing a shape shows only its positions on the explorer's neck and
-  strums it; choosing it again shows every position of the chord again. Nothing is shown while
-  no chord is chosen. "Add shape to sheet", while a shape is chosen, puts its diagram on the
+  start fret, open strings, muted strings, inversions), saved in the settings, and the core's
+  ranked shapes of the panel's chord on the current instrument, tuning, fret count and capo, best
+  first, each as a chord diagram. Choosing a shape shows only its positions on the explorer's
+  neck and strums it; choosing it again shows every position of the chord again. Nothing is
+  shown while no chord is chosen. "Add shape to sheet", while a shape is chosen, puts its diagram on the
   export sheet (ADR-43).
 
   The shapes are the chord's own: a slash chord's bass (`Am7/G`) is not voiced, so the list is
@@ -55,6 +55,23 @@
 
   function constrain(change: Partial<Settings['voicings']>) {
     settings.update({ voicings: change }).catch(ignore);
+  }
+
+  /** The highest start fret: the neck's last fret (frets are absolute, ADR-18). */
+  const lastFret = $derived(settings.current.instrument.frets);
+  let startProblem = $state<string | null>(null);
+
+  /** Saves a typed start fret, 0 to the last fret; anything else is refused and put back. */
+  function setStartFret(event: Event & { currentTarget: HTMLInputElement }) {
+    const input = event.currentTarget;
+    const value = input.valueAsNumber;
+    if (!Number.isInteger(value) || value < 0 || value > lastFret) {
+      startProblem = `The start fret is a fret from 0 to ${lastFret}.`;
+      input.value = String(constraints.startFret);
+      return;
+    }
+    startProblem = null;
+    constrain({ startFret: value });
   }
 
   /** Shows the shape alone on the neck and strums it; the chosen one again shows them all. */
@@ -119,6 +136,17 @@
         </select>
       </label>
       <label>
+        Start fret
+        <input
+          type="number"
+          min="0"
+          max={lastFret}
+          step="1"
+          value={constraints.startFret}
+          onchange={setStartFret}
+        />
+      </label>
+      <label>
         <input
           type="checkbox"
           checked={constraints.openStrings}
@@ -143,6 +171,9 @@
         Inversions
       </label>
     </fieldset>
+    {#if startProblem}
+      <p class="problem" role="alert">{startProblem}</p>
+    {/if}
 
     {#if list.length === 0}
       <p class="muted">No playable shape of {symbol} fits these constraints on this neck.</p>
@@ -236,13 +267,24 @@
     font-size: 0.875rem;
   }
 
-  select {
+  select,
+  input[type='number'] {
     font: inherit;
     color: var(--text);
     background: var(--surface);
     border: 1px solid var(--border-strong);
     border-radius: 0.375rem;
     padding: 0.125rem 0.375rem;
+  }
+
+  input[type='number'] {
+    width: 4rem;
+  }
+
+  .problem {
+    margin: 0;
+    color: var(--text-danger);
+    font-size: 0.875rem;
   }
 
   button {

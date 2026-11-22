@@ -43,6 +43,7 @@ export function voicingList(
       openStrings: voicings.openStrings,
       mutedStrings: voicings.mutedStrings,
       inversions: voicings.inversions,
+      startFret: voicings.startFret,
       ...(limit === undefined ? {} : { limit }),
     },
   );
