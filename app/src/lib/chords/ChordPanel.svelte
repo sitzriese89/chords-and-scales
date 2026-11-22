@@ -8,7 +8,9 @@
   for a degree. The panel lists the chord's notes and strums it (lowest
   string first, ADR-28): the shape chosen in the voicing browser if there is one, else the
   chord stacked up from its lowest root (ADR-32, ADR-37). The user's own chords are made, edited
-  and deleted in the root and quality picker (ADR-36). That picker's qualities show their mood
+  and deleted in the root and quality picker (ADR-36); the editor's dialog,
+  `ChordEditorDialog`, is mounted by the app outside the pages, so reverse lookup on the Scales
+  page can open it too (ADR-53). That picker's qualities show their mood
   tags and can be filtered by tag with the chips; a chosen chord the filter hides stays chosen
   (ADR-41). **Random chord**, in the same picker, chooses a root and a quality from what the
   chips let through, as if the user had picked them (SPEC §5.8, ADR-42); `random` is the number
@@ -37,7 +39,6 @@
   import { getTagFilters, HIDDEN_BY_TAGS, TagChips, tagList, withTags } from '../tags';
   import { getChord } from '../theory';
   import { getUserCatalogs } from '../user-catalogs.svelte';
-  import ChordEditorDialog from './ChordEditorDialog.svelte';
   import { chordSymbol } from './display';
   import type { ChordSize } from './harmonize';
   import { getChordState } from './state.svelte';
@@ -470,8 +471,6 @@
 
     {@render children?.()}
   </div>
-
-  <ChordEditorDialog />
 </div>
 
 <style>

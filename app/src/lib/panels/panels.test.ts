@@ -1,188 +1,185 @@
-// The collapsible side panels (ADR-50): the component alone, and the scale picker and the
-// settings panel in the real app.
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/svelte';
+// The drawer and the popover on their own (ADR-53); the app's use of them is in
+// `shell.test.ts`.
+import { cleanup, fireEvent, render, screen } from '@testing-library/svelte';
 import { createRawSnippet } from 'svelte';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import App from '../../App.svelte';
-import { defaultSettings, SETTINGS_DOCUMENT, serializeSettings, type Settings } from '../settings';
-import { BrowserStorage } from '../storage';
-import CollapsiblePanel from './CollapsiblePanel.svelte';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import Drawer from './Drawer.svelte';
+import Popover from './Popover.svelte';
 
-const body = createRawSnippet(() => ({ render: () => '<p>Panel content</p>' }));
+const body = createRawSnippet(() => ({
+  render: () => '<div><label>Name <input /></label><button type="button">Go</button></div>',
+}));
 
-describe('CollapsiblePanel', () => {
-  afterEach(cleanup);
-
-  it('shows its body and a Collapse button that controls it while expanded', () => {
-    const ontoggle = vi.fn();
-    render(CollapsiblePanel, {
-      id: 'demo',
-      title: 'Demo',
-      collapsed: false,
-      ontoggle,
-      children: body,
-    });
-    const button = screen.getByRole('button', { name: 'Collapse Demo' });
-    expect(button).toHaveAttribute('aria-expanded', 'true');
-    expect(button).toHaveAttribute('aria-controls', 'demo-body');
-    expect(document.getElementById('demo-body')).toBeVisible();
-    expect(screen.getByText('Panel content')).toBeVisible();
-    expect(screen.getByText('Demo')).toBeVisible();
+describe('Drawer', () => {
+  afterEach(() => {
+    cleanup();
+    document.body.innerHTML = '';
   });
 
-  it('keeps only its title and an Expand button while collapsed; the body stays mounted', () => {
-    render(CollapsiblePanel, {
+  function setup(open: boolean) {
+    const opener = document.createElement('button');
+    opener.textContent = 'Open';
+    const outside = document.createElement('p');
+    outside.textContent = 'Page text';
+    document.body.append(opener, outside);
+    const onclose = vi.fn();
+    const result = render(Drawer, {
       id: 'demo',
       title: 'Demo',
-      collapsed: true,
-      ontoggle: () => {},
+      open,
+      onclose,
+      opener,
       children: body,
     });
-    const button = screen.getByRole('button', { name: 'Expand Demo' });
-    expect(button).toHaveAttribute('aria-expanded', 'false');
-    expect(button).toHaveAttribute('aria-controls', 'demo-body');
-    expect(screen.getByText('Demo')).toBeVisible();
-    expect(screen.getByText('Panel content')).not.toBeVisible();
+    return { opener, outside, onclose, ...result };
+  }
+
+  const drawer = () => screen.getByRole('dialog', { name: 'Demo' });
+
+  it('is hidden while closed, its content mounted', () => {
+    setup(false);
+    expect(document.getElementById('demo')).not.toBeVisible();
+    expect(screen.getByRole('textbox', { name: 'Name', hidden: true })).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 
-  it('asks its parent to toggle; it is a native button, so Enter and Space work', async () => {
-    const ontoggle = vi.fn();
-    render(CollapsiblePanel, {
-      id: 'demo',
-      title: 'Demo',
-      collapsed: false,
-      ontoggle,
-      children: body,
-    });
-    const button = screen.getByRole('button', { name: 'Collapse Demo' });
-    expect(button.tagName).toBe('BUTTON');
-    expect(button).toHaveAttribute('type', 'button');
-    expect(button).not.toHaveAttribute('tabindex');
+  it('shows its title and moves focus to its first control when it opens', async () => {
+    const { rerender } = setup(false);
+    await rerender({ open: true });
+    expect(drawer()).toBeVisible();
+    expect(screen.getByRole('heading', { name: 'Demo' })).toBeVisible();
+    expect(screen.getByRole('textbox', { name: 'Name' })).toHaveFocus();
+  });
+
+  it('closes with ✕ and gives focus back to the opener', async () => {
+    const { onclose, opener } = setup(true);
+    const close = screen.getByRole('button', { name: 'Close Demo' });
+    expect(close.tagName).toBe('BUTTON');
+    await fireEvent.click(close);
+    expect(onclose).toHaveBeenCalledOnce();
+    expect(opener).toHaveFocus();
+  });
+
+  it('closes with Escape and gives focus back to the opener', async () => {
+    const { onclose, opener } = setup(true);
+    await fireEvent.keyDown(screen.getByRole('textbox', { name: 'Name' }), { key: 'Escape' });
+    expect(onclose).toHaveBeenCalledOnce();
+    expect(opener).toHaveFocus();
+  });
+
+  it('leaves an Escape another control already handled', async () => {
+    const { onclose } = setup(true);
+    const input = screen.getByRole('textbox', { name: 'Name' });
+    input.addEventListener('keydown', (event) => event.preventDefault());
+    await fireEvent.keyDown(input, { key: 'Escape' });
+    expect(onclose).not.toHaveBeenCalled();
+  });
+
+  it('closes on a click outside it, but not on a click inside or on the opener', async () => {
+    const { onclose, opener, outside } = setup(true);
+    await fireEvent.click(screen.getByRole('button', { name: 'Go' }));
+    await fireEvent.click(opener);
+    expect(onclose).not.toHaveBeenCalled();
+    await fireEvent.click(outside);
+    expect(onclose).toHaveBeenCalledOnce();
+  });
+
+  it('after a click outside, gives focus back only if it would be lost', async () => {
+    const { opener, outside, rerender } = setup(true);
+    // The page text takes no focus: focus would be lost inside the closing drawer.
+    await fireEvent.click(outside);
+    expect(opener).toHaveFocus();
+
+    const field = document.createElement('input');
+    document.body.append(field);
+    await rerender({ open: false });
+    await rerender({ open: true });
+    field.focus();
+    await fireEvent.click(field);
+    expect(field).toHaveFocus();
+  });
+
+  it('leaves clicks and keys in a modal dialog above it alone', async () => {
+    const { onclose } = setup(true);
+    const modal = document.createElement('div');
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    const button = document.createElement('button');
+    modal.append(button);
+    document.body.append(modal);
     await fireEvent.click(button);
-    expect(ontoggle).toHaveBeenCalledOnce();
+    await fireEvent.keyDown(button, { key: 'Escape' });
+    expect(onclose).not.toHaveBeenCalled();
+  });
+
+  it('stops listening once closed', async () => {
+    const { onclose, outside, rerender } = setup(true);
+    await rerender({ open: false });
+    await fireEvent.click(outside);
+    await fireEvent.keyDown(document.body, { key: 'Escape' });
+    expect(onclose).not.toHaveBeenCalled();
   });
 });
 
-describe('the side panels in the app', () => {
-  beforeEach(() => window.localStorage.clear());
-  afterEach(cleanup);
+describe('Popover', () => {
+  afterEach(() => {
+    cleanup();
+    document.body.innerHTML = '';
+  });
 
-  async function startApp(change: (s: Settings) => void = () => {}) {
-    const storage = new BrowserStorage(window.localStorage);
-    const settings = defaultSettings();
-    change(settings);
-    await storage.write(SETTINGS_DOCUMENT, serializeSettings(settings));
-    render(App, { storage });
-    await screen.findByRole('grid', { name: /^Fretboard/ });
-    return storage;
+  const label = createRawSnippet(() => ({ render: () => '<span>Neck summary</span>' }));
+
+  function setup() {
+    const outside = document.createElement('p');
+    outside.textContent = 'Page text';
+    document.body.append(outside);
+    render(Popover, { id: 'pop', label: 'Instrument', button: label, children: body });
+    const button = screen.getByRole('button', { name: /^Neck summary/ });
+    return { outside, button };
   }
 
-  const picker = () => screen.getByRole('navigation', { name: 'Scale picker' });
-  const settingsPanel = () => screen.getByRole('complementary', { name: 'Settings' });
-  const layout = () => document.querySelector('.layout')!;
-  // Found while hidden too, to check that they are.
-  const rootField = () => within(picker()).getByRole('combobox', { name: 'Root', hidden: true });
-  const tuningSelect = () =>
-    within(settingsPanel()).getByRole('combobox', { name: 'Tuning', hidden: true });
+  const panel = () => screen.queryByRole('dialog', { name: 'Instrument' });
 
-  it('collapses and expands the scale picker by mouse, and saves it', async () => {
-    const storage = await startApp();
-    const button = within(picker()).getByRole('button', { name: 'Collapse Scale picker' });
+  it('is a closed disclosure button at first', () => {
+    const { button } = setup();
+    expect(button).toHaveAttribute('aria-expanded', 'false');
+    expect(button).toHaveAttribute('aria-controls', 'pop');
+    expect(panel()).toBeNull();
+  });
+
+  it('opens on a click, focus moving into it, and closes on a second click', async () => {
+    const { button } = setup();
+    await fireEvent.click(button);
     expect(button).toHaveAttribute('aria-expanded', 'true');
-    expect(rootField()).toBeVisible();
-    expect(layout()).not.toHaveClass('picker-collapsed');
-
+    expect(panel()).toBeVisible();
+    expect(screen.getByRole('textbox', { name: 'Name' })).toHaveFocus();
     await fireEvent.click(button);
-    const expand = within(picker()).getByRole('button', { name: 'Expand Scale picker' });
-    expect(expand).toHaveAttribute('aria-expanded', 'false');
-    expect(within(picker()).getByText('Scale picker')).toBeVisible();
-    expect(rootField()).not.toBeVisible();
-    // The board's column takes the width.
-    expect(layout()).toHaveClass('picker-collapsed');
-    // The other panel is untouched.
-    expect(tuningSelect()).toBeVisible();
-    await expect
-      .poll(() => storage.read(SETTINGS_DOCUMENT))
-      .toMatch(/\[scale_picker\]\ncollapsed = true/);
-
-    await fireEvent.click(expand);
-    expect(rootField()).toBeVisible();
-    expect(layout()).not.toHaveClass('picker-collapsed');
-    await expect
-      .poll(() => storage.read(SETTINGS_DOCUMENT))
-      .toMatch(/\[scale_picker\]\ncollapsed = false/);
-  });
-
-  it('collapses and expands the settings panel from the keyboard, and saves it', async () => {
-    const storage = await startApp();
-    const button = within(settingsPanel()).getByRole('button', { name: 'Collapse Settings' });
-    // Keyboard users reach the native button and activate it; a button's Enter and Space
-    // arrive as a click.
-    button.focus();
+    expect(button).toHaveAttribute('aria-expanded', 'false');
+    expect(panel()).toBeNull();
     expect(button).toHaveFocus();
+  });
+
+  it('opens from the keyboard and closes with Escape, focus back on the button', async () => {
+    const { button } = setup();
+    button.focus();
+    // A native button: Enter and Space arrive as a click.
     await fireEvent.click(button);
-    const expand = within(settingsPanel()).getByRole('button', { name: 'Expand Settings' });
-    expect(expand).toHaveFocus();
-    expect(expand).toHaveAttribute('aria-expanded', 'false');
-    expect(tuningSelect()).not.toBeVisible();
-    expect(layout()).toHaveClass('settings-collapsed');
-    expect(rootField()).toBeVisible();
-    await expect
-      .poll(() => storage.read(SETTINGS_DOCUMENT))
-      .toMatch(/\[settings_panel\]\ncollapsed = true/);
-
-    await fireEvent.click(expand);
-    expect(tuningSelect()).toBeVisible();
-    expect(layout()).not.toHaveClass('settings-collapsed');
+    await fireEvent.keyDown(screen.getByRole('textbox', { name: 'Name' }), { key: 'Escape' });
+    expect(panel()).toBeNull();
+    expect(button).toHaveFocus();
   });
 
-  it('starts with the panels as they were saved', async () => {
-    await startApp((s) => {
-      s.scalePicker.collapsed = true;
-      s.settingsPanel.collapsed = true;
+  it('closes on a click outside it, and keeps what was typed for the next time', async () => {
+    const { button, outside } = setup();
+    await fireEvent.click(button);
+    await fireEvent.input(screen.getByRole('textbox', { name: 'Name' }), {
+      target: { value: 'half done' },
     });
-    expect(within(picker()).getByRole('button', { name: 'Expand Scale picker' })).toHaveAttribute(
-      'aria-expanded',
-      'false',
-    );
-    expect(
-      within(settingsPanel()).getByRole('button', { name: 'Expand Settings' }),
-    ).toHaveAttribute('aria-expanded', 'false');
-    expect(rootField()).not.toBeVisible();
-    expect(tuningSelect()).not.toBeVisible();
-    expect(layout()).toHaveClass('picker-collapsed');
-    expect(layout()).toHaveClass('settings-collapsed');
-  });
-
-  it('keeps a collapsed panel collapsed across a restart', async () => {
-    const storage = await startApp();
-    await fireEvent.click(within(picker()).getByRole('button', { name: 'Collapse Scale picker' }));
-    await expect
-      .poll(() => storage.read(SETTINGS_DOCUMENT))
-      .toMatch(/\[scale_picker\]\ncollapsed = true/);
-    cleanup();
-
-    render(App, { storage });
-    await screen.findByRole('grid', { name: /^Fretboard/ });
-    expect(within(picker()).getByRole('button', { name: 'Expand Scale picker' })).toBeVisible();
-    expect(rootField()).not.toBeVisible();
-    expect(tuningSelect()).toBeVisible();
-  });
-
-  it('opens an older settings file without the panel tables with both panels expanded', async () => {
-    const storage = new BrowserStorage(window.localStorage);
-    await storage.write(SETTINGS_DOCUMENT, 'version = 1\n[chord_panel]\ncollapsed = true\n');
-    render(App, { storage });
-    await screen.findByRole('grid', { name: /^Fretboard/ });
-    expect(within(picker()).getByRole('button', { name: 'Collapse Scale picker' })).toHaveAttribute(
-      'aria-expanded',
-      'true',
-    );
-    expect(
-      within(settingsPanel()).getByRole('button', { name: 'Collapse Settings' }),
-    ).toHaveAttribute('aria-expanded', 'true');
-    expect(rootField()).toBeVisible();
-    expect(tuningSelect()).toBeVisible();
-    expect(screen.queryByRole('status')).toBeNull();
+    await fireEvent.click(screen.getByRole('button', { name: 'Go' }));
+    expect(panel()).toBeVisible();
+    await fireEvent.click(outside);
+    expect(panel()).toBeNull();
+    await fireEvent.click(button);
+    expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue('half done');
   });
 });

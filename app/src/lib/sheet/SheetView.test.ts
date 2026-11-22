@@ -3,6 +3,7 @@
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import App from '../../App.svelte';
+import { appReady, goTo, scalePicker } from '../../test-shell';
 import { cMajorHarmonizer } from '../chords/fixture-harmonizer';
 import { defaultSettings, SETTINGS_DOCUMENT, serializeSettings } from '../settings';
 import { BrowserStorage, type Storage } from '../storage';
@@ -11,7 +12,7 @@ import { SHEET_DOCUMENT } from './store.svelte';
 
 async function startApp(storage: Storage) {
   render(App, { storage, harmonizer: cMajorHarmonizer });
-  await screen.findByRole('grid', { name: /^Fretboard/ });
+  await appReady();
 }
 
 /** Closes the app and starts it again on the same storage. */
@@ -33,9 +34,11 @@ const surfaceOf = (element: HTMLElement) =>
 
 /** Adds the scale, its tab and a chord, as a user would. */
 async function addScaleTabAndChord() {
+  goTo('Scales');
   await click('Add scale to sheet');
   expect(screen.getByRole('status')).toHaveTextContent('Added to the sheet (1 item).');
   await click('Add tab to sheet');
+  goTo('Chords');
   await pick('Chord root', 'G');
   await pick('Chord quality', 'dom7');
   await click('Add chord to sheet');
@@ -80,7 +83,7 @@ describe('export sheet', () => {
     await startApp(storage);
     await click('Add scale to sheet');
     // Change the scale and the labels afterwards.
-    await fireEvent.change(screen.getByRole('listbox', { name: 'Scale' }), {
+    await fireEvent.change(scalePicker().getByRole('listbox', { name: 'Scale' }), {
       target: { value: 'major' },
     });
     await fireEvent.click(screen.getByRole('radio', { name: 'Intervals' }));
@@ -93,6 +96,7 @@ describe('export sheet', () => {
 
   it('adds a chosen voicing as a chord diagram', async () => {
     await startApp(storage);
+    goTo('Chords');
     await pick('Chord quality', 'major');
     expect(screen.queryByRole('button', { name: 'Add shape to sheet' })).toBeNull();
     await fireEvent.click(screen.getByRole('button', { name: /^\d+\. x32010(,|$)/ }));

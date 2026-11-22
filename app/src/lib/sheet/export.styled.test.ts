@@ -5,6 +5,7 @@ import '../../styles/base.css';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '../../App.svelte';
+import { goTo } from '../../test-shell';
 import { cMajorHarmonizer } from '../chords/fixture-harmonizer';
 import { PNG_SIGNATURE, type Printer } from '../export';
 import { defaultSettings, SETTINGS_DOCUMENT, serializeSettings } from '../settings';
@@ -90,6 +91,7 @@ describe('sheet export', { timeout: 15_000 }, () => {
     await screen.findByRole('grid', { name: /^Fretboard/ });
     await click('Add scale to sheet');
     await click('Add tab to sheet');
+    goTo('Chords');
     await pick('Chord root', 'G');
     await pick('Chord quality', 'dom7');
     await click('Add chord to sheet');
@@ -394,7 +396,7 @@ describe('sheet export', { timeout: 15_000 }, () => {
 
   it('prints pages without the sheet as they are', async () => {
     await sheetWithEveryKind();
-    await click('Explorer');
+    await click('Scales');
     await screen.findByRole('grid', { name: /^Fretboard/ });
     expect(document.querySelector('[data-sheet]')).toBeNull();
     const hiding = printRules().filter((r) => r.style.getPropertyValue('display') === 'none');

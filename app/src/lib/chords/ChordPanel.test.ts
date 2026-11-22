@@ -1,9 +1,10 @@
 // The chord panel in the real app: the real WASM core, settings and storage and a fake
 // AudioContext. Most tests pass a C major fixture for the harmonize seam; the last block uses
 // the app's own default, the core's harmonize.
-import { cleanup, fireEvent, render, screen } from '@testing-library/svelte';
+import { cleanup, fireEvent, render } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import App from '../../App.svelte';
+import { appReady, goTo, on } from '../../test-shell';
 import { AudioEngine, midiToHz } from '../audio';
 import { FakeAudioContext, FakeGesture } from '../audio/fake-context';
 import { defaultSettings, SETTINGS_DOCUMENT, serializeSettings, type Settings } from '../settings';
@@ -47,12 +48,13 @@ async function startApp(options: {
       : { harmonizer: options.harmonizer === undefined ? cMajorHarmonizer : options.harmonizer }),
     ...(options.audio ? { audio: options.audio } : {}),
   });
-  await screen.findByRole('grid', { name: /^Fretboard/ });
+  await appReady();
   return storage;
 }
 
 /** The neck's dots by role, as the set of their labels. */
 function neck(): Record<string, Set<string>> {
+  goTo('Scales');
   const roles: Record<string, Set<string>> = { root: new Set(), tone: new Set(), dim: new Set() };
   for (const g of document.querySelectorAll<SVGGElement>('svg.fretboard g.dot')) {
     roles[g.dataset.role ?? ''].add(g.querySelector('text')?.textContent ?? '');
@@ -60,9 +62,9 @@ function neck(): Record<string, Set<string>> {
   return roles;
 }
 
-const pickMode = (name: string) => fireEvent.click(screen.getByRole('radio', { name }));
+const pickMode = (name: string) => fireEvent.click(on('Chords').getByRole('radio', { name }));
 const pick = (name: string, value: string) =>
-  fireEvent.change(screen.getByRole('combobox', { name }), { target: { value } });
+  fireEvent.change(on('Chords').getByRole('combobox', { name }), { target: { value } });
 
 describe('chord panel', () => {
   beforeEach(() => window.localStorage.clear());
@@ -75,18 +77,22 @@ describe('chord panel', () => {
     expect(neck().tone).toEqual(new Set(['D', 'E', 'F', 'G', 'A', 'B']));
 
     await pickMode('Degree of the scale');
-    await fireEvent.click(screen.getByRole('radio', { name: '7th chords' }));
+    await fireEvent.click(on('Chords').getByRole('radio', { name: '7th chords' }));
     await pick('Degree of C Major', '4');
 
-    expect(screen.getByRole('heading', { name: 'G7' })).toBeInTheDocument();
-    expect(screen.getByText(/Dominant seventh \(V7\) on degree 5 of C Major/)).toBeInTheDocument();
+    expect(on('Chords').getByRole('heading', { name: 'G7' })).toBeInTheDocument();
+    expect(
+      on('Chords').getByText(/Dominant seventh \(V7\) on degree 5 of C Major/),
+    ).toBeInTheDocument();
     expect(neck()).toEqual({
       root: new Set(['G']),
       tone: new Set(['B', 'D', 'F']),
       dim: new Set(['C', 'E', 'A']),
     });
-    expect(screen.getByRole('grid', { name: /^Fretboard: G7 over C Major/ })).toBeInTheDocument();
-    expect(screen.getByLabelText('Notes of G7')).toHaveTextContent('1 G3 B5 D♭7 F');
+    expect(
+      on('Scales').getByRole('grid', { name: /^Fretboard: G7 over C Major/ }),
+    ).toBeInTheDocument();
+    expect(on('Chords').getByLabelText('Notes of G7')).toHaveTextContent('1 G3 B5 D♭7 F');
   });
 
   it('draws the chord over the scale also while the tab highlights a position', async () => {
@@ -104,21 +110,21 @@ describe('chord panel', () => {
     await startApp({});
     await pickMode('Degree of the scale');
     await pick('Degree of C Major', '4');
-    expect(screen.getByRole('heading', { name: 'G' })).toBeInTheDocument();
+    expect(on('Chords').getByRole('heading', { name: 'G' })).toBeInTheDocument();
     expect(neck().tone).toEqual(new Set(['B', 'D']));
     expect(neck().dim).toEqual(new Set(['C', 'E', 'F', 'A']));
 
-    await fireEvent.click(screen.getByRole('radio', { name: '7th chords' }));
-    expect(screen.getByRole('heading', { name: 'G7' })).toBeInTheDocument();
+    await fireEvent.click(on('Chords').getByRole('radio', { name: '7th chords' }));
+    expect(on('Chords').getByRole('heading', { name: 'G7' })).toBeInTheDocument();
     expect(neck().tone).toEqual(new Set(['B', 'D', 'F']));
   });
 
   it('shows a chord from root and quality alone, without the scale', async () => {
     await startApp({});
     await pick('Chord root', 'E♭');
-    expect(screen.getByText('Choose a chord to see it on the neck.')).toBeInTheDocument();
+    expect(on('Chords').getByText('Choose a chord to see it on the neck.')).toBeInTheDocument();
     await pick('Chord quality', 'min7');
-    expect(screen.getByRole('heading', { name: 'E♭m7' })).toBeInTheDocument();
+    expect(on('Chords').getByRole('heading', { name: 'E♭m7' })).toBeInTheDocument();
     expect(neck()).toEqual({
       root: new Set(['E♭']),
       tone: new Set(['F♯', 'A♯', 'C♯']),
@@ -138,7 +144,7 @@ describe('chord panel', () => {
     await startApp({});
     await pick('Chord quality', 'major');
     expect(neck().root).toEqual(new Set(['C']));
-    await fireEvent.click(screen.getByRole('button', { name: 'Clear chord' }));
+    await fireEvent.click(on('Chords').getByRole('button', { name: 'Clear chord' }));
     expect(neck().tone).toEqual(new Set(['D', 'E', 'F', 'G', 'A', 'B']));
     expect(neck().dim.size).toBe(0);
   });
@@ -147,26 +153,26 @@ describe('chord panel', () => {
     await startApp({ change: (s) => (s.lastView.scale = 'dorian') });
     await pickMode('Degree of the scale');
     await pick('Degree of C Dorian', '4');
-    expect(screen.getByText('No chord forms on degree 5 of C Dorian.')).toBeInTheDocument();
+    expect(on('Chords').getByText('No chord forms on degree 5 of C Dorian.')).toBeInTheDocument();
     expect(neck().dim.size).toBe(0);
   });
 
   it('offers the degree input only when the harmonize core is there', async () => {
     await startApp({ harmonizer: null });
-    expect(screen.getByRole('radio', { name: 'Degree of the scale' })).toBeDisabled();
-    expect(screen.getByRole('radio', { name: 'Root and quality' })).toBeChecked();
-    expect(screen.getByText('Choosing by degree is not available yet.')).toBeInTheDocument();
+    expect(on('Chords').getByRole('radio', { name: 'Degree of the scale' })).toBeDisabled();
+    expect(on('Chords').getByRole('radio', { name: 'Root and quality' })).toBeChecked();
+    expect(on('Chords').getByText('Choosing by degree is not available yet.')).toBeInTheDocument();
   });
 
   it('strums the chord lowest string first, after the first user gesture', async () => {
     const { audio, gesture, frequencies } = audioSetup();
     await startApp({ audio });
     await pickMode('Degree of the scale');
-    await fireEvent.click(screen.getByRole('radio', { name: '7th chords' }));
+    await fireEvent.click(on('Chords').getByRole('radio', { name: '7th chords' }));
     await pick('Degree of C Major', '4');
     gesture.happen();
 
-    await fireEvent.click(screen.getByRole('button', { name: 'Strum G7' }));
+    await fireEvent.click(on('Chords').getByRole('button', { name: 'Strum G7' }));
     // G2 on the low E string, B2, D3, and F4 on the high E string: pitches from the core.
     expect(frequencies).toEqual([43, 47, 50, 65].map(midiToHz));
   });
@@ -178,13 +184,13 @@ describe('chord panel', () => {
     gesture.happen();
     const strum = async () => {
       frequencies.length = 0;
-      await fireEvent.click(screen.getByRole('button', { name: 'Strum C' }));
+      await fireEvent.click(on('Chords').getByRole('button', { name: 'Strum C' }));
       return [...frequencies];
     };
     // No shape chosen: C3 E3 G3, stacked up from the lowest C on the neck (ADR-32).
     expect(await strum()).toEqual([48, 52, 55].map(midiToHz));
 
-    const shape = screen.getByRole('button', { name: /^\d+\. x32010(,|$)/ });
+    const shape = on('Chords').getByRole('button', { name: /^\d+\. x32010(,|$)/ });
     await fireEvent.click(shape);
     // x32010: C3 E3 G3 C4 E4, the shape's own notes lowest string first.
     expect(await strum()).toEqual([48, 52, 55, 60, 64].map(midiToHz));
@@ -198,8 +204,10 @@ describe('chord panel', () => {
     await startApp({ audio, change: (s) => (s.audio.muted = true) });
     await pick('Chord quality', 'major');
     gesture.happen();
-    expect(screen.getByText('Sound is muted.', { selector: '.chord-panel *' })).toBeInTheDocument();
-    await fireEvent.click(screen.getByRole('button', { name: 'Strum C' }));
+    expect(
+      on('Chords').getByText('Sound is muted.', { selector: '.chord-panel *' }),
+    ).toBeInTheDocument();
+    await fireEvent.click(on('Chords').getByRole('button', { name: 'Strum C' }));
     expect(frequencies).toEqual([]);
   });
 
@@ -209,47 +217,47 @@ describe('chord panel', () => {
     await pick('Chord quality', 'major');
     gesture.happen();
     // The 5th fret of the D string is G3.
-    await fireEvent.click(screen.getByRole('gridcell', { name: /^String 4, fret 5, G/ }));
+    await fireEvent.click(on('Scales').getByRole('gridcell', { name: /^String 4, fret 5, G/ }));
     expect(frequencies).toEqual([midiToHz(55)]);
   });
 
   describe('collapsed and size', () => {
     it('collapses to the title bar and keeps that across a restart', async () => {
       const storage = await startApp({});
-      expect(screen.getByRole('combobox', { name: 'Chord quality' })).toBeVisible();
-      const toggle = screen.getByRole('button', { name: 'Collapse' });
+      expect(on('Chords').getByRole('combobox', { name: 'Chord quality' })).toBeVisible();
+      const toggle = on('Chords').getByRole('button', { name: 'Collapse' });
       expect(toggle).toHaveAttribute('aria-expanded', 'true');
 
       await fireEvent.click(toggle);
-      expect(screen.getByRole('button', { name: 'Expand' })).toHaveAttribute(
+      expect(on('Chords').getByRole('button', { name: 'Expand' })).toHaveAttribute(
         'aria-expanded',
         'false',
       );
-      expect(screen.queryByRole('combobox', { name: 'Chord quality' })).toBeNull();
-      expect(screen.queryByRole('separator')).toBeNull();
+      expect(on('Chords').queryByRole('combobox', { name: 'Chord quality' })).toBeNull();
+      expect(on('Chords').queryByRole('separator')).toBeNull();
       await expect.poll(() => storage.read(SETTINGS_DOCUMENT)).toMatch(/collapsed = true/);
       cleanup();
 
       await startApp({ storage });
-      expect(screen.getByRole('button', { name: 'Expand' })).toBeInTheDocument();
-      expect(screen.queryByRole('combobox', { name: 'Chord quality' })).toBeNull();
+      expect(on('Chords').getByRole('button', { name: 'Expand' })).toBeInTheDocument();
+      expect(on('Chords').queryByRole('combobox', { name: 'Chord quality' })).toBeNull();
 
-      await fireEvent.click(screen.getByRole('button', { name: 'Expand' }));
-      expect(screen.getByRole('combobox', { name: 'Chord quality' })).toBeVisible();
+      await fireEvent.click(on('Chords').getByRole('button', { name: 'Expand' }));
+      expect(on('Chords').getByRole('combobox', { name: 'Chord quality' })).toBeVisible();
       await expect.poll(() => storage.read(SETTINGS_DOCUMENT)).toMatch(/collapsed = false/);
     });
 
     it('keeps showing the chord on the neck, and its name in the title bar, while collapsed', async () => {
       await startApp({});
       await pick('Chord quality', 'dom7');
-      await fireEvent.click(screen.getByRole('button', { name: 'Collapse' }));
+      await fireEvent.click(on('Chords').getByRole('button', { name: 'Collapse' }));
       expect(neck().root).toEqual(new Set(['C']));
-      expect(screen.getByText('C7', { selector: '.current' })).toBeInTheDocument();
+      expect(on('Chords').getByText('C7', { selector: '.current' })).toBeInTheDocument();
     });
 
     it('resizes with the arrow keys and saves the height', async () => {
       const storage = await startApp({});
-      const edge = screen.getByRole('separator', { name: 'Resize chord panel' });
+      const edge = on('Chords').getByRole('separator', { name: 'Resize chord panel' });
       expect(edge).toHaveAttribute('aria-valuenow', '220');
 
       await fireEvent.keyDown(edge, { key: 'ArrowUp' });
@@ -270,7 +278,7 @@ describe('chord panel', () => {
       cleanup();
 
       await startApp({ storage });
-      expect(screen.getByRole('separator', { name: 'Resize chord panel' })).toHaveAttribute(
+      expect(on('Chords').getByRole('separator', { name: 'Resize chord panel' })).toHaveAttribute(
         'aria-valuenow',
         '640',
       );
@@ -278,7 +286,7 @@ describe('chord panel', () => {
 
     it('resizes by dragging the top edge, saving the height when it is let go', async () => {
       const storage = await startApp({});
-      const edge = screen.getByRole('separator', { name: 'Resize chord panel' });
+      const edge = on('Chords').getByRole('separator', { name: 'Resize chord panel' });
       const move = (type: string, clientY: number) =>
         fireEvent(
           edge,
@@ -308,31 +316,35 @@ describe('chord panel with the real harmonize core', () => {
 
   it('is enabled in the app without any harmonizer passed in', async () => {
     await startApp({ harmonizer: 'core' });
-    expect(screen.getByRole('radio', { name: 'Degree of the scale' })).toBeEnabled();
-    expect(screen.queryByText('Choosing by degree is not available yet.')).toBeNull();
+    expect(on('Chords').getByRole('radio', { name: 'Degree of the scale' })).toBeEnabled();
+    expect(on('Chords').queryByText('Choosing by degree is not available yet.')).toBeNull();
   });
 
   it('shows degree V of C major as 7th chords: G7 over the dimmed scale', async () => {
     await startApp({ harmonizer: 'core' });
     await pickMode('Degree of the scale');
-    await fireEvent.click(screen.getByRole('radio', { name: '7th chords' }));
+    await fireEvent.click(on('Chords').getByRole('radio', { name: '7th chords' }));
     await pick('Degree of C Major', '4');
 
-    expect(screen.getByRole('heading', { name: 'G7' })).toBeInTheDocument();
-    expect(screen.getByText(/Dominant seventh \(V7\) on degree 5 of C Major/)).toBeInTheDocument();
+    expect(on('Chords').getByRole('heading', { name: 'G7' })).toBeInTheDocument();
+    expect(
+      on('Chords').getByText(/Dominant seventh \(V7\) on degree 5 of C Major/),
+    ).toBeInTheDocument();
     expect(neck()).toEqual({
       root: new Set(['G']),
       tone: new Set(['B', 'D', 'F']),
       dim: new Set(['C', 'E', 'A']),
     });
-    expect(screen.getByRole('grid', { name: /^Fretboard: G7 over C Major/ })).toBeInTheDocument();
+    expect(
+      on('Scales').getByRole('grid', { name: /^Fretboard: G7 over C Major/ }),
+    ).toBeInTheDocument();
   });
 
   it('shows the triad on degree V of C major', async () => {
     await startApp({ harmonizer: 'core' });
     await pickMode('Degree of the scale');
     await pick('Degree of C Major', '4');
-    expect(screen.getByRole('heading', { name: 'G' })).toBeInTheDocument();
+    expect(on('Chords').getByRole('heading', { name: 'G' })).toBeInTheDocument();
     expect(neck().root).toEqual(new Set(['G']));
     expect(neck().tone).toEqual(new Set(['B', 'D']));
     expect(neck().dim).toEqual(new Set(['C', 'E', 'F', 'A']));
@@ -348,12 +360,14 @@ describe('chord panel with the real harmonize core', () => {
     });
     await pickMode('Degree of the scale');
     await pick('Degree of C Minor pentatonic', '1');
-    expect(screen.getByRole('heading', { name: 'E♭' })).toBeInTheDocument();
-    expect(screen.getByText(/\(♭III\) on degree 2 of C Minor pentatonic/)).toBeInTheDocument();
+    expect(on('Chords').getByRole('heading', { name: 'E♭' })).toBeInTheDocument();
+    expect(
+      on('Chords').getByText(/\(♭III\) on degree 2 of C Minor pentatonic/),
+    ).toBeInTheDocument();
 
     await pick('Degree of C Minor pentatonic', '2');
     expect(
-      screen.getByText('No chord forms on degree 3 of C Minor pentatonic.'),
+      on('Chords').getByText('No chord forms on degree 3 of C Minor pentatonic.'),
     ).toBeInTheDocument();
     expect(neck().dim.size).toBe(0);
     expect(neck().tone).toEqual(new Set(['E♭', 'F', 'G', 'B♭']));
@@ -368,9 +382,9 @@ describe('chord panel with the real harmonize core', () => {
       },
     });
     await pickMode('Degree of the scale');
-    await fireEvent.click(screen.getByRole('radio', { name: '7th chords' }));
+    await fireEvent.click(on('Chords').getByRole('radio', { name: '7th chords' }));
     await pick('Degree of D♭ Major', '4');
-    expect(screen.getByRole('heading', { name: 'A♭7' })).toBeInTheDocument();
+    expect(on('Chords').getByRole('heading', { name: 'A♭7' })).toBeInTheDocument();
     expect(neck()).toEqual({
       root: new Set(['A♭']),
       tone: new Set(['C', 'E♭', 'G♭']),
@@ -383,23 +397,27 @@ describe('chord panel: typed symbols and the display style', () => {
   beforeEach(() => window.localStorage.clear());
   afterEach(cleanup);
 
-  const symbolInput = () => screen.getByRole('textbox', { name: 'Chord symbol' });
+  const symbolInput = () => on('Chords').getByRole('textbox', { name: 'Chord symbol' });
   const type = (text: string) => fireEvent.input(symbolInput(), { target: { value: text } });
   const marked = () => document.querySelector('#chord-symbol-help mark');
 
   it('shows a typed symbol on the neck', async () => {
     await startApp({});
     await pickMode('Typed symbol');
-    expect(screen.getByText('Type a chord symbol to see it on the neck.')).toBeInTheDocument();
+    expect(
+      on('Chords').getByText('Type a chord symbol to see it on the neck.'),
+    ).toBeInTheDocument();
 
     await type('F#m7b5');
-    expect(screen.getByRole('heading', { name: 'F♯m7♭5' })).toBeInTheDocument();
+    expect(on('Chords').getByRole('heading', { name: 'F♯m7♭5' })).toBeInTheDocument();
     expect(neck()).toEqual({
       root: new Set(['F♯']),
       tone: new Set(['A', 'C', 'E']),
       dim: new Set(),
     });
-    expect(screen.getByRole('grid', { name: /^Fretboard: F♯m7♭5 chord/ })).toBeInTheDocument();
+    expect(
+      on('Scales').getByRole('grid', { name: /^Fretboard: F♯m7♭5 chord/ }),
+    ).toBeInTheDocument();
     expect(symbolInput()).not.toHaveAttribute('aria-invalid');
   });
 
@@ -407,7 +425,7 @@ describe('chord panel: typed symbols and the display style', () => {
     await startApp({});
     await pickMode('Typed symbol');
     await type('dbΔ7');
-    expect(screen.getByRole('heading', { name: 'D♭maj7' })).toBeInTheDocument();
+    expect(on('Chords').getByRole('heading', { name: 'D♭maj7' })).toBeInTheDocument();
     expect(neck().root).toEqual(new Set(['D♭']));
   });
 
@@ -415,9 +433,9 @@ describe('chord panel: typed symbols and the display style', () => {
     await startApp({});
     await pickMode('Typed symbol');
     await type('Am7/G');
-    expect(screen.getByRole('heading', { name: 'Am7/G' })).toBeInTheDocument();
-    expect(screen.getByText('Minor seventh, bass G')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Strum Am7/G' })).toBeEnabled();
+    expect(on('Chords').getByRole('heading', { name: 'Am7/G' })).toBeInTheDocument();
+    expect(on('Chords').getByText('Minor seventh, bass G')).toBeInTheDocument();
+    expect(on('Chords').getByRole('button', { name: 'Strum Am7/G' })).toBeEnabled();
   });
 
   it('marks where an invalid symbol could not be read, and shows no chord', async () => {
@@ -440,7 +458,7 @@ describe('chord panel: typed symbols and the display style', () => {
 
     await type('Cmaj7');
     expect(symbolInput()).not.toHaveAttribute('aria-invalid');
-    expect(screen.getByRole('heading', { name: 'Cmaj7' })).toBeInTheDocument();
+    expect(on('Chords').getByRole('heading', { name: 'Cmaj7' })).toBeInTheDocument();
   });
 
   it('counts characters, not UTF-16 units, and marks the end of a symbol cut short', async () => {
@@ -462,7 +480,7 @@ describe('chord panel: typed symbols and the display style', () => {
     expect(symbolInput()).not.toHaveAttribute('aria-invalid');
 
     await type('G7');
-    await fireEvent.click(screen.getByRole('button', { name: 'Clear chord' }));
+    await fireEvent.click(on('Chords').getByRole('button', { name: 'Clear chord' }));
     expect(symbolInput()).toHaveValue('');
     expect(neck().dim.size).toBe(0);
     expect(neck().tone).toEqual(new Set(['D', 'E', 'F', 'G', 'A', 'B']));
@@ -471,36 +489,38 @@ describe('chord panel: typed symbols and the display style', () => {
   it('renames every visible chord when the style changes, and keeps it across a restart', async () => {
     const storage = await startApp({});
     // Each choice shows what its style looks like, written by the core.
-    expect(screen.getByRole('radio', { name: 'Standard Cmaj7 Cm7♭5' })).toBeChecked();
-    expect(screen.getByRole('radio', { name: 'Jazz CΔ7 Cø' })).not.toBeChecked();
+    expect(on('Chords').getByRole('radio', { name: 'Standard Cmaj7 Cm7♭5' })).toBeChecked();
+    expect(on('Chords').getByRole('radio', { name: 'Jazz CΔ7 Cø' })).not.toBeChecked();
 
     await pickMode('Typed symbol');
     await type('Bm7b5');
-    expect(screen.getByRole('heading', { name: 'Bm7♭5' })).toBeInTheDocument();
+    expect(on('Chords').getByRole('heading', { name: 'Bm7♭5' })).toBeInTheDocument();
 
-    await fireEvent.click(screen.getByRole('radio', { name: /^Jazz/ }));
-    expect(screen.getByRole('heading', { name: 'Bø' })).toBeInTheDocument();
-    expect(screen.getByRole('grid', { name: /^Fretboard: Bø chord/ })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Strum Bø' })).toBeInTheDocument();
-    expect(screen.getByLabelText('Notes of Bø')).toBeInTheDocument();
-    await fireEvent.click(screen.getByRole('button', { name: 'Collapse' }));
-    expect(screen.getByText('Bø', { selector: '.current' })).toBeInTheDocument();
+    await fireEvent.click(on('Chords').getByRole('radio', { name: /^Jazz/ }));
+    expect(on('Chords').getByRole('heading', { name: 'Bø' })).toBeInTheDocument();
+    expect(on('Scales').getByRole('grid', { name: /^Fretboard: Bø chord/ })).toBeInTheDocument();
+    expect(on('Chords').getByRole('button', { name: 'Strum Bø' })).toBeInTheDocument();
+    expect(on('Chords').getByLabelText('Notes of Bø')).toBeInTheDocument();
+    await fireEvent.click(on('Chords').getByRole('button', { name: 'Collapse' }));
+    expect(on('Chords').getByText('Bø', { selector: '.current' })).toBeInTheDocument();
     await expect.poll(() => storage.read(SETTINGS_DOCUMENT)).toMatch(/chord_symbols = "jazz"/);
     cleanup();
 
     await startApp({ storage });
-    await fireEvent.click(screen.getByRole('button', { name: 'Expand' }));
-    expect(screen.getByRole('radio', { name: /^Jazz/ })).toBeChecked();
+    await fireEvent.click(on('Chords').getByRole('button', { name: 'Expand' }));
+    expect(on('Chords').getByRole('radio', { name: /^Jazz/ })).toBeChecked();
     await pick('Chord quality', 'maj7');
-    expect(screen.getByRole('heading', { name: 'CΔ7' })).toBeInTheDocument();
+    expect(on('Chords').getByRole('heading', { name: 'CΔ7' })).toBeInTheDocument();
   });
 
   it('names a chord on a degree in the chosen style', async () => {
     await startApp({ change: (s) => (s.chordSymbols = 'jazz') });
     await pickMode('Degree of the scale');
-    await fireEvent.click(screen.getByRole('radio', { name: '7th chords' }));
+    await fireEvent.click(on('Chords').getByRole('radio', { name: '7th chords' }));
     await pick('Degree of C Major', '6');
-    expect(screen.getByRole('heading', { name: 'Bø' })).toBeInTheDocument();
-    expect(screen.getByRole('grid', { name: /^Fretboard: Bø over C Major/ })).toBeInTheDocument();
+    expect(on('Chords').getByRole('heading', { name: 'Bø' })).toBeInTheDocument();
+    expect(
+      on('Scales').getByRole('grid', { name: /^Fretboard: Bø over C Major/ }),
+    ).toBeInTheDocument();
   });
 });

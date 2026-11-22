@@ -9,3 +9,16 @@ import { getTuning, type Tuning } from '../theory';
 export function instrumentTuning(instrument: Pick<Settings['instrument'], 'tuning'>): Tuning {
   return getTuning(instrument.tuning) ?? getTuning(DEFAULT_SETTINGS.instrument.tuning)!;
 }
+
+/**
+ * The toolbar's one-line summary of the neck (ADR-51): "6-string guitar · Standard · 24 frets",
+ * then "· capo 2" with a capo. Strings and kind are the tuning's, as the instrument panel shows
+ * them. Read the catalogs' `revision` with it, like `instrumentTuning`.
+ */
+export function instrumentSummary(instrument: Settings['instrument']): string {
+  const tuning = instrumentTuning(instrument);
+  const parts = [`${tuning.notes.length}-string ${tuning.kind}`, tuning.name];
+  parts.push(`${instrument.frets} frets`);
+  if (instrument.capo > 0) parts.push(`capo ${instrument.capo}`);
+  return parts.join(' · ');
+}

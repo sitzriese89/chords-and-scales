@@ -3,6 +3,7 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import App from '../../App.svelte';
+import { scalePicker } from '../../test-shell';
 import { BrowserStorage, TauriStorage, type Storage } from '../storage';
 import { fakeCommands } from '../storage/fake-commands';
 import { setUserScales, setUserTunings } from '../theory';
@@ -32,15 +33,17 @@ async function startApp(storage: Storage) {
   return result;
 }
 
-const picker = () => within(screen.getByRole('navigation', { name: 'Scale picker' }));
+const picker = scalePicker;
+/** The scale editor's dialog, over the picker's drawer. */
+const EDITOR = { name: /^(New|Edit) scale$/ };
 const scaleList = () => picker().getByRole('listbox', { name: 'Scale' });
-const dialog = () => within(screen.getByRole('dialog'));
+const dialog = () => within(screen.getByRole('dialog', EDITOR));
 const neckCell = (name: string) => dialog().getByRole('gridcell', { name });
 const typeName = (name: string) =>
   fireEvent.input(dialog().getByRole('textbox', { name: 'Name' }), { target: { value: name } });
 const save = () => fireEvent.click(dialog().getByRole('button', { name: 'Save' }));
 /** Saving writes to storage first: wait until the dialog has closed. */
-const closed = () => waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+const closed = () => waitFor(() => expect(screen.queryByRole('dialog', EDITOR)).toBeNull());
 
 /** The names in the picker's group `family`. */
 function listed(family: string): string[] {

@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { AudioControls, AudioEngine, setAudio } from './lib/audio';
+  import { AudioEngine, setAudio } from './lib/audio';
   import {
+    ChordEditorDialog,
     ChordPanel,
     ChordState,
     harmonizer as coreHarmonizer,
@@ -8,6 +9,7 @@
     type Harmonizer,
   } from './lib/chords';
   import {
+    ScaleEditorDialog,
     ScaleEditorState,
     ScaleExplorer,
     ScalePicker,
@@ -15,14 +17,15 @@
     setScaleEditor,
   } from './lib/explorer';
   import { createPrinter, svgToPng, type Printer, type Rasterize } from './lib/export';
-  import { InstrumentPanel } from './lib/instrument';
-  import { CollapsiblePanel } from './lib/panels';
-  import { SettingsStore, setSettings } from './lib/settings';
+  import { InstrumentButton } from './lib/instrument';
+  import { Drawer } from './lib/panels';
+  import { SettingsStore, setSettings, type Page } from './lib/settings';
   import type { Random } from './lib/random';
   import { setSheet, SheetStore, SheetView } from './lib/sheet';
+  import { SettingsDialog } from './lib/shell';
   import { createStorage, createUserFiles, type Storage, type UserFiles } from './lib/storage';
   import { setTagFilters, TagFilters } from './lib/tags';
-  import { applyTheme, setThemes, ThemeLibrary, ThemePicker } from './lib/themes';
+  import { applyTheme, setThemes, ThemeLibrary } from './lib/themes';
   import { version } from './lib/theory';
   import { setUserCatalogs, UserCatalogs } from './lib/user-catalogs.svelte';
   import { VoicingBrowser } from './lib/voicings';
@@ -73,12 +76,10 @@
   // svelte-ignore state_referenced_locally
   const sheet = new SheetStore(storage);
   setSheet(sheet);
-  /** Which page is shown: the explorer with its panels, or the export sheet. Not saved. */
-  let page = $state<'explorer' | 'sheet'>('explorer');
   // The chord chosen in the chord panel, drawn on the explorer's neck (ADR-32).
   // svelte-ignore state_referenced_locally
   setChordState(new ChordState(settings, harmonizer, catalogs));
-  // Whether the scale editor is open: the picker shows it, reverse lookup opens it too (ADR-38).
+  // Whether the scale editor is open: the picker opens it, reverse lookup too (ADR-38).
   setScaleEditor(new ScaleEditorState());
 
   // The sound: no AudioContext exists until the first click or key press (ADR-28). Volume and
@@ -103,114 +104,124 @@
   // changes (ADR-40).
   $effect(() => applyTheme(themes.get(settings.current.themeId), settings.current.theme));
 
-  // The side panels collapse to a strip and the board takes their width; whether they are is
-  // saved (ADR-50). A failed save is shown by the store's warning.
-  const pickerCollapsed = $derived(settings.current.scalePicker.collapsed);
-  const settingsCollapsed = $derived(settings.current.settingsPanel.collapsed);
-  const togglePicker = () =>
-    settings.update({ scalePicker: { collapsed: !pickerCollapsed } }).catch(() => {});
-  const toggleSettings = () =>
-    settings.update({ settingsPanel: { collapsed: !settingsCollapsed } }).catch(() => {});
+  // The page under the toolbar is a setting, so the app opens where it was left (ADR-51). A
+  // failed save is shown by the store's warning.
+  const page = $derived(settings.current.page);
+  const pages: { id: Page; label: () => string }[] = [
+    { id: 'scales', label: () => 'Scales' },
+    { id: 'chords', label: () => 'Chords' },
+    { id: 'sheet', label: () => `Sheet (${sheet.items.length})` },
+  ];
+  function show(next: Page) {
+    pickerOpen = false;
+    if (next !== page) settings.update({ page: next }).catch(() => {});
+  }
+
+  // The scale picker's drawer: closed at start and not saved (ADR-51).
+  let pickerOpen = $state(false);
+  let pickerButton = $state<HTMLButtonElement>();
 </script>
 
-{#if settings.warning}
-  <div class="settings-warning" role="status">
-    <p>{settings.warning}</p>
-    <button type="button" onclick={() => settings.dismissWarning()}>Dismiss</button>
-  </div>
-{/if}
-
 <!--
-  Main layout (ADR-23). Regions, by grid area:
-  - picker:   root and scale picker.
-  - board:    the view toggles (labels, sharps/flats) and the fretboard.
-  - settings: the instrument panel (strings, tuning and custom tunings, frets, capo,
-              left-handed; ADR-24), the sound (volume, mute; ADR-28) and the appearance
-              (theme and light/dark; ADR-40). The view toggles stay in board.
-  - chords:   the docked chord panel (SPEC §5.3, ADR-10, ADR-32): collapsible and resizable.
-  Picker and settings collapse to a strip with their title and an Expand button, and the
-  board's column takes their width (ADR-50).
-  On narrow windows the regions stack in that order; a collapsed one shows only its title bar.
-  The header's Explorer / Sheet buttons swap these regions for the export sheet (ADR-43).
+  The app shell (ADR-51, ADR-53): one toolbar, sticky at the top, and the page under it at the
+  full width.
+  - Toolbar, left to right: the title; the page tabs (Scales, Chords, Sheet with its item
+    count); "Choose scale" on Scales, which opens the scale picker in a drawer from the left;
+    a gap; the instrument button, a summary of the neck that opens the instrument settings
+    (ADR-24) in a popover; ⚙ Settings, a dialog with Sound (ADR-28) and Appearance (ADR-40).
+    On a narrow window it wraps.
+  - Scales: the view toggles and the scale explorer (ADR-23).
+  - Chords: the chord panel (SPEC §5.3, ADR-32) with the voicing browser (ADR-37), as they
+    were docked under the neck; M6.3 reworks this page.
+  - Sheet: the export sheet (ADR-43).
+  The scale and chord editors are modal and live outside the pages, so they open from
+  anywhere: reverse lookup on the Scales page opens both (ADR-38).
 -->
-<div
-  class="layout"
-  class:picker-collapsed={pickerCollapsed}
-  class:settings-collapsed={settingsCollapsed}
->
-  <header class="title">
-    <h1>Chords &amp; Scales</h1>
-    <nav class="pages" aria-label="Pages">
-      <button
-        type="button"
-        aria-current={page === 'explorer' ? 'page' : undefined}
-        onclick={() => (page = 'explorer')}>Explorer</button
-      >
-      <button
-        type="button"
-        aria-current={page === 'sheet' ? 'page' : undefined}
-        onclick={() => (page = 'sheet')}>Sheet ({sheet.items.length})</button
-      >
-    </nav>
-    {#if fileProblems.length > 0}
-      <details class="file-problems">
-        <summary>
-          {fileProblems.length === 1 ? 'One problem' : `${fileProblems.length} problems`} with your files:
-          some items or tag rules were not used
-        </summary>
-        <ul>
-          {#each fileProblems as problem (problem)}
-            <li>{problem}</li>
+<div class="app">
+  <div class="top">
+    <header class="toolbar">
+      <h1>Chords &amp; Scales</h1>
+      {#if ready}
+        <nav class="pages" aria-label="Pages">
+          {#each pages as p (p.id)}
+            <button
+              type="button"
+              aria-current={page === p.id ? 'page' : undefined}
+              onclick={() => show(p.id)}>{p.label()}</button
+            >
           {/each}
-        </ul>
-      </details>
-    {/if}
-  </header>
-
-  {#if ready && page === 'sheet'}
-    <main class="region sheet">
-      <SheetView {files} {rasterize} {printer} />
-    </main>
-  {:else if ready}
-    <nav class="region picker" aria-label="Scale picker">
-      <CollapsiblePanel
-        id="scale-picker"
-        title="Scale picker"
-        collapsed={pickerCollapsed}
-        ontoggle={togglePicker}
+        </nav>
+        {#if page === 'scales'}
+          <button
+            bind:this={pickerButton}
+            type="button"
+            class="picker-button"
+            aria-expanded={pickerOpen}
+            aria-controls="scale-drawer"
+            onclick={() => (pickerOpen = !pickerOpen)}
+            ><span aria-hidden="true">☰</span> Choose scale</button
+          >
+        {/if}
+        <span class="gap"></span>
+        <InstrumentButton />
+        <SettingsDialog />
+      {/if}
+    </header>
+    {#if ready}
+      <Drawer
+        id="scale-drawer"
+        title="Choose scale"
+        open={pickerOpen}
+        onclose={() => (pickerOpen = false)}
+        opener={pickerButton}
       >
         <ScalePicker {random} />
-      </CollapsiblePanel>
-    </nav>
+      </Drawer>
+    {/if}
+  </div>
 
-    <main class="region board">
+  {#if settings.warning}
+    <div class="settings-warning" role="status">
+      <p>{settings.warning}</p>
+      <button type="button" onclick={() => settings.dismissWarning()}>Dismiss</button>
+    </div>
+  {/if}
+
+  {#if fileProblems.length > 0}
+    <details class="file-problems">
+      <summary>
+        {fileProblems.length === 1 ? 'One problem' : `${fileProblems.length} problems`} with your files:
+        some items or tag rules were not used
+      </summary>
+      <ul>
+        {#each fileProblems as problem (problem)}
+          <li>{problem}</li>
+        {/each}
+      </ul>
+    </details>
+  {/if}
+
+  {#if !ready}
+    <p class="muted">Loading…</p>
+  {:else}
+    <!-- Scales and Chords stay mounted while hidden, so a selection, an open row or a typed
+         symbol is still there on coming back (ADR-53). -->
+    <main class="page scales" aria-label="Scales" hidden={page !== 'scales'}>
       <ViewControls />
       <ScaleExplorer />
     </main>
-
-    <aside class="region settings" aria-label="Settings">
-      <CollapsiblePanel
-        id="settings-panel"
-        title="Settings"
-        collapsed={settingsCollapsed}
-        ontoggle={toggleSettings}
-      >
-        <h2>Instrument</h2>
-        <InstrumentPanel />
-        <h2 class="section">Sound</h2>
-        <AudioControls />
-        <h2 class="section">Appearance</h2>
-        <ThemePicker />
-      </CollapsiblePanel>
-    </aside>
-
-    <aside class="region chords" aria-label="Chords">
+    <main class="page chords" aria-label="Chords" hidden={page !== 'chords'}>
       <ChordPanel {random}>
         <VoicingBrowser />
       </ChordPanel>
-    </aside>
-  {:else}
-    <p class="muted loading">Loading…</p>
+    </main>
+    <!-- The sheet is mounted only while shown: its print styles print the sheet alone whenever
+         it is on the page (ADR-45). -->
+    {#if page === 'sheet'}
+      <main class="page sheet" aria-label="Sheet">
+        <SheetView {files} {rasterize} {printer} />
+      </main>
+    {/if}
   {/if}
 
   <footer class="footer">
@@ -218,13 +229,101 @@
   </footer>
 </div>
 
+{#if ready}
+  <ScaleEditorDialog />
+  <ChordEditorDialog />
+{/if}
+
 <style>
+  .app {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  /* The toolbar stays in view; the drawer hangs under it. */
+  .top {
+    position: sticky;
+    z-index: 4;
+    top: 0;
+    padding-top: 1rem;
+    background: var(--surface);
+    --drawer-top: 100%;
+  }
+
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  h1 {
+    margin: 0;
+    font-size: 1.25rem;
+  }
+
+  .gap {
+    flex: 1;
+  }
+
+  button {
+    font: inherit;
+    font-size: 0.875rem;
+    color: var(--text);
+    background: var(--surface-raised);
+    border: 1px solid var(--border-strong);
+    border-radius: 0.375rem;
+    padding: 0.25rem 0.75rem;
+    cursor: pointer;
+  }
+
+  button:hover {
+    background: var(--surface-sunken);
+  }
+
+  .pages {
+    display: flex;
+    gap: 0.25rem;
+  }
+
+  .pages button {
+    background: transparent;
+    border-color: transparent;
+  }
+
+  .pages button:hover {
+    background: var(--surface-sunken);
+  }
+
+  .pages button[aria-current='page'] {
+    color: var(--accent-text);
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .picker-button[aria-expanded='true'] {
+    border-color: var(--accent);
+  }
+
+  .page {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    min-width: 0;
+  }
+
+  .page[hidden] {
+    display: none;
+  }
+
   .settings-warning {
     display: flex;
     gap: 0.75rem;
     align-items: center;
     justify-content: space-between;
-    margin: 0 0 1rem;
     padding: 0.5rem 0.75rem;
     border: 1px solid var(--border-strong);
     border-left: 4px solid var(--text-danger);
@@ -238,118 +337,14 @@
     margin: 0;
   }
 
-  button {
-    font: inherit;
-    color: var(--accent-text);
-    background: var(--accent);
-    border: 1px solid var(--accent);
-    border-radius: 0.375rem;
-    padding: 0.25rem 0.75rem;
-    cursor: pointer;
-  }
-
-  button:hover {
-    background: var(--accent-hover);
-  }
-
-  .layout {
-    display: grid;
-    gap: 1rem 1.5rem;
-    --picker-column: minmax(13rem, 16rem);
-    --settings-column: minmax(12rem, 15rem);
-    grid-template-columns: var(--picker-column) minmax(0, 1fr) var(--settings-column);
-    grid-template-areas:
-      'title title title'
-      'picker board settings'
-      'picker chords settings'
-      'footer footer footer';
-    align-items: start;
-  }
-
-  /* A collapsed side panel is a strip as wide as its vertical title bar. */
-  .layout.picker-collapsed {
-    --picker-column: auto;
-  }
-
-  .layout.settings-collapsed {
-    --settings-column: auto;
-  }
-
-  .title {
-    grid-area: title;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 0.5rem 1.5rem;
-  }
-
-  h1 {
-    margin: 0;
-    font-size: 1.5rem;
-  }
-
-  h2 {
-    margin: 0 0 0.5rem;
-    font-size: 1rem;
-  }
-
-  h2.section {
-    margin-top: 1rem;
-  }
-
-  .region {
-    padding: 0.75rem;
-    border: 1px solid var(--border);
-    border-radius: 0.5rem;
-    background: var(--surface-raised);
-    min-width: 0;
-  }
-
-  .picker {
-    grid-area: picker;
-  }
-
-  .board {
-    grid-area: board;
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .settings {
-    grid-area: settings;
-  }
-
-  .chords {
-    grid-area: chords;
-    background: var(--surface-sunken);
-  }
-
-  .loading,
-  .sheet {
-    grid-column: 1 / -1;
-  }
-
-  .pages {
-    display: flex;
-    gap: 0.25rem;
-  }
-
-  .pages button {
-    color: var(--text);
-    background: var(--surface-raised);
-    border-color: var(--border-strong);
-    font-size: 0.875rem;
-  }
-
-  .pages button[aria-current='page'] {
+  .settings-warning button {
     color: var(--accent-text);
     background: var(--accent);
     border-color: var(--accent);
   }
 
-  .footer {
-    grid-area: footer;
+  .settings-warning button:hover {
+    background: var(--accent-hover);
   }
 
   .muted {
@@ -370,14 +365,5 @@
   .file-problems ul {
     margin: 0.25rem 0 0;
     padding-left: 1.25rem;
-  }
-
-  @media (max-width: 60rem) {
-    .layout {
-      grid-template-columns: minmax(0, 1fr);
-      grid-template-areas: 'title' 'picker' 'board' 'settings' 'chords' 'footer';
-      /* Stacked, a collapsed panel is a title bar, not a strip (ADR-50). */
-      --collapsible-panel-writing-mode: horizontal-tb;
-    }
   }
 </style>

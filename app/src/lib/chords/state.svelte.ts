@@ -76,7 +76,17 @@ export class ChordState {
     /** Where chords on a degree come from (`harmonize.ts`); `null` turns the degree input off. */
     readonly harmonizer: Harmonizer | null,
     private readonly catalogs: UserCatalogs,
-  ) {}
+  ) {
+    // `voicing` is a derived, which only notices a change of its reset key while something
+    // reads it. The neck that always read it and the voicing browser that sets it are on
+    // different pages now (ADR-51), so the state reads it itself, for as long as it lives;
+    // otherwise Clear chord and the same chord again would bring the old shape back (ADR-53).
+    $effect.root(() => {
+      $effect(() => {
+        void this.voicing;
+      });
+    });
+  }
 
   /** The scale the degree input counts in: the explorer's. Read again after catalog changes. */
   readonly scale = $derived.by((): { root: string; info: ScaleInfo; notes: ScaleNote[] } => {

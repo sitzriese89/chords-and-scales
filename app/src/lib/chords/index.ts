@@ -1,3 +1,4 @@
+export { default as ChordEditorDialog } from './ChordEditorDialog.svelte';
 export { default as ChordPanel } from './ChordPanel.svelte';
 export { chordSymbol } from './display';
 export {
