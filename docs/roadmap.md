@@ -116,7 +116,7 @@ Small adjustments before the UI redesign.
 
 | Item | Issue | Depends on | Status |
 |---|---|---|---|
-| M5.1 Root picker as a dropdown of all 17 note names | [#81][81] |  | Open |
+| M5.1 Root picker as a dropdown of all 17 note names | [#81][81] |  | Done (#87) |
 | M5.2 Collapsible scale picker and settings panels | [#82][82] |  | Open |
 | M5.3 Start fret for chord voicings | [#83][83] |  | Open |
 | M5.4 Horizontal chord diagrams with the lowest fret number | [#84][84] | M5.3 | Open |
