@@ -370,13 +370,23 @@ describe('sheet export', { timeout: 15_000 }, () => {
     };
     const article = document.querySelector<HTMLElement>('article[data-sheet]')!;
     // The sheet and everything in it prints, and so do the elements around it.
-    for (const element of [article, ...article.querySelectorAll('*')]) {
-      expect(hidden(element), element.outerHTML.slice(0, 60)).toBe(false);
+    expect(hidden(article)).toBe(false);
+    // Inside it, each element itself (its ancestors up to the sheet are checked on the way).
+    for (const element of article.querySelectorAll('*')) {
+      const matched = hiding.some((r) => element.matches(r.selectorText));
+      expect(matched, element.outerHTML.slice(0, 60)).toBe(false);
     }
-    // The app's header, navigation, the sheet's controls and its export buttons don't.
-    const shown = [...document.body.querySelectorAll('*')].filter(
-      (e) => !hidden(e) && !article.contains(e) && !e.contains(article),
-    );
+    // The app's header, navigation, the sheet's controls and its export buttons don't. Walked
+    // from the top, skipping what is inside a hidden element: the hidden Scales and Chords
+    // pages stay mounted (ADR-53), and matching every rule on all of them is slow.
+    const shown: Element[] = [];
+    const visit = (element: Element) => {
+      if (article.contains(element)) return;
+      if (hiding.some((r) => element.matches(r.selectorText))) return;
+      if (!element.contains(article)) shown.push(element);
+      for (const child of element.children) visit(child);
+    };
+    for (const child of document.body.children) visit(child);
     expect(shown.map((e) => e.outerHTML.slice(0, 60))).toEqual([]);
     for (const name of ['Export sheet as PNG', 'Print or save as PDF', /^Sheet \(\d+\)$/]) {
       expect(hidden(screen.getByRole('button', { name }))).toBe(true);
