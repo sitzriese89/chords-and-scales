@@ -117,7 +117,7 @@ Small adjustments before the UI redesign.
 | Item | Issue | Depends on | Status |
 |---|---|---|---|
 | M5.1 Root picker as a dropdown of all 17 note names | [#81][81] |  | Done (#87) |
-| M5.2 Collapsible scale picker and settings panels | [#82][82] |  | Open |
+| M5.2 Collapsible scale picker and settings panels | [#82][82] |  | Done (#90) |
 | M5.3 Start fret for chord voicings | [#83][83] |  | Done (#88) |
 | M5.4 Horizontal chord diagrams with the lowest fret number | [#84][84] | M5.3 | Open |
 | M5.5 Built-in themes: Catppuccin, Dracula, Nord, Atom One | [#85][85] |  | Done (#89) |
