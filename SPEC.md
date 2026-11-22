@@ -89,12 +89,12 @@ Files are hand-editable and shareable; the UI offers import/export of them.
   light/dark, left-handed), the last instrument (kind, string count, tuning, fret count, capo) and the
   last view (root, scale) and the tab view's position (system, 3NPS pattern, fret window,
   direction, highlight; ADR-25), the sound (volume 0–100, mute; ADR-28), the voicing
-  browser's constraints (`[voicings]`; ADR-37), whether the chord panel is collapsed and its
-  height (`[chord_panel]`; ADR-32) and the page shown (`page = "scales" | "chords" | "sheet"`
-  at the top; ADR-51). It is created with
+  browser's constraints (`[voicings]`; ADR-37) and the page shown (`page = "scales" |
+  "chords" | "sheet"` at the top; ADR-51). It is created with
   the defaults on first start, read once at start and saved on every change. A file without
-  `page` opens on Scales. The `[scale_picker]` and `[settings_panel]` tables of older
-  versions (ADR-50) are skipped without a warning and left out on the next save (ADR-53).
+  `page` opens on Scales. The `[scale_picker]` and `[settings_panel]` tables (ADR-50) and the
+  `[chord_panel]` table (ADR-32) of older versions are skipped without a warning and left
+  out on the next save (ADR-53, ADR-54).
 - The user's own scales, chords and tunings are `scales.toml`, `chords.toml` and
   `tunings.toml`, in the format of the built-in catalogs (§4.2, §4.3, §5.1). They are read at
   start; a broken item is skipped and listed in a collapsed note in the window, and the rest
@@ -142,7 +142,7 @@ Files are hand-editable and shareable; the UI offers import/export of them.
   built-in it replaced, or the default scale. **Save as scale** in reverse lookup (§5.4)
   opens the editor with the selected notes on the lowest one; saving shows the new scale on
   that root.
-- Chords (ADR-36): **New chord** under the chord quality in the chord panel (§5.3) opens the
+- Chords (ADR-36): **New chord** under the chord quality in the chord picker (§5.3) opens the
   same editor; a user chord that is chosen there can be edited or deleted. The picker has two
   rows of one octave each, labelled as the built-in chords write them: `1 ♭2 2 ♭3 3 4 ♭5 5 ♯5
   6 ♭7 7`, then `♭9 9 ♯9 11 ♯11 ♭13 13` above the octave (a chord tone an octave up, such as
@@ -260,7 +260,7 @@ intervals = ["1", "b3", "b5", "b7"]
     `C6/9/E` is `C6/9` over `E`. The bass is any note and keeps its spelling.
   - A symbol the catalog doesn't know (`C7b9b13` if no chord has it) is an error with the
     position of the first character it could not read; there is no guessing between chords.
-- **Display style** is a setting (`chord_symbols` in `[display]`, chosen in the chord panel,
+- **Display style** is a setting (`chord_symbols` in `[display]`, chosen in the chord picker,
   §5.3):
   - *Standard*: `Cmaj7`, `Cm7♭5`, `Cdim7`
   - *Jazz*: `CΔ7`, `Cø`, `C°7`
@@ -326,10 +326,11 @@ intervals = ["1", "b3", "b5", "b7"]
 - **Layout** (ADR-51, ADR-53): one toolbar, which stays at the top while the page scrolls,
   and the page under it at the full width of the window. The toolbar holds, left to right:
   the title; the page tabs **Scales**, **Chords** and **Sheet (n)** (n items on the sheet);
-  **☰ Choose scale** on the Scales page; a gap; the instrument button; **⚙ Settings**. On a
-  narrow window it wraps.
-  - **Pages.** Scales: the view toggles and the scale explorer. Chords: the chord panel and
-    the voicing browser (§5.3, §5.6). Sheet: the export sheet (§5.10). The tabs are buttons;
+  **☰ Choose scale** on the Scales page or **☰ Choose chord** on the Chords page; a gap; the
+  instrument button; **⚙ Settings**. On a narrow window it wraps.
+  - **Pages.** Scales: the view toggles and the scale explorer; its neck shows the scale only,
+    never a chord. Chords: no fretboard; the chosen chord's heading row and its shapes (§5.3,
+    §5.6). Sheet: the export sheet (§5.10). The tabs are buttons;
     the current one has `aria-current="page"`. The page shown is saved (`page` in
     `settings.toml`, §3.2) and the app opens on it; a file without it opens on Scales.
     Scales and Chords keep their state while another page is shown.
@@ -341,7 +342,11 @@ intervals = ["1", "b3", "b5", "b7"]
     (after a click outside, only when focus would otherwise be lost). Closed, it keeps what
     was typed in it. It is closed at start and when another page is shown, and is not saved.
     The scale editor's dialog is outside the drawer, so reverse lookup opens it while the
-    drawer is closed. The same drawer component holds the chord picker on Chords (M6.3).
+    drawer is closed.
+  - **Chord picker drawer.** "Choose chord" on the Chords page opens the chord picker (§5.3)
+    in the same kind of drawer ("Close Choose chord"), which behaves as the scale picker's.
+    A chord chosen in Harmonize or reverse lookup on the Scales page switches to Chords,
+    and either drawer closes on that switch.
   - **Instrument button.** A summary of the neck, "6-string guitar · Standard · 24 frets ·
     capo 2" (no capo part without a capo), named "Instrument: …". It opens the instrument
     panel in a popover under it, which closes like the drawer. One instrument for the whole
@@ -413,49 +418,51 @@ How the tab is shown (`app/src/lib/tab/`, ADR-25):
 
 ### 5.3 Chords (Q5, Q16, Q19, Q26)
 
-- Displayed in a **panel** (resizable/collapsible) on the **Chords** page of the main window
-  (§5.1), not a separate OS window; the chosen chord is drawn on the Scales page's neck
-  (until M6.3 reworks the page, ADR-51).
-- **Display:** all chord tones highlighted across the whole neck.
+- Shown on the **Chords** page of the main window (§5.1), not a separate OS window, and
+  chosen in the **chord picker**, in the drawer behind **☰ Choose chord** (ADR-51, ADR-54).
+  The page has no fretboard, and no chord or shape is drawn on the Scales page's neck.
+- **Display:** a heading row with the chord's symbol, its name, its notes, **▶ Strum**,
+  **Clear chord** and "Add chord to sheet", its tags under it; then the voicing constraints
+  and the chord's shapes across the full width (§5.6). While no chord is chosen the page says
+  how to choose one (or, for a degree with none, that no chord forms there).
 - **Input modes:**
   1. Root + quality
   2. From scale/mode + degree (e.g. iv of D Dorian)
   3. **Reverse lookup:** click notes on the fretboard → matching chord names
      (including slash chords / inversions, and chords with the 5th left out; §5.4)
   4. **Typed symbol:** e.g. `F#m7b5`, parsed per §4.4
-- **Chord-over-scale overlay:** when a chord comes from a scale (input mode 2
-  or harmonize), the parent scale is shown dimmed with chord tones emphasized.
-  No general multi-layer comparison.
-- **The panel** (ADR-32): collapsed to its title bar with a button, and resized by dragging
-  its top edge (or with the arrow keys, Home and End when the edge has focus). Both are saved
-  in `settings.toml` (`[chord_panel]`: `collapsed`, `height` in pixels, 96–640) and come back
-  at the next start.
-  - **Root and quality:** pick a root and a chord from the catalog (grouped by family). The
-    neck shows the chord's tones alone, the root as a square. **New chord**, **Edit chord**
-    and **Delete chord** there make and change the user's own chords (§3.3).
-  - **Degree of the scale:** pick a degree of the scale in the explorer and triads or 7th
-    chords; the chord on that degree comes from harmonize (§5.5). The neck shows the scale
-    dimmed with the chord's tones emphasized (degree V of C major as 7th chords: G7 over
-    C major). The chord follows the explorer's scale. Where no chord forms on a degree (some
-    pentatonic degrees), the panel says so and the neck shows the scale alone.
-  - The panel lists the chord's notes (spelled by the sharp/flat setting; the root keeps its
+- **Chord-over-scale overlay:** a chord from a scale (input mode 2 or harmonize) added to the
+  export sheet (§5.10) is drawn on a neck over its parent scale, dimmed, with the chord tones
+  emphasized; a chord from root and quality or a typed symbol is drawn alone. No general
+  multi-layer comparison. The app's own neck shows the scale only (ADR-54).
+- **The chord picker** (ADR-32, ADR-54), in the drawer:
+  - **Root and quality:** pick a root and a chord from the catalog (grouped by family), with
+    the tag chips (§5.7) and **Random chord** (§5.8). **New chord**, **Edit chord** and
+    **Delete chord** there make and change the user's own chords (§3.3).
+  - **Degree of the scale:** pick a degree of the Scales page's scale and triads or 7th
+    chords; the chord on that degree comes from harmonize (§5.5) (degree V of C major as 7th
+    chords: G7, "Dominant seventh (V7) on degree 5 of C Major"). The chord follows that
+    scale. Where no chord forms on a degree (some pentatonic degrees), the picker and the page
+    say so.
+  - The page lists the chord's notes (spelled by the sharp/flat setting; the root keeps its
     spelling) and has **Strum**, which plays the chord through the audio engine (§5.9) as one
     note per string, lowest string first, stacked upward from the lowest root on the neck;
     with a shape chosen in the voicing browser (§5.6), it plays that shape instead.
-    **Clear chord** returns to the plain scale. The chosen chord is not saved.
+    **Clear chord** returns to no chord. The chosen chord is not saved.
   - **Typed symbol:** type a chord symbol (`F#m7b5`, `CΔ7`, `Am7/G`); it is read as you type
-    by the parser (§4.4), in either style, and the neck shows the chord's tones alone, the
-    root as typed. A symbol that can't be read shows no chord: the field is marked invalid
+    by the parser (§4.4), in either style, the root as typed. A symbol that can't be read
+    shows no chord: the field is marked invalid
     and the typed text is repeated with the first unreadable character underlined (the end,
     if the symbol stops too early), with the parser's reason and the character's number. An
     empty field is no error. A slash chord's bass is written in the name (`Am7/G`, "Minor
-    seventh, bass G"); the neck shows the chord's own tones and does not add the bass.
+    seventh, bass G"); its shapes are the chord's own and do not add the bass (§5.6).
   - **Reverse lookup** (ADR-38): **Select notes** above the explorer's neck; the chords the
-    selected notes make are listed there (§5.4). Clicking one chooses it in the panel: as root
-    and quality, or as a typed symbol for a slash chord (`C/E`), so the bass is kept.
-  - **Chord names** (ADR-33): every chord name in the app, in the panel, its title bar and
-    the neck's label, is written by the symbol formatter (§4.4) in the display style chosen
-    in the panel: Standard (`Cmaj7`, `Cm7♭5`) or Jazz (`CΔ7`, `Cø`), each choice showing
+    selected notes make are listed there (§5.4). Clicking one chooses it, as root and
+    quality, or as a typed symbol for a slash chord (`C/E`), so the bass is kept, and shows
+    the Chords page.
+  - **Chord names** (ADR-33): every chord name in the app, on the Chords page, in the
+    Harmonize row and in reverse lookup, is written by the symbol formatter (§4.4) in the
+    display style chosen in the picker: Standard (`Cmaj7`, `Cm7♭5`) or Jazz (`CΔ7`, `Cø`), each choice showing
     those two examples. Switching renames every visible chord at once. The style is saved in
     `settings.toml` as `chord_symbols = "standard"` or `"jazz"` in `[display]` (default
     Standard).
@@ -489,7 +496,7 @@ The core does both searches (ADR-31). The input is a set of pitch classes with a
   turns on select mode and shows its buttons and results under the row: a click (or
   Enter/Space) on a position adds that note, or takes it out if it is selected, and sounds a
   note it adds. Any position can be selected, in the scale or not. Selected positions are
-  ringed on the neck, over whatever it shows (the scale, or a chosen chord); a selected note
+  ringed on the neck, over the scale it shows; a selected note
   with no dot gets one, named by its note. The selected notes are listed with their octaves,
   lowest first; the lowest by pitch (from the core's fretboard mapping, so a re-entrant tuning
   or a capo needs no special case) is the **bass**. **Clear selection** empties the
@@ -499,10 +506,10 @@ The core does both searches (ADR-31). The input is a set of pitch classes with a
   that the core finds, best first. A chord is named in the display style (§4.4), with its
   catalog name, the bass's degree for a slash chord (`3 in the bass`) and what is left out
   (`without 5`); a scale shows its root and name and how many of its notes are not selected.
-  Fewer than two different notes find nothing. Clicking a chord shows it in the chord panel
-  (§5.3) and so on the neck; clicking a scale makes it the explorer's root and scale (saved,
-  like a pick in the scale picker) and clears a chosen chord, so the neck shows the scale. The
-  chord or scale on show is marked in the list.
+  Fewer than two different notes find nothing. Clicking a chord chooses it (§5.3) and shows
+  the Chords page with it; the selection is still there on coming back. Clicking a scale makes
+  it the explorer's root and scale (saved, like a pick in the scale picker) and leaves the
+  chosen chord alone. The chosen chord and the scale on show are marked in the list.
 - **Save as scale** and **Save as chord** open the scale or chord editor (§3.3) with the
   selection: the bass as the root, and each other note once, as its interval above the bass
   within the octave (the editor's default label for a scale, the chord editor's offered label
@@ -535,11 +542,11 @@ The core does both searches (ADR-31). The input is a set of pitch classes with a
   the row, a row with the chord on every degree of the current scale, its Roman numeral above
   its symbol (D Dorian as 7th chords: i7 Dm7, ii7 Em7, IIImaj7 Fmaj7, IV7 G7, v7 Am7,
   viø7 Bm7♭5, VIImaj7 Cmaj7; in the Jazz style FΔ7, Bø and CΔ7). The row has its own
-  **Triads** / **7th chords** toggle, which is the chord panel's size (§5.3): changing one
+  **Triads** / **7th chords** toggle, which is the chord picker's size (§5.3): changing one
   changes the other. A degree where no chord forms shows its note and *no chord*. Clicking a
-  chord chooses it in the chord panel by its degree (whatever input the panel was on), so the
-  neck shows it over the dimmed scale (the chord-over-scale overlay, §5.3), and expands the
-  panel if it was collapsed; the chosen chord is marked in the row. The row follows the
+  chord chooses it by its degree (whatever input the chord picker was on) and switches to the
+  Chords page, which shows it with its shapes (ADR-54); the neck shows no chord. The chosen
+  chord is marked in the row. The row follows the
   explorer's scale, root, sharp/flat setting and chord name style. Whether it is open is not
   saved.
 
@@ -566,9 +573,12 @@ Algorithmic (works for any tuning and 4–9 strings; no static shape library).
   small cost for muted strings between played ones, inversions and barres. The default list
   has the best 50 (ADR-35).
 - **Output:** chord diagrams (SVG).
-- **In the app** (ADR-37): the chord panel (§5.3) lists the voicings of its chord under the
-  chord, on the current instrument, tuning, fret count and capo, best first (the best 50),
-  each as a chord diagram, plus its bass when it is an inversion and the tones it leaves out.
+- **In the app** (ADR-37, ADR-54): the Chords page (§5.3) lists the voicings of the chosen
+  chord under its heading row, on the current instrument, tuning, fret count and capo, best
+  first (the best 50), as a grid of chord diagrams across the page's width, drawn at 1.5
+  times the sheet's size (a 6-string shape is about 190 px wide, six to a row on a
+  laptop-wide window, two on a phone-wide one), each with its bass when it is an inversion
+  and the tones it leaves out.
   No shape text is written under a diagram; its accessible name gives the shape (`x32010`,
   lowest string first) for screen readers. The list is headed by the
   chord's name; a slash chord's bass is not voiced, so `Am7/G` is headed "Voicings of Am7"
@@ -587,11 +597,12 @@ Algorithmic (works for any tuning and 4–9 strings; no static shape library).
     tab view's), open strings, muted strings and inversions, as above; changing one updates the
     list at once. They are saved in `settings.toml` (`[voicings]`: `max_span`, `start_fret`,
     `open_strings`, `muted_strings`, `inversions`; missing keys take the defaults above).
-  - **Choosing a shape** shows only its positions on the explorer's neck, still named as the
-    chord and without the scale behind it, and strums it lowest string first; while it is
-    chosen, the panel's **Strum** plays it too. Choosing it again, or **Show all positions**,
-    shows the chord across the neck again. The choice is not saved, and it is dropped when the
-    chord, the instrument (tuning, fret count, capo) or a constraint changes.
+  - **Choosing a shape** marks it in the grid, strums it lowest string first and enables
+    **Add shape to sheet** (disabled while none is chosen); while it is chosen, the page's
+    **Strum** plays it too. No neck shows it. Choosing it again unchooses it. The choice is
+    not saved, and it is dropped when the chord, the instrument (tuning, fret count, capo) or
+    a constraint changes, and by **Clear chord** (choosing the same chord again brings no
+    shape back).
 
 ### 5.7 Mood/category tags (Q6, Q14, Q31)
 
@@ -617,9 +628,9 @@ Algorithmic (works for any tuning and 4–9 strings; no static shape library).
   with AND: an item is listed when it has every one; **Clear tags** turns them off. In the
   scale picker the chips combine with the search. Every item in both lists shows its tags
   after its name (`Phrygian — dark, …`), the current scale's tags are shown under the list
-  and the chosen chord's in the panel.
+  and the chosen chord's on the Chords page.
 - Filtering never changes the choice: a current scale or chord without the tags stays shown
-  on the neck and stays in its list, in its family, marked “(hidden by tags)”; the picker says
+  and stays in its list, in its family, marked “(hidden by tags)”; the picker says
   why. No other item without the tags is listed. A filter that matches nothing
   says so (“No scale has all of the tags dark and happy.”).
 - The chips start off at every start (they are not saved).
@@ -629,7 +640,7 @@ Algorithmic (works for any tuning and 4–9 strings; no static shape library).
 ### 5.8 Random (Q21)
 
 - Two buttons (ADR-42), one per picker: **Random scale** in the scale picker, under its tag
-  chips, and **Random chord** in the chord panel's root and quality input, under the quality.
+  chips, and **Random chord** in the chord picker's root and quality input, under the quality.
   Each picks a random root (one of the 12 pitch classes, spelled by the sharp/flat preference,
   §4.1) and an item, and applies them exactly as if the user had picked them: the scale and
   root are saved as the last view; the chord is chosen as root and quality.
@@ -648,7 +659,7 @@ Algorithmic (works for any tuning and 4–9 strings; no static shape library).
   sample files.
 - Click a dot (or press Enter or Space on it) to hear the note at its real pitch, from the
   tuning and fret. **Play**, next to the tab, plays the position the tab shows, in its
-  direction (up, down, or up and back down). Chords get a strum from the chord panel (§5.3)
+  direction (up, down, or up and back down). Chords get a strum on the Chords page (§5.3)
   through the same engine; it takes the notes lowest string first.
 - **Sound** in the ⚙ Settings dialog (§5.1): a volume slider (0–100) and **Mute**. Both are saved in
   `settings.toml` (`[audio]`) and come back at the next start. Muted, nothing plays.
@@ -659,9 +670,9 @@ Algorithmic (works for any tuning and 4–9 strings; no static shape library).
 
 - **Sheet builder:** collect multiple scales/chords onto an export sheet (ADR-43).
   - **Add scale to sheet** (by the scale's notes), **Add tab to sheet** (by **Play**), **Add
-    chord to sheet** (in the chord panel, by **Clear chord**) and, while a shape is chosen in
-    the voicing browser, **Add shape to sheet** add what is shown: the scale on the neck with
-    the tab position highlighted as on screen, the tab of the position shown, the chord on the
+    chord to sheet** (on the Chords page, by **Clear chord**) and, while a shape is chosen in
+    the voicing browser, **Add shape to sheet** add: the scale on the neck with
+    the tab position highlighted as on screen, the tab of the position shown, the chord on a
     neck (alone, or over the dimmed scale for a degree), or the shape as a chord diagram.
   - An item keeps what it was made from: root as typed, scale or chord id, the shape's frets,
     and the instrument and display settings at that moment (tuning, capo, frets, left-handed,

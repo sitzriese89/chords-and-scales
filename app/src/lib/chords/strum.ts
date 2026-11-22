@@ -1,5 +1,5 @@
 /**
- * Which pitches the chord panel's strum plays.
+ * Which pitches the Chords page's strum plays.
  *
  * The chord is stacked upward from its lowest root on the neck: each next tone is the nearest
  * higher pitch of the next chord tone on a higher string (a string numbered lower, ADR-18),

@@ -1,13 +1,13 @@
 <!--
   @component
-  The voicing browser in the chord panel (SPEC §5.6, ADR-37): the constraints (max fret span,
-  start fret, open strings, muted strings, inversions), saved in the settings, and the core's
-  ranked shapes of the panel's chord on the current instrument, tuning, fret count and capo, best
-  first, each as a chord diagram (ADR-49) with no shape text under it: the shape (`x32010`)
-  is the button's and the diagram's accessible name. Choosing a shape shows only its positions on the explorer's
-  neck and strums it; choosing it again shows every position of the chord again. Nothing is
-  shown while no chord is chosen. "Add shape to sheet", while a shape is chosen, puts its diagram on the
-  export sheet (ADR-43).
+  The voicing browser on the Chords page (SPEC §5.6, ADR-37, ADR-54): the constraints (max fret
+  span, start fret, open strings, muted strings, inversions), saved in the settings, and the
+  core's ranked shapes of the chosen chord on the current instrument, tuning, fret count and
+  capo, best first, as a grid of chord diagrams (ADR-49) across the page's width, drawn larger
+  than on the sheet, with no shape text under them: the shape (`x32010`) is the button's and the
+  diagram's accessible name. Choosing a shape marks it (`aria-pressed`) and strums it; choosing
+  it again unchooses it. No neck shows it. Nothing is shown while no chord is chosen. "Add shape
+  to sheet", enabled while a shape is chosen, puts its diagram on the export sheet (ADR-43).
 
   The shapes are the chord's own: a slash chord's bass (`Am7/G`) is not voiced, so the list is
   headed by the chord without it and says so.
@@ -32,6 +32,11 @@
   const chordState = getChordState();
 
   const SPANS = Array.from({ length: MAX_VOICING_SPAN }, (_, i) => i + 1);
+  /**
+   * The grid's diagrams are drawn larger than the sheet's: about 190 px wide for a 6-string
+   * shape, so a laptop-wide window holds six in a row (ADR-54).
+   */
+  const DIAGRAM_SCALE = 1.5;
 
   const active = $derived(chordState.active);
   const chord = $derived(active ? { root: active.root, chordId: active.chord.id } : null);
@@ -75,7 +80,7 @@
     constrain({ startFret: value });
   }
 
-  /** Shows the shape alone on the neck and strums it; the chosen one again shows them all. */
+  /** Chooses the shape and strums it; choosing the chosen one again unchooses it. */
   function choose(voicing: ChordVoicing) {
     if (chosen === shapeKey(voicing)) {
       chordState.voicing = null;
@@ -112,12 +117,7 @@
             ? '1 shape'
             : `${list.length} shapes, best first`}
       </span>
-      {#if chordState.voicing}
-        <button type="button" onclick={() => (chordState.voicing = null)}>
-          Show all positions
-        </button>
-        <AddToSheet what="shape" make={addShape} />
-      {/if}
+      <AddToSheet what="shape" disabled={!chordState.voicing} make={addShape} />
     </div>
     {#if active.bass}
       <p class="muted">Shapes of {symbol}; the {active.bass} bass isn't voiced.</p>
@@ -195,6 +195,7 @@
                 capo={settings.current.instrument.capo}
                 leftHanded={settings.current.leftHanded}
                 {label}
+                scale={DIAGRAM_SCALE}
                 ariaLabel="{symbol}: {text}"
               />
               {#if voicing.bass !== '1' || voicing.omitted.length > 0}
@@ -333,5 +334,22 @@
   .note {
     color: var(--text-muted);
     font-size: 0.75rem;
+  }
+
+  /* A phone-wide window: two shapes in a row, shrunk to fit. */
+  @media (max-width: 40rem) {
+    .list li {
+      flex: 0 0 calc(50% - 0.25rem);
+      min-width: 0;
+    }
+
+    .voicing {
+      width: 100%;
+    }
+
+    .voicing :global(svg) {
+      width: 100%;
+      height: auto;
+    }
   }
 </style>

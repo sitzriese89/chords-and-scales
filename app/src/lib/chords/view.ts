@@ -1,5 +1,5 @@
 /**
- * What the chord panel shows about the chosen chord: its name, its notes and the pitches its
+ * What the Chords page shows about the chosen chord: its name, its notes and the pitches its
  * strum plays. Everything comes from the core (`chordNotes`, the fretboard mapping, the
  * voicing generator).
  */
@@ -10,7 +10,7 @@ import { chordSymbol } from './display';
 import { shapePitches, strumPitches } from './strum';
 import type { ActiveChord } from './state.svelte';
 
-export interface ChordPanelView {
+export interface ChordView {
   /** The chord as written, in the display style: `G7`, `CΔ7`, `Am7/E`. */
   symbol: string;
   /** The catalog name: `Dominant seventh`. */
@@ -24,14 +24,14 @@ export interface ChordPanelView {
 type ViewSettings = Pick<Settings, 'accidentals' | 'instrument' | 'chordSymbols'>;
 
 /**
- * The panel's view of `active`. With a `voicing` chosen in the voicing browser (ADR-37), the
+ * The Chords page's view of `active`. With a `voicing` chosen in the voicing browser (ADR-37), the
  * strum plays that shape; without, the chord stacked up from its lowest root (ADR-32).
  */
-export function chordPanelView(
+export function chordView(
   settings: ViewSettings,
   active: ActiveChord,
   voicing: ChordVoicing | null = null,
-): ChordPanelView {
+): ChordView {
   const { chord, root } = active;
   const notes = chordNotes(chord.id, root, settings.accidentals);
   return {

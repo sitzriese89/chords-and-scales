@@ -42,13 +42,13 @@ ADR-1 to ADR-13 come from the design interview behind [SPEC.md](SPEC.md) (decisi
 | 29 | [Chord symbols: the parser reads the catalog, fallbacks never guess, errors carry a position](#adr-29-chord-symbols-the-parser-reads-the-catalog-fallbacks-never-guess-errors-carry-a-position) | Accepted |
 | 30 | [Harmonize: stack thirds in the scale, number by the scale's own degrees](#adr-30-harmonize-stack-thirds-in-the-scale-number-by-the-scales-own-degrees) | Accepted |
 | 31 | [Reverse lookup and the scale finder: contain every note, inversions are cheap, omissions cost more](#adr-31-reverse-lookup-and-the-scale-finder-contain-every-note-inversions-are-cheap-omissions-cost-more) | Accepted |
-| 32 | [The chord panel: one chosen chord drawn on the explorer neck, degrees behind a seam](#adr-32-the-chord-panel-one-chosen-chord-drawn-on-the-explorer-neck-degrees-behind-a-seam) | Accepted |
+| 32 | [The chord panel: one chosen chord drawn on the explorer neck, degrees behind a seam](#adr-32-the-chord-panel-one-chosen-chord-drawn-on-the-explorer-neck-degrees-behind-a-seam) | Accepted; the chord on the neck and the `[chord_panel]` dock superseded by ADR-54 |
 | 33 | [Chord names: the style is passed to one formatter call; typed symbols are read as you type](#adr-33-chord-names-the-style-is-passed-to-one-formatter-call-typed-symbols-are-read-as-you-type) | Accepted |
-| 34 | [The harmonize view: a row over the panel's seam, one chord size, clicks choose a degree](#adr-34-the-harmonize-view-a-row-over-the-panels-seam-one-chord-size-clicks-choose-a-degree) | Accepted; the Harmonize button moved to the tool row by ADR-52 |
+| 34 | [The harmonize view: a row over the panel's seam, one chord size, clicks choose a degree](#adr-34-the-harmonize-view-a-row-over-the-panels-seam-one-chord-size-clicks-choose-a-degree) | Accepted; the Harmonize button moved to the tool row by ADR-52; a click opens the Chords page (ADR-54) |
 | 35 | [Voicings: a pruned search over one fret per string, a hand model, one score](#adr-35-voicings-a-pruned-search-over-one-fret-per-string-a-hand-model-one-score) | Accepted |
 | 36 | [Custom chords: the scale editor on two octaves, suffixes unique and readable, checks in the core](#adr-36-custom-chords-the-scale-editor-on-two-octaves-suffixes-unique-and-readable-checks-in-the-core) | Accepted |
-| 37 | [The voicing browser: diagrams from the core's result, saved constraints, one chosen shape on the neck](#adr-37-the-voicing-browser-diagrams-from-the-cores-result-saved-constraints-one-chosen-shape-on-the-neck) | Accepted; diagram orientation and the shape text under each diagram superseded by ADR-49 |
-| 38 | [Reverse lookup on the neck: a select mode, the lowest pitch as the bass, results chosen through the existing inputs](#adr-38-reverse-lookup-on-the-neck-a-select-mode-the-lowest-pitch-as-the-bass-results-chosen-through-the-existing-inputs) | Accepted; the Select notes button moved to the tool row by ADR-52 |
+| 37 | [The voicing browser: diagrams from the core's result, saved constraints, one chosen shape on the neck](#adr-37-the-voicing-browser-diagrams-from-the-cores-result-saved-constraints-one-chosen-shape-on-the-neck) | Accepted; diagram orientation and the shape text under each diagram superseded by ADR-49; the shape on the neck and Show all positions superseded by ADR-54 |
+| 38 | [Reverse lookup on the neck: a select mode, the lowest pitch as the bass, results chosen through the existing inputs](#adr-38-reverse-lookup-on-the-neck-a-select-mode-the-lowest-pitch-as-the-bass-results-chosen-through-the-existing-inputs) | Accepted; the Select notes button moved to the tool row by ADR-52; a chord click opens the Chords page, a scale click keeps the chord (ADR-54) |
 | 39 | [Mood tags: features from semitones, one weight table per tag, a threshold per kind, user rules merged per key](#adr-39-mood-tags-features-from-semitones-one-weight-table-per-tag-a-threshold-per-kind-user-rules-merged-per-key) | Accepted |
 | 40 | [Themes: CSS files with a light and/or dark scheme, applied at runtime, user themes as CSS documents](#adr-40-themes-css-files-with-a-light-andor-dark-scheme-applied-at-runtime-user-themes-as-css-documents) | Accepted |
 | 41 | [Tag filters: chips per picker, AND, the choice never jumps, `tags.toml` read with the user catalogs](#adr-41-tag-filters-chips-per-picker-and-the-choice-never-jumps-tagstoml-read-with-the-user-catalogs) | Accepted |
@@ -58,9 +58,10 @@ ADR-1 to ADR-13 come from the design interview behind [SPEC.md](SPEC.md) (decisi
 | 48 | [Built-in themes after editor palettes: the original's own variants, nudged to pass the rules, credited in the file](#adr-48-built-in-themes-after-editor-palettes-the-originals-own-variants-nudged-to-pass-the-rules-credited-in-the-file) | Accepted |
 | 49 | [Chord diagrams lie like the neck: strings across, the nut on the left, the lowest fret numbered under its column](#adr-49-chord-diagrams-lie-like-the-neck-strings-across-the-nut-on-the-left-the-lowest-fret-numbered-under-its-column) | Accepted |
 | 50 | [Collapsible side panels: one stateless component, the parent keeps the state and the width, a table per panel](#adr-50-collapsible-side-panels-one-stateless-component-the-parent-keeps-the-state-and-the-width-a-table-per-panel) | Superseded by ADR-51 |
-| 51 | [Three pages under one toolbar, pickers in a drawer, instrument in the toolbar, Sound and Appearance in a dialog](#adr-51-three-pages-under-one-toolbar-pickers-in-a-drawer-instrument-in-the-toolbar-sound-and-appearance-in-a-dialog) | Accepted |
+| 51 | [Three pages under one toolbar, pickers in a drawer, instrument in the toolbar, Sound and Appearance in a dialog](#adr-51-three-pages-under-one-toolbar-pickers-in-a-drawer-instrument-in-the-toolbar-sound-and-appearance-in-a-dialog) | Accepted; the Chords page detailed by ADR-54 |
 | 52 | [The Scales tool row: the toggles in one row, their panels under it, in button order](#adr-52-the-scales-tool-row-the-toggles-in-one-row-their-panels-under-it-in-button-order) | Accepted |
 | 53 | [The app shell: stateless drawer, light-dismiss overlays, a native Settings dialog, pages kept mounted, `page` at the top of the settings](#adr-53-the-app-shell-stateless-drawer-light-dismiss-overlays-a-native-settings-dialog-pages-kept-mounted-page-at-the-top-of-the-settings) | Accepted |
+| 54 | [The Chords page: the picker in the drawer, a heading row over the shapes, no chord on any neck](#adr-54-the-chords-page-the-picker-in-the-drawer-a-heading-row-over-the-shapes-no-chord-on-any-neck) | Accepted |
 
 ---
 
@@ -1037,6 +1038,11 @@ the neck, the tab and the layout region (ADR-23); chords on a degree come from h
 - Each degree asks the core for the whole table of the scale and takes one entry; the table is
   small, so there is no cache.
 
+*Superseded in part by ADR-54:* the chosen chord is no longer drawn on the explorer's neck;
+the Chords page shows it with its shapes and no fretboard. The overlay remains for the export
+sheet's chord items. The panel's collapse, resize edge and `[chord_panel]` table are gone;
+the inputs are the chord picker in a drawer.
+
 ## ADR-33: Chord names: the style is passed to one formatter call; typed symbols are read as you type
 
 **Context.** M2.6 adds the Standard/Jazz display style (SPEC §4.4) and typed chord symbols as
@@ -1113,6 +1119,9 @@ harmonized chord over the scale, through the `Harmonizer` seam and `ChordState`.
 
 *Superseded in part by ADR-52:* the **Harmonize** button is no longer in `HarmonizeView`; it
 sits in the explorer's tool row next to Select notes, and the component is the panel it opens.
+
+*Superseded in part by ADR-54:* a click chooses the degree as before and switches to the Chords
+page instead of drawing the chord on the neck; there is no collapsed panel to expand.
 
 ## ADR-35: Voicings: a pruned search over one fret per string, a hand model, one score
 
@@ -1332,6 +1341,11 @@ shape higher up is numbered under its lowest fret's column. The list no longer w
 shape (`x32010`) under each diagram. The window rules (four frets from the nut or capo, else
 from the lowest fretted fret, up to six), the capo, markers, barre, dots and labels stay.
 
+*Superseded in part by ADR-54:* a chosen shape is marked in the grid and strummed, not drawn on
+a neck; **Show all positions** is gone (choosing the shape again still unchooses it), and "Add
+shape to sheet" is always shown, disabled without a shape. The grid's diagrams are drawn at
+1.5 times their size.
+
 ## ADR-38: Reverse lookup on the neck: a select mode, the lowest pitch as the bass, results chosen through the existing inputs
 
 **Context.** M2.8 puts reverse lookup and the scale finder (ADR-31) on the fretboard (SPEC
@@ -1400,6 +1414,9 @@ editors are given.
 
 *Superseded in part by ADR-52:* the **Select notes** toggle is no longer in `FretboardLookup`;
 it sits in the explorer's tool row next to Harmonize, and the component is the panel it opens.
+
+*Superseded in part by ADR-54:* clicking a chord chooses it and switches to the Chords page (the
+neck no longer shows chords); clicking a scale no longer clears the chosen chord.
 
 ## ADR-39: Mood tags: features from semitones, one weight table per tag, a threshold per kind, user rules merged per key
 
@@ -2163,3 +2180,64 @@ the scale neck read it.
   would.
 - Both pages' components run while hidden; a page with expensive work would need to pause
   it when hidden.
+
+## ADR-54: The Chords page: the picker in the drawer, a heading row over the shapes, no chord on any neck
+
+**Context.** M6.3 (#96) builds the Chords page ADR-51 decided on: no fretboard, a chord picker
+in the drawer, and the chord's shapes across the full width. Until now the chosen chord and
+the chosen shape were drawn on the Scales page's neck (ADR-32, ADR-37), the chord panel was a
+dock with its own collapse, resize edge and `[chord_panel]` table, and a Harmonize or
+reverse-lookup click chose a chord and expanded the dock. The voicing browser's diagrams were
+drawn at the sheet's size, about five frets in 124 px.
+
+**Decision.**
+- **The panel splits in two.** `ChordPicker` (`lib/chords/`) is the inputs: the three modes,
+  root, tag chips and quality, Random chord, the user's chords (New, Edit, Delete), the
+  symbol field with its error, the degree with its size, and Chord names. The app puts it in a
+  second `Drawer` (`chord-drawer`, "Choose chord"). `ChordSummary` is the page's heading row:
+  the symbol (an `h2`), the name with bass, numeral and degree, the notes, ▶ Strum, Clear
+  chord and "Add chord to sheet", the tags under it; with no chord, a prompt naming ☰ Choose
+  chord and Harmonize, or the degree's problem. The app places `ChordSummary` and
+  `VoicingBrowser` on the page, so `chords/` still imports nothing from `voicings/`
+  (ADR-37). A degree with no chord is reported in both: in the picker (as the degree
+  select's description) next to its cause, and on the page, which the drawer may cover.
+- **One toolbar button, the page's picker.** The toolbar's picker button reads "Choose
+  scale" on Scales and "Choose chord" on Chords; the app keeps which page's drawer is open
+  and closes it on every page change, also one made by a click elsewhere (an effect on the
+  page), not only by the tabs.
+- **No chord on any neck.** `ScaleExplorer` calls `explorerView` without a chord, so its
+  neck and its name are the scale's alone. `ChordState.onNeck` goes, and with it
+  `ChordOnNeck.shape`, `shapePositions` and `chordOverlay`'s shape filter, which only the
+  neck used. `explorerView(settings, chord)` and `chordOverlay` stay for the export sheet's
+  chord items, which are still drawn on a neck, alone or over the dimmed scale (ADR-43). The
+  state keeps reading `voicing` in its own `$effect.root` (ADR-53).
+- **Clicks that choose a chord go to Chords.** A degree chord in Harmonize is chosen by its
+  degree as before and the page becomes Chords (`settings.update({ page: 'chords' })`, so it
+  is saved like a tab click). A chord result in reverse lookup does the same; with no chord
+  on the neck there is nothing to see on Scales. A scale result no longer clears the chosen
+  chord: that only made the neck show the scale, which it now always does.
+- **A chosen shape is marked, not drawn.** Choosing a shape marks it (`aria-pressed`) and
+  strums it; choosing it again unchooses it (still a toggle, so `aria-pressed` keeps its
+  meaning). "Show all positions" goes. "Add shape to sheet" is always shown and disabled
+  while no shape is chosen, so it doesn't jump in and out of the heading.
+- **Larger diagrams.** `ChordDiagram` takes a `scale` (default 1) that multiplies its
+  `width` and `height` and keeps its `viewBox`, so the drawing and the sheet are unchanged.
+  The grid draws at 1.5: a 6-string shape is about 190 px wide, six to a row on a 1366 px
+  window. Under 40rem the grid has two columns and the diagrams shrink to fit.
+- **`[chord_panel]` is retired** like `[scale_picker]` and `[settings_panel]`: it joins
+  `RETIRED_TABLES`, is skipped without a problem and is not written back. No version bump.
+- Rejected: hiding the old dock's header and resize edge with CSS, as the prototype did
+  (dead settings and code stay); a second "Choose chord" button in the empty page's prompt
+  (two buttons with one name); keeping reverse lookup on Scales after a chord click, which
+  would make the click do nothing visible.
+
+**Consequences.**
+- Supersedes ADR-32's "one neck" (the chord is not drawn on the explorer's neck) and its
+  `[chord_panel]` table, ADR-37's "one chosen shape on the neck" and **Show all positions**,
+  ADR-34's "expands a collapsed panel" and ADR-38's "a collapsed panel is expanded" and
+  "clicking a scale clears a chosen chord".
+- The drawer covers the left of the page, where the heading row is, while it is open; the
+  shapes to its right stay in view on a wide window. On a phone-wide window it covers the
+  page until it is closed.
+- Tests reach the parts through `chordPicker()` (opens the drawer) and `chordsPage()` in
+  `src/test-shell.ts`; `chordPanel()` is gone.

@@ -3,7 +3,7 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import App from '../../App.svelte';
-import { appReady, chordPanel } from '../../test-shell';
+import { appReady, chordPicker, chordsPage } from '../../test-shell';
 import { BrowserStorage, TauriStorage, type Storage } from '../storage';
 import { fakeCommands } from '../storage/fake-commands';
 import { lookupChords, setUserChords, setUserScales, setUserTunings } from '../theory';
@@ -32,16 +32,17 @@ async function startApp(storage: Storage) {
   await appReady();
 }
 
-const panel = chordPanel;
+const panel = chordPicker;
 const quality = () => panel().getByRole('combobox', { name: 'Chord quality' });
-const dialog = () => within(screen.getByRole('dialog'));
+const dialog = () => within(screen.getByRole('dialog', { name: /^(New|Edit) chord$/ }));
 const lower = () => within(dialog().getByRole('group', { name: 'Intervals up to the octave' }));
 const upper = () => within(dialog().getByRole('group', { name: 'Intervals above the octave' }));
 const type = (name: string, value: string) =>
   fireEvent.input(dialog().getByRole('textbox', { name }), { target: { value } });
 const save = () => fireEvent.click(dialog().getByRole('button', { name: 'Save' }));
 /** Saving writes to storage first: wait until the dialog has closed. */
-const closed = () => waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+const closed = () =>
+  waitFor(() => expect(screen.queryByRole('dialog', { name: /^(New|Edit) chord$/ })).toBeNull());
 
 /** The chord names in the quality list's group `family`. */
 function listed(family: string): string[] {
@@ -81,7 +82,7 @@ describe.each(implementations)('The chord editor (%s storage)', (_label, fixture
     await closed();
     expect(listed('Custom')).toEqual(['Hendrix']);
     expect(quality()).toHaveValue('hendrix');
-    expect(panel().getByRole('heading', { name: 'Chx' })).toBeInTheDocument();
+    expect(chordsPage().getByRole('heading', { name: 'Chx' })).toBeInTheDocument();
     const text = await open().read(USER_CHORDS_DOCUMENT);
     expect(text).toContain('id = "hendrix"');
     expect(text).toContain('symbol = "hx"');
@@ -97,7 +98,7 @@ describe.each(implementations)('The chord editor (%s storage)', (_label, fixture
     await fireEvent.input(panel().getByRole('textbox', { name: 'Chord symbol' }), {
       target: { value: 'Chx' },
     });
-    expect(panel().getByRole('heading', { name: 'Chx' })).toBeInTheDocument();
+    expect(chordsPage().getByRole('heading', { name: 'Chx' })).toBeInTheDocument();
     expect(lookupChords([0, 4, 10, 3], 0, 'sharps').map((m) => m.chordId)).toContain('hendrix');
   });
 });
@@ -152,7 +153,7 @@ describe('The chord editor', () => {
     expect(listed('Custom')).toEqual([]);
     expect(quality()).toHaveValue('hendrix');
     await fireEvent.click(panel().getByRole('radio', { name: /^Jazz/ }));
-    expect(panel().getByRole('heading', { name: 'CHX' })).toBeInTheDocument();
+    expect(chordsPage().getByRole('heading', { name: 'CHX' })).toBeInTheDocument();
 
     await fireEvent.click(panel().getByRole('button', { name: 'Delete chord' }));
     await fireEvent.click(panel().getByRole('button', { name: 'Delete' }));

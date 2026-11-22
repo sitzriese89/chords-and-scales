@@ -1,6 +1,6 @@
 /**
  * Sheet items made from what the app shows now (ADR-43): the current settings, the tab's
- * position and the chord panel's chord, copied, so later changes in the app leave the item as
+ * position and the chosen chord, copied, so later changes in the app leave the item as
  * it was added.
  */
 import { displayRoot, resolveScale } from '../explorer/view';

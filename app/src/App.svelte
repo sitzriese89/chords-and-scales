@@ -2,8 +2,9 @@
   import { AudioEngine, setAudio } from './lib/audio';
   import {
     ChordEditorDialog,
-    ChordPanel,
+    ChordPicker,
     ChordState,
+    ChordSummary,
     harmonizer as coreHarmonizer,
     setChordState,
     type Harmonizer,
@@ -76,7 +77,8 @@
   // svelte-ignore state_referenced_locally
   const sheet = new SheetStore(storage);
   setSheet(sheet);
-  // The chord chosen in the chord panel, drawn on the explorer's neck (ADR-32).
+  // The chosen chord: the chord picker, Harmonize and reverse lookup choose it, the Chords page
+  // shows it with its shapes (ADR-32, ADR-54).
   // svelte-ignore state_referenced_locally
   setChordState(new ChordState(settings, harmonizer, catalogs));
   // Whether the scale editor is open: the picker opens it, reverse lookup too (ADR-38).
@@ -113,29 +115,44 @@
     { id: 'sheet', label: () => `Sheet (${sheet.items.length})` },
   ];
   function show(next: Page) {
-    pickerOpen = false;
     if (next !== page) settings.update({ page: next }).catch(() => {});
   }
 
-  // The scale picker's drawer: closed at start and not saved (ADR-51).
-  let pickerOpen = $state(false);
+  // The page's picker in a drawer: the scale picker on Scales, the chord picker on Chords.
+  // Closed at start and on every page switch, also one made by Harmonize; not saved (ADR-51).
+  const pickers: Partial<Record<Page, { id: string; title: string }>> = {
+    scales: { id: 'scale-drawer', title: 'Choose scale' },
+    chords: { id: 'chord-drawer', title: 'Choose chord' },
+  };
+  const picker = $derived(pickers[page]);
+  let openPicker = $state<Page | null>(null);
   let pickerButton = $state<HTMLButtonElement>();
+  $effect.pre(() => {
+    void page;
+    openPicker = null;
+  });
+  function togglePicker() {
+    openPicker = openPicker === page ? null : page;
+  }
+  const closePicker = () => (openPicker = null);
 </script>
 
 <!--
   The app shell (ADR-51, ADR-53): one toolbar, sticky at the top, and the page under it at the
   full width.
   - Toolbar, left to right: the title; the page tabs (Scales, Chords, Sheet with its item
-    count); "Choose scale" on Scales, which opens the scale picker in a drawer from the left;
-    a gap; the instrument button, a summary of the neck that opens the instrument settings
-    (ADR-24) in a popover; ⚙ Settings, a dialog with Sound (ADR-28) and Appearance (ADR-40).
-    On a narrow window it wraps.
-  - Scales: the view toggles and the scale explorer (ADR-23).
-  - Chords: the chord panel (SPEC §5.3, ADR-32) with the voicing browser (ADR-37), as they
-    were docked under the neck; M6.3 reworks this page.
+    count); the page's picker button, "Choose scale" on Scales and "Choose chord" on Chords,
+    which opens the scale or the chord picker in a drawer from the left; a gap; the instrument
+    button, a summary of the neck that opens the instrument settings (ADR-24) in a popover;
+    ⚙ Settings, a dialog with Sound (ADR-28) and Appearance (ADR-40). On a narrow window it
+    wraps.
+  - Scales: the view toggles and the scale explorer (ADR-23); its neck shows the scale only.
+  - Chords: no fretboard (ADR-54). The chosen chord's heading row (SPEC §5.3), then the voicing
+    browser (ADR-37): the constraints and the shapes across the full width.
   - Sheet: the export sheet (ADR-43).
   The scale and chord editors are modal and live outside the pages, so they open from
-  anywhere: reverse lookup on the Scales page opens both (ADR-38).
+  anywhere: reverse lookup on the Scales page opens both (ADR-38). A degree chord in
+  Harmonize or a chord in reverse lookup switches to the Chords page.
 -->
 <div class="app">
   <div class="top">
@@ -151,15 +168,14 @@
             >
           {/each}
         </nav>
-        {#if page === 'scales'}
+        {#if picker}
           <button
             bind:this={pickerButton}
             type="button"
             class="picker-button"
-            aria-expanded={pickerOpen}
-            aria-controls="scale-drawer"
-            onclick={() => (pickerOpen = !pickerOpen)}
-            ><span aria-hidden="true">☰</span> Choose scale</button
+            aria-expanded={openPicker === page}
+            aria-controls={picker.id}
+            onclick={togglePicker}><span aria-hidden="true">☰</span> {picker.title}</button
           >
         {/if}
         <span class="gap"></span>
@@ -171,11 +187,20 @@
       <Drawer
         id="scale-drawer"
         title="Choose scale"
-        open={pickerOpen}
-        onclose={() => (pickerOpen = false)}
+        open={openPicker === 'scales' && page === 'scales'}
+        onclose={closePicker}
         opener={pickerButton}
       >
         <ScalePicker {random} />
+      </Drawer>
+      <Drawer
+        id="chord-drawer"
+        title="Choose chord"
+        open={openPicker === 'chords' && page === 'chords'}
+        onclose={closePicker}
+        opener={pickerButton}
+      >
+        <ChordPicker {random} />
       </Drawer>
     {/if}
   </div>
@@ -211,9 +236,8 @@
       <ScaleExplorer />
     </main>
     <main class="page chords" aria-label="Chords" hidden={page !== 'chords'}>
-      <ChordPanel {random}>
-        <VoicingBrowser />
-      </ChordPanel>
+      <ChordSummary />
+      <VoicingBrowser />
     </main>
     <!-- The sheet is mounted only while shown: its print styles print the sheet alone whenever
          it is on the page (ADR-45). -->

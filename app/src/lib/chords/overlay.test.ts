@@ -13,7 +13,7 @@ import {
 import { chordSymbol } from './display';
 import { chordOverlay } from './overlay';
 import { strumPitches } from './strum';
-import { chordPanelView } from './view';
+import { chordView } from './view';
 
 const tuning = getTuning('guitar-6-standard')!;
 const noteNames = (names: string) => names.split(' ');
@@ -62,37 +62,6 @@ describe('chordOverlay', () => {
     );
     expect(dots.filter((d) => d.role === 'dim').every((d) => d.label === '')).toBe(true);
     expect(overlay('dom7', 'G', true, 'none').dots.every((d) => d.label === '')).toBe(true);
-  });
-
-  it('shows only the positions of a chosen voicing, without the scale', () => {
-    // 320003: the open G shape.
-    const shape = [
-      { string: 6, fret: 3 },
-      { string: 5, fret: 2 },
-      { string: 4, fret: 0 },
-      { string: 3, fret: 0 },
-      { string: 2, fret: 0 },
-      { string: 1, fret: 3 },
-    ];
-    const { dots, positions } = chordOverlay({
-      tuning,
-      frets: 24,
-      capo: 0,
-      labels: 'notes',
-      chord: chordNotes('major', 'G', 'sharps'),
-      scale: scaleNotes('major', 'C', 'sharps'),
-      shape,
-    });
-    const at = (d: { string: number; fret: number }) => `${d.string}:${d.fret}`;
-    expect(dots.map(at).sort()).toEqual(shape.map(at).sort());
-    expect(positions.map(at).sort()).toEqual(shape.map(at).sort());
-    expect(
-      dots
-        .filter((d) => d.role === 'root')
-        .map(at)
-        .sort(),
-    ).toEqual(['1:3', '3:0', '6:3']);
-    expect(dots.some((d) => d.role === 'dim')).toBe(false);
   });
 
   it('measures the degree from the chord root', () => {
@@ -191,10 +160,10 @@ describe('strumPitches', () => {
   });
 });
 
-describe('chordPanelView', () => {
+describe('chordView', () => {
   it('names the chord, lists its notes and picks the strum from the tuning', () => {
     const settings = defaultSettings();
-    const view = chordPanelView(settings, {
+    const view = chordView(settings, {
       root: 'G',
       chord: getChord('dom7')!,
       fromScale: true,
@@ -208,7 +177,7 @@ describe('chordPanelView', () => {
   it('follows the tuning: drop D gives a lower strum', () => {
     const settings = defaultSettings();
     settings.instrument.tuning = 'guitar-6-drop-d';
-    const view = chordPanelView(settings, {
+    const view = chordView(settings, {
       root: 'D',
       chord: getChord('major')!,
       fromScale: false,
@@ -240,12 +209,12 @@ describe('chordSymbol', () => {
   });
 });
 
-describe('chordPanelView in the display style', () => {
+describe('chordView in the display style', () => {
   it('writes the symbol in the chosen style, with the bass', () => {
     const settings = defaultSettings();
     const active = { root: 'C', chord: getChord('maj7')!, fromScale: false, bass: 'E' };
-    expect(chordPanelView(settings, active).symbol).toBe('Cmaj7/E');
+    expect(chordView(settings, active).symbol).toBe('Cmaj7/E');
     settings.chordSymbols = 'jazz';
-    expect(chordPanelView(settings, active).symbol).toBe('CΔ7/E');
+    expect(chordView(settings, active).symbol).toBe('CΔ7/E');
   });
 });

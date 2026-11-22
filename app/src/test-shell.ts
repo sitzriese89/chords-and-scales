@@ -57,8 +57,21 @@ export function scalePicker() {
   return within(screen.getByRole('dialog', { name: 'Choose scale' }));
 }
 
-/** The chord panel on the Chords page. */
-export function chordPanel() {
+/** The "Choose chord" button in the toolbar (on the Chords page). */
+export function chordPickerButton(): HTMLElement {
+  goTo('Chords');
+  return screen.getByRole('button', { name: 'Choose chord' });
+}
+
+/** The chord picker, in its drawer on the Chords page, opened if it was closed. */
+export function chordPicker() {
+  const button = chordPickerButton();
+  if (button.getAttribute('aria-expanded') !== 'true') click(button);
+  return within(screen.getByRole('dialog', { name: 'Choose chord' }));
+}
+
+/** The Chords page: the chosen chord's heading row and its shapes. */
+export function chordsPage() {
   goTo('Chords');
   return within(screen.getByRole('main', { name: 'Chords' }));
 }

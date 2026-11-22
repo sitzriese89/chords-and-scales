@@ -28,27 +28,27 @@ set with a start fret and a width, played up, down or up and back down; the posi
 are highlighted on the neck. **New tuning** makes your own tuning, a note and octave per
 string; your tunings can be edited and deleted there too. Click a dot to hear the note, or
 press **Play** next to the tab to hear the position; volume and mute are under **Sound** in
-⚙ Settings. The **Chords** page has the chord panel, which shows a chord on the Scales page's
-neck: pick a root and a
-chord quality, a degree of the current scale as a triad or 7th chord, which shows the chord
-emphasized over the dimmed scale, or type a symbol such as `F#m7b5`, `CΔ7` or `G7/B` (a
-symbol it can't read is marked where it goes wrong). **Harmonize**, next to the scale's
-notes, lists the chord on every degree of the scale with its Roman numeral (triads or 7th
-chords; "no chord" where none forms, as on most degrees of a pentatonic scale); click one to
-show it on the neck over the scale. **Select notes**, above the neck, works the other way
-round: click notes on the neck (click one again to take it out) and the chords they make
-(slash chords and chords without their 5th included, the lowest note as the bass) and the
-scales that contain them are listed, best first, as you click. Click a chord to show it in the
-Chords panel and on the neck, or a scale to make it the scale; **Save as scale** and **Save as
-chord** open the editors with your notes, on the lowest one; **Clear selection** starts again.
-**Chord names** switches every chord name between
-Standard (`Cmaj7`, `Cm7♭5`) and Jazz (`CΔ7`, `Cø`). **Strum** plays the chord. Under it,
+⚙ Settings. The **Chords** page shows one chord and its shapes, with no fretboard; the
+Scales page's neck always shows the scale alone. **☰ Choose chord** opens the chord picker:
+pick a root and a chord quality, a degree of the current scale as a triad or 7th chord, or
+type a symbol such as `F#m7b5`, `CΔ7` or `G7/B` (a symbol it can't read is marked where it
+goes wrong). **Harmonize**, next to the scale's notes, lists the chord on every degree of
+the scale with its Roman numeral (triads or 7th chords; "no chord" where none forms, as on
+most degrees of a pentatonic scale); click one to open it on the Chords page. **Select
+notes**, above the neck, works the other way round: click notes on the neck (click one again
+to take it out) and the chords they make (slash chords and chords without their 5th
+included, the lowest note as the bass) and the scales that contain them are listed, best
+first, as you click. Click a chord to open it on the Chords page, or a scale to make it the
+scale; **Save as scale** and **Save as chord** open the editors with your notes, on the
+lowest one; **Clear selection** starts again. **Chord names**, in the chord picker, switches
+every chord name between Standard (`Cmaj7`, `Cm7♭5`) and Jazz (`CΔ7`, `Cø`). On the Chords
+page, the chord's name and notes head the page with **Strum**, which plays it. Under them,
 **Voicings** lists the best playable shapes of the chord on your instrument, tuning and capo
-as chord diagrams that lie like the neck (nut on the left, a shape higher up numbered under
-its lowest fret), best first; set the widest fret span and whether open strings, muted
-strings and inversions are allowed. Click a shape to hear it and to see just that shape on
-the neck; click it again (or **Show all positions**) to see the whole neck again.
-**Collapse** and the panel's top edge (drag, or the arrow keys) fold and resize the panel.
+across the page as large chord diagrams that lie like the neck (nut on the left, a shape
+higher up numbered under its lowest fret), best first; set the widest fret span, the start
+fret and whether open strings, muted strings and inversions are allowed. Click a shape to
+hear it and mark it (click it again to unmark it); **Strum** then plays that shape and **Add
+shape to sheet** adds its diagram to the sheet.
 **New chord**, under the chord quality, makes your own chord: pick intervals over two octaves
 (`♭9`, `♯11`, `13` above the octave) or click notes on the neck, give it a name, the symbol
 written after the root (`m7b5`) and, if you like, a Jazz symbol and a family. Your chords are

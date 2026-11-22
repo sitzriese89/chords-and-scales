@@ -4,7 +4,7 @@
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import App from '../../App.svelte';
-import { chordPanel, scalePicker } from '../../test-shell';
+import { chordPicker, chordsPage, scalePicker } from '../../test-shell';
 import { defaultSettings, SETTINGS_DOCUMENT, serializeSettings } from '../settings';
 import { BrowserStorage, TauriStorage, type Storage } from '../storage';
 import { fakeCommands } from '../storage/fake-commands';
@@ -45,7 +45,7 @@ async function startApp(storage: Storage) {
 const picker = scalePicker;
 const scaleList = () => picker().getByRole('listbox', { name: 'Scale' });
 const scaleChips = () => within(picker().getByRole('group', { name: 'Filter scales by tag' }));
-const panel = chordPanel;
+const panel = chordPicker;
 const quality = () => panel().getByRole('combobox', { name: 'Chord quality' });
 const chordChips = () => within(panel().getByRole('group', { name: 'Filter chords by tag' }));
 
@@ -201,8 +201,8 @@ describe('tag filters', () => {
   it('keeps the current scale and chord when the chips hide them', async () => {
     await startApp(storage);
     await fireEvent.change(quality(), { target: { value: 'major' } });
-    expect(panel().getByRole('heading', { level: 3, name: 'C' })).toBeInTheDocument();
-    expect(panel().getByText(/^Tags: /)).toHaveTextContent(
+    expect(chordsPage().getByRole('heading', { level: 2, name: 'C' })).toBeInTheDocument();
+    expect(chordsPage().getByText(/^Tags: /)).toHaveTextContent(
       `Tags: ${chordTags('major').join(', ') || 'none'}`,
     );
 
@@ -228,7 +228,7 @@ describe('tag filters', () => {
     expect(keptOptions(quality()).map((o) => o.value)).toEqual(['major']);
     expect(keptOptions(quality())[0].textContent).toMatch(/ \(hidden by tags\)$/);
     expect(quality()).toHaveValue('major');
-    expect(panel().getByRole('heading', { level: 3, name: 'C' })).toBeInTheDocument();
+    expect(chordsPage().getByRole('heading', { level: 2, name: 'C' })).toBeInTheDocument();
     expect(
       panel().getByText(/stays chosen, but it doesn’t have every tag you picked\.$/),
     ).toBeInTheDocument();

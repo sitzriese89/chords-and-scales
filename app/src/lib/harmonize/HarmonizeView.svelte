@@ -2,12 +2,12 @@
   @component
   Harmonize for the explorer's scale (SPEC §5.5, ADR-34): the panel that the **Harmonize** button
   in the explorer's tool row (`ScaleTools`, ADR-52) opens. It shows the chord on every degree, as triads or 7th chords, each with its Roman numeral; degrees where
-  no chord forms are marked "no chord". Clicking a chord chooses it in the chord panel by its
-  degree, so the neck shows it over the dimmed scale (ADR-32), and expands the panel if it is
-  collapsed. The size is the chord panel's: the toggle here and the one there are the same.
+  no chord forms are marked "no chord". Clicking a chord chooses it by its degree, as the chord
+  picker's degree input does, and switches to the Chords page, which shows it with its shapes
+  (ADR-54). The size is the chord picker's: the toggle here and the one there are the same.
   Chord names follow the Standard/Jazz setting (ADR-33).
 
-  Shown only when the app has a harmonizer (the chord panel's degree input is on); the tool row
+  Shown only when the app has a harmonizer (the chord picker's degree input is on); the tool row
   offers the button only then.
 -->
 <script lang="ts">
@@ -39,17 +39,16 @@
       settings.current,
     );
   });
-  /** The degree whose chord is on the neck, if it was chosen by degree. */
+  /** The degree whose chord is chosen, if it was chosen by degree. */
   const chosen = $derived(
     chordState.mode === 'degree' && chordState.active ? chordState.degree : null,
   );
 
+  /** Chooses the degree's chord and shows it, with its shapes, on the Chords page (ADR-54). */
   function choose(degree: number) {
     chordState.chooseDegree(degree);
-    if (settings.current.chordPanel.collapsed) {
-      // A failed save is shown by the store's warning.
-      settings.update({ chordPanel: { collapsed: false } }).catch(() => {});
-    }
+    // A failed save is shown by the store's warning.
+    settings.update({ page: 'chords' }).catch(() => {});
   }
 </script>
 

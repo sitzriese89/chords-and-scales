@@ -1,7 +1,8 @@
 <!--
   @component
   The neck for the current last view: the scale's notes on the root across the whole neck of
-  the current instrument (tuning, fret count, capo, left-handed from the settings), with a
+  the current instrument (tuning, fret count, capo, left-handed from the settings), and never a
+  chord: the chosen chord and its shapes are on the Chords page (ADR-54). It comes with a
   summary of the scale above it, then the tool row (`ScaleTools`, ADR-52: Harmonize, ADR-34, and
   Select notes, ADR-38) between the summary and the neck, and under the neck the tab of one
   position with its controls (ADR-25); the position's notes are highlighted on the neck.
@@ -14,7 +15,6 @@
 -->
 <script lang="ts">
   import { getAudio } from '../audio';
-  import { getChordState } from '../chords';
   import { Fretboard, type FretPosition } from '../fretboard';
   import { NoteSelection, withSelection } from '../lookup';
   import { getSettings } from '../settings';
@@ -28,21 +28,13 @@
   const settings = getSettings();
   const catalogs = getUserCatalogs();
   const audio = getAudio();
-  const chords = getChordState();
+  // The neck shows the scale only; chords and their shapes are on the Chords page (ADR-54).
   const view = $derived.by(() => {
     // Re-read the catalogs when a user scale or tuning was saved or deleted (ADR-24).
     void catalogs.revision;
-    return explorerView(settings.current, chords.onNeck);
+    return explorerView(settings.current);
   });
   const title = $derived(`${view.root} ${view.scale.name}`);
-  /** What the neck shows: the scale, or a chord (over the scale when it comes from it). */
-  const neckTitle = $derived(
-    view.chord
-      ? view.chord.overScale
-        ? `${view.chord.name} over ${title}`
-        : `${view.chord.name} chord`
-      : title,
-  );
 
   /** The notes selected for reverse lookup; not saved. */
   const selection = new NoteSelection(settings, catalogs);
@@ -99,7 +91,7 @@
       {dots}
       selected={selecting ? selection.notes : []}
       leftHanded={settings.current.leftHanded}
-      ariaLabel="Fretboard: {neckTitle}, {view.tuning.name} tuning{selecting
+      ariaLabel="Fretboard: {title}, {view.tuning.name} tuning{selecting
         ? ', selecting notes'
         : ''}"
       onactivate={activate}

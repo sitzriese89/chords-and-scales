@@ -1,7 +1,8 @@
 /**
- * The chord chosen in the chord panel, shared with the scale explorer's neck (ADR-32).
+ * The chosen chord (ADR-32, ADR-54): what the chord picker, the Harmonize row and reverse
+ * lookup choose, and what the Chords page shows with its shapes.
  *
- * The panel writes the inputs (`mode`, `root`, `chordId`, `degree`, `size`, `symbol`); `active`
+ * The picker writes the inputs (`mode`, `root`, `chordId`, `degree`, `size`, `symbol`); `active`
  * is the chord they come to, with its root and catalog entry, or `null` while nothing is chosen.
  * In degree mode the chord follows the explorer's scale: change the scale and it is looked up
  * again. A typed symbol is read by the core's parser (ADR-29, ADR-33). Nothing here is theory: the
@@ -21,7 +22,6 @@ import {
 } from '../theory';
 import type { UserCatalogs } from '../user-catalogs.svelte';
 import { chordSymbol } from './display';
-import { shapePositions, type ChordOnNeck } from './overlay';
 import type { ChordSize, Harmonizer } from './harmonize';
 
 /**
@@ -78,9 +78,9 @@ export class ChordState {
     private readonly catalogs: UserCatalogs,
   ) {
     // `voicing` is a derived, which only notices a change of its reset key while something
-    // reads it. The neck that always read it and the voicing browser that sets it are on
-    // different pages now (ADR-51), so the state reads it itself, for as long as it lives;
-    // otherwise Clear chord and the same chord again would bring the old shape back (ADR-53).
+    // reads it. The voicing browser that reads it renders nothing without a chord, so the
+    // state reads it itself, for as long as it lives; otherwise Clear chord and the same chord
+    // again would bring the old shape back (ADR-53).
     $effect.root(() => {
       $effect(() => {
         void this.voicing;
@@ -176,8 +176,8 @@ export class ChordState {
   });
 
   /**
-   * The voicing chosen in the voicing browser (SPEC §5.6, ADR-37): the neck shows only its
-   * positions and the panel's Strum plays it. Assign it to choose one; it goes back to `null`
+   * The shape chosen in the voicing browser (SPEC §5.6, ADR-37), marked in its grid: the
+   * Chords page's Strum plays it. Assign it to choose one; it goes back to `null`
    * whenever `voicingResetKey` changes: the chord, the instrument, its tuning or the voicing
    * constraints.
    */
@@ -186,26 +186,9 @@ export class ChordState {
     return null;
   });
 
-  /** What the scale explorer draws on the neck. */
-  readonly onNeck = $derived.by((): ChordOnNeck | null => {
-    // Read first, also with no chord: a derived only notices a change while it is read, so
-    // the chosen voicing must not survive Clear chord and come back with the same chord.
-    const voicing = this.voicing;
-    const active = this.active;
-    return active
-      ? {
-          root: active.root,
-          chordId: active.chord.id,
-          fromScale: active.fromScale,
-          bass: active.bass,
-          shape: voicing ? shapePositions(voicing) : undefined,
-        }
-      : null;
-  });
-
   /**
-   * The chord on a degree of the current scale, over the dimmed scale, in the current size:
-   * what a click in the harmonize row (SPEC §5.5) chooses.
+   * The chord on a degree of the current scale, in the current size: what a click in the
+   * harmonize row (SPEC §5.5) chooses.
    */
   chooseDegree(degree: number): void {
     this.mode = 'degree';
@@ -237,7 +220,7 @@ export class ChordState {
   /**
    * Opens the chord editor for a new chord. `intervals` (labels from the root, `1` first, e.g.
    * notes picked on the neck) preset its notes and `root` the root its neck is shown on; by
-   * default only the root, on the panel's root. Saving it chooses it as root and quality.
+   * default only the root, on the picker's root. Saving it chooses it as root and quality.
    */
   newChord(intervals: readonly string[] = ['1'], root?: string): void {
     this.editing = { mode: 'new', intervals: [...intervals], root };
@@ -252,7 +235,7 @@ export class ChordState {
     this.editing = null;
   }
 
-  /** Back to no chord: the neck shows the scale alone. */
+  /** Back to no chord: the Chords page asks for one. */
   clear(): void {
     this.chordId = '';
     this.degree = null;
