@@ -26,9 +26,9 @@ each PR names its issue with `Fixes #n`.
 3. **M2**, voicings (M2.11, M2.12) last, then release **v0.2.0** (released 2026-11-17).
 4. **M3**, with M4.1 (themes) pulled forward, then release **v0.3.0** (released 2026-11-21).
 5. **M4**, one item at a time (M4.2 → M4.3 → M4.4), then release **v0.4.0** (released 2026-11-21).
-6. **M5**, small adjustments before the UI redesign, then release **v0.5.0**. **Now**
+6. **M5**, small adjustments before the UI redesign, then release **v0.5.0** (released 2026-11-22).
 7. UI redesign (Scales / Chords / Sheet tabs, each with its own fretboard): not planned yet.
-   New items get a row and an issue before work starts.
+   New items get a row and an issue before work starts. **Now**
 
 Items whose dependencies are done can run in parallel. The coordinator groups them into waves
 of issues that don't touch the same files (`implement` skill). Suggested waves from the
