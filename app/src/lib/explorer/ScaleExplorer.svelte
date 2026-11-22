@@ -28,10 +28,12 @@
   const catalogs = getUserCatalogs();
   const audio = getAudio();
   const chords = getChordState();
+  // PROTOTYPE (redesign): the prototype shell turns the chord overlay off.
+  const { showChord = true }: { showChord?: boolean } = $props();
   const view = $derived.by(() => {
     // Re-read the catalogs when a user scale or tuning was saved or deleted (ADR-24).
     void catalogs.revision;
-    return explorerView(settings.current, chords.onNeck);
+    return explorerView(settings.current, showChord ? chords.onNeck : null);
   });
   const title = $derived(`${view.root} ${view.scale.name}`);
   /** What the neck shows: the scale, or a chord (over the scale when it comes from it). */

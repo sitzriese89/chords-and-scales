@@ -26,6 +26,9 @@
   import { version } from './lib/theory';
   import { setUserCatalogs, UserCatalogs } from './lib/user-catalogs.svelte';
   import { VoicingBrowser } from './lib/voicings';
+  // PROTOTYPE (redesign): `?variant=A|B|C` in dev shows the layout prototype instead.
+  import RedesignPrototype from './prototype-redesign/RedesignPrototype.svelte';
+  const prototype = import.meta.env.DEV && new URLSearchParams(location.search).has('variant');
 
   // Tests pass their own storage, audio engine, harmonizer, random numbers, user files, PNG
   // rasterizer and printer; the app picks Tauri files or localStorage (ADR-4), the Web Audio
@@ -133,90 +136,94 @@
   On narrow windows the regions stack in that order; a collapsed one shows only its title bar.
   The header's Explorer / Sheet buttons swap these regions for the export sheet (ADR-43).
 -->
-<div
-  class="layout"
-  class:picker-collapsed={pickerCollapsed}
-  class:settings-collapsed={settingsCollapsed}
->
-  <header class="title">
-    <h1>Chords &amp; Scales</h1>
-    <nav class="pages" aria-label="Pages">
-      <button
-        type="button"
-        aria-current={page === 'explorer' ? 'page' : undefined}
-        onclick={() => (page = 'explorer')}>Explorer</button
-      >
-      <button
-        type="button"
-        aria-current={page === 'sheet' ? 'page' : undefined}
-        onclick={() => (page = 'sheet')}>Sheet ({sheet.items.length})</button
-      >
-    </nav>
-    {#if fileProblems.length > 0}
-      <details class="file-problems">
-        <summary>
-          {fileProblems.length === 1 ? 'One problem' : `${fileProblems.length} problems`} with your files:
-          some items or tag rules were not used
-        </summary>
-        <ul>
-          {#each fileProblems as problem (problem)}
-            <li>{problem}</li>
-          {/each}
-        </ul>
-      </details>
+{#if prototype && ready}
+  <RedesignPrototype {random} {files} {rasterize} {printer} />
+{:else}
+  <div
+    class="layout"
+    class:picker-collapsed={pickerCollapsed}
+    class:settings-collapsed={settingsCollapsed}
+  >
+    <header class="title">
+      <h1>Chords &amp; Scales</h1>
+      <nav class="pages" aria-label="Pages">
+        <button
+          type="button"
+          aria-current={page === 'explorer' ? 'page' : undefined}
+          onclick={() => (page = 'explorer')}>Explorer</button
+        >
+        <button
+          type="button"
+          aria-current={page === 'sheet' ? 'page' : undefined}
+          onclick={() => (page = 'sheet')}>Sheet ({sheet.items.length})</button
+        >
+      </nav>
+      {#if fileProblems.length > 0}
+        <details class="file-problems">
+          <summary>
+            {fileProblems.length === 1 ? 'One problem' : `${fileProblems.length} problems`} with your
+            files: some items or tag rules were not used
+          </summary>
+          <ul>
+            {#each fileProblems as problem (problem)}
+              <li>{problem}</li>
+            {/each}
+          </ul>
+        </details>
+      {/if}
+    </header>
+
+    {#if ready && page === 'sheet'}
+      <main class="region sheet">
+        <SheetView {files} {rasterize} {printer} />
+      </main>
+    {:else if ready}
+      <nav class="region picker" aria-label="Scale picker">
+        <CollapsiblePanel
+          id="scale-picker"
+          title="Scale picker"
+          collapsed={pickerCollapsed}
+          ontoggle={togglePicker}
+        >
+          <ScalePicker {random} />
+        </CollapsiblePanel>
+      </nav>
+
+      <main class="region board">
+        <ViewControls />
+        <ScaleExplorer />
+      </main>
+
+      <aside class="region settings" aria-label="Settings">
+        <CollapsiblePanel
+          id="settings-panel"
+          title="Settings"
+          collapsed={settingsCollapsed}
+          ontoggle={toggleSettings}
+        >
+          <h2>Instrument</h2>
+          <InstrumentPanel />
+          <h2 class="section">Sound</h2>
+          <AudioControls />
+          <h2 class="section">Appearance</h2>
+          <ThemePicker />
+        </CollapsiblePanel>
+      </aside>
+
+      <aside class="region chords" aria-label="Chords">
+        <ChordPanel {random}>
+          <VoicingBrowser />
+        </ChordPanel>
+      </aside>
+    {:else}
+      <p class="muted loading">Loading…</p>
     {/if}
-  </header>
 
-  {#if ready && page === 'sheet'}
-    <main class="region sheet">
-      <SheetView {files} {rasterize} {printer} />
-    </main>
-  {:else if ready}
-    <nav class="region picker" aria-label="Scale picker">
-      <CollapsiblePanel
-        id="scale-picker"
-        title="Scale picker"
-        collapsed={pickerCollapsed}
-        ontoggle={togglePicker}
-      >
-        <ScalePicker {random} />
-      </CollapsiblePanel>
-    </nav>
-
-    <main class="region board">
-      <ViewControls />
-      <ScaleExplorer />
-    </main>
-
-    <aside class="region settings" aria-label="Settings">
-      <CollapsiblePanel
-        id="settings-panel"
-        title="Settings"
-        collapsed={settingsCollapsed}
-        ontoggle={toggleSettings}
-      >
-        <h2>Instrument</h2>
-        <InstrumentPanel />
-        <h2 class="section">Sound</h2>
-        <AudioControls />
-        <h2 class="section">Appearance</h2>
-        <ThemePicker />
-      </CollapsiblePanel>
-    </aside>
-
-    <aside class="region chords" aria-label="Chords">
-      <ChordPanel {random}>
-        <VoicingBrowser />
-      </ChordPanel>
-    </aside>
-  {:else}
-    <p class="muted loading">Loading…</p>
-  {/if}
-
-  <footer class="footer">
-    <p class="muted">Theory core v{coreVersion}</p>
-  </footer>
-</div>
+    <footer class="footer">
+      <p class="muted">Theory core v{coreVersion}</p>
+    </footer>
+  </div>
+{/if}
 
 <style>
   .settings-warning {
