@@ -19,6 +19,8 @@
   import type { UserFiles } from '../lib/storage';
   import { ThemePicker } from '../lib/themes';
   import { VoicingBrowser } from '../lib/voicings';
+  import AddToSheet from '../lib/sheet/AddToSheet.svelte';
+  import { scaleItem } from '../lib/sheet/capture';
 
   const {
     random,
@@ -37,6 +39,7 @@
     { key: 'C', name: 'One toolbar, pickers as drawers' },
     { key: 'C2', name: 'C, Harmonize + Select notes at the bottom' },
     { key: 'C3', name: 'C, Harmonize + Select notes in one row' },
+    { key: 'C4', name: 'C, Add to sheet by the toggles, tools by the notes' },
   ] as const;
   type Key = (typeof VARIANTS)[number]['key'];
 
@@ -131,10 +134,23 @@
 
 {#snippet scalesMain()}
   <div class="main">
-    <ViewControls />
+    {#if variant === 'C4'}
+      <div class="view-row">
+        <ViewControls />
+        <AddToSheet what="scale" make={() => scaleItem(settings.current)} />
+      </div>
+    {:else}
+      <ViewControls />
+    {/if}
     <ScaleExplorer
       showChord={false}
-      tools={variant === 'C2' ? 'bottom' : variant === 'C3' ? 'row' : 'top'}
+      tools={variant === 'C2'
+        ? 'bottom'
+        : variant === 'C3'
+          ? 'row'
+          : variant === 'C4'
+            ? 'summary'
+            : 'top'}
     />
   </div>
 {/snippet}
@@ -336,6 +352,13 @@
     color: var(--text);
     background: var(--surface-raised);
     border-color: var(--border-strong);
+  }
+
+  .view-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1.5rem;
   }
 
   .spacer {

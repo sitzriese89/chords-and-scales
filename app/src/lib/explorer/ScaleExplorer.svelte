@@ -32,7 +32,7 @@
   const {
     showChord = true,
     tools = 'top',
-  }: { showChord?: boolean; tools?: 'top' | 'bottom' | 'row' } = $props();
+  }: { showChord?: boolean; tools?: 'top' | 'bottom' | 'row' | 'summary' } = $props();
   const view = $derived.by(() => {
     // Re-read the catalogs when a user scale or tuning was saved or deleted (ADR-24).
     void catalogs.revision;
@@ -86,7 +86,14 @@
         </div>
       {/each}
     </dl>
-    <AddToSheet what="scale" make={() => scaleItem(settings.current)} />
+    {#if tools === 'summary'}
+      <div class="tools-inline">
+        <HarmonizeView />
+        <FretboardLookup {selection} />
+      </div>
+    {:else}
+      <AddToSheet what="scale" make={() => scaleItem(settings.current)} />
+    {/if}
   </div>
 
   {#if tools === 'top'}
@@ -162,6 +169,13 @@
 <style>
   /* PROTOTYPE (redesign) */
   .tools-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+    align-items: flex-start;
+  }
+
+  .tools-inline {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem 1rem;
