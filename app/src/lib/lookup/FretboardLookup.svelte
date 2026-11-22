@@ -4,8 +4,9 @@
   while select mode is on. **Select notes** in the explorer's tool row (`ScaleTools`, ADR-52)
   turns select mode on: clicks on the neck then add or remove notes (the explorer routes them to
   `selection`), the lowest selected note is the bass, and the chords and scales the core finds
-  are listed under the selected notes, best first, on every click. Clicking a chord chooses it in
-  the chord panel (and so on the neck); clicking a scale makes it the explorer's scale and root.
+  are listed under the selected notes, best first, on every click. Clicking a chord chooses it
+  and shows the Chords page with it (ADR-54); clicking a scale makes it the explorer's scale and
+  root.
   **Save as scale** and **Save as chord** open the editors with the selection, on the bass.
   **Clear selection** empties it. Chord names follow the Standard/Jazz setting (ADR-33).
 -->
@@ -35,7 +36,7 @@
     // The values are always valid settings; a failed save is shown by the store's warning.
   }
 
-  /** Whether the chord panel shows this chord, bass included. */
+  /** Whether this is the chosen chord, bass included. */
   function isChosen(result: ChordResult): boolean {
     const active = chordState.active;
     return (
@@ -51,16 +52,14 @@
     return scale === result.scaleId && displayRoot(root) === result.root;
   }
 
+  /** The chord is chosen and the Chords page shows it with its shapes (ADR-54). */
   function chooseChord(result: ChordResult) {
     chordState.chooseChord(result.root, result.chordId, result.bass);
-    if (settings.current.chordPanel.collapsed) {
-      settings.update({ chordPanel: { collapsed: false } }).catch(ignore);
-    }
+    settings.update({ page: 'chords' }).catch(ignore);
   }
 
-  /** The scale becomes the explorer's; a chosen chord is cleared so the neck shows the scale. */
+  /** The scale becomes the explorer's; the chosen chord stays as it was. */
   function chooseScale(result: ScaleResult) {
-    chordState.clear();
     settings.update({ lastView: { root: result.root, scale: result.scaleId } }).catch(ignore);
   }
 

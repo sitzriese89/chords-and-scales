@@ -3,7 +3,7 @@
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import App from '../../App.svelte';
-import { appReady, goTo, scalePicker } from '../../test-shell';
+import { appReady, chordPicker, goTo, scalePicker } from '../../test-shell';
 import { cMajorHarmonizer } from '../chords/fixture-harmonizer';
 import { defaultSettings, SETTINGS_DOCUMENT, serializeSettings } from '../settings';
 import { BrowserStorage, type Storage } from '../storage';
@@ -22,6 +22,9 @@ async function restart(storage: Storage) {
 }
 
 const click = (name: string | RegExp) => fireEvent.click(screen.getByRole('button', { name }));
+/** Picks in the chord picker, opening its drawer. */
+const pickChord = (name: string, value: string) =>
+  fireEvent.change(chordPicker().getByRole('combobox', { name }), { target: { value } });
 const pick = (name: string, value: string) =>
   fireEvent.change(screen.getByRole('combobox', { name }), { target: { value } });
 
@@ -39,8 +42,8 @@ async function addScaleTabAndChord() {
   expect(screen.getByRole('status')).toHaveTextContent('Added to the sheet (1 item).');
   await click('Add tab to sheet');
   goTo('Chords');
-  await pick('Chord root', 'G');
-  await pick('Chord quality', 'dom7');
+  await pickChord('Chord root', 'G');
+  await pickChord('Chord quality', 'dom7');
   await click('Add chord to sheet');
 }
 
@@ -97,8 +100,8 @@ describe('export sheet', () => {
   it('adds a chosen voicing as a chord diagram', async () => {
     await startApp(storage);
     goTo('Chords');
-    await pick('Chord quality', 'major');
-    expect(screen.queryByRole('button', { name: 'Add shape to sheet' })).toBeNull();
+    await pickChord('Chord quality', 'major');
+    expect(screen.getByRole('button', { name: 'Add shape to sheet' })).toBeDisabled();
     await fireEvent.click(screen.getByRole('button', { name: /^\d+\. x32010(,|$)/ }));
     await click('Add shape to sheet');
     await openSheet();

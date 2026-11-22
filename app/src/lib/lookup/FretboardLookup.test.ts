@@ -3,7 +3,7 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import App from '../../App.svelte';
-import { on } from '../../test-shell';
+import { chordPicker, chordsPage, on, pageTab } from '../../test-shell';
 import { AudioEngine, midiToHz } from '../audio';
 import { FakeAudioContext, FakeGesture } from '../audio/fake-context';
 import { defaultSettings, SETTINGS_DOCUMENT, serializeSettings, type Settings } from '../settings';
@@ -182,22 +182,25 @@ describe('reverse lookup on the fretboard', () => {
     expect(ringed()).toEqual(['5:4']);
   });
 
-  it('shows a clicked chord in the chord panel and on the neck', async () => {
+  it('chooses a clicked chord and shows it on the Chords page; the neck keeps the scale', async () => {
     await startApp();
     await fireEvent.click(selectMode());
     await play('x02220');
-    const result = within(
-      lookup().getByRole('list', { name: 'Chords of the selected notes' }),
-    ).getAllByRole('button')[0];
-    expect(result).toHaveAttribute('aria-pressed', 'false');
+    const result = () =>
+      within(lookup().getByRole('list', { name: 'Chords of the selected notes' })).getAllByRole(
+        'button',
+      )[0];
+    expect(result()).toHaveAttribute('aria-pressed', 'false');
 
-    await fireEvent.click(result);
-    expect(result).toHaveAttribute('aria-pressed', 'true');
-    expect(on('Chords').getByRole('combobox', { name: 'Chord root' })).toHaveValue('A');
-    expect(on('Chords').getByRole('combobox', { name: 'Chord quality' })).toHaveValue('major');
-    expect(board()).toHaveAccessibleName(/^Fretboard: A chord/);
-    // The chord's tones across the neck, the selection still ringed over them.
-    expect(cell(6, 5)).toHaveAccessibleName('String 6, fret 5, A, root');
+    await fireEvent.click(result());
+    expect(pageTab('Chords')).toHaveAttribute('aria-current', 'page');
+    expect(chordsPage().getByRole('heading', { level: 2, name: 'A' })).toBeInTheDocument();
+    expect(chordPicker().getByRole('combobox', { name: 'Chord root' })).toHaveValue('A');
+    expect(chordPicker().getByRole('combobox', { name: 'Chord quality' })).toHaveValue('major');
+    // Back on Scales: the result is marked, the neck shows C major, the selection still ringed.
+    expect(result()).toHaveAttribute('aria-pressed', 'true');
+    expect(board()).toHaveAccessibleName(/^Fretboard: C Major, /);
+    expect(cell(5, 3)).toHaveAccessibleName(/^String 5, fret 3, C, root/);
     expect(ringed()).toEqual(['1:0', '2:2', '3:2', '4:2', '5:0']);
   });
 
@@ -217,24 +220,23 @@ describe('reverse lookup on the fretboard', () => {
       .find((b) => b.textContent!.includes('Odd'))!;
     await fireEvent.click(odd);
 
-    expect(on('Chords').getByRole('radio', { name: 'Root and quality' })).toBeChecked();
-    expect(on('Chords').getByRole('combobox', { name: 'Chord root' })).toHaveValue('C');
-    expect(on('Chords').getByRole('combobox', { name: 'Chord quality' })).toHaveValue('odd');
+    expect(chordPicker().getByRole('radio', { name: 'Root and quality' })).toBeChecked();
+    expect(chordPicker().getByRole('combobox', { name: 'Chord root' })).toHaveValue('C');
+    expect(chordPicker().getByRole('combobox', { name: 'Chord quality' })).toHaveValue('odd');
   });
 
   it('shows a slash chord as its typed symbol, with the bass', async () => {
-    await startApp({ change: (s) => (s.chordPanel.collapsed = true) });
+    await startApp();
     await fireEvent.click(selectMode());
     await fireEvent.click(cell(6, 0));
     await fireEvent.click(cell(5, 3));
     await fireEvent.click(cell(3, 0));
     await fireEvent.click(lookup().getByRole('button', { name: /^C\/E/ }));
 
-    // The panel opens on the typed symbol.
-    expect(on('Chords').getByRole('button', { name: 'Collapse' })).toBeInTheDocument();
-    expect(on('Chords').getByRole('radio', { name: 'Typed symbol' })).toBeChecked();
-    expect(on('Chords').getByRole('textbox', { name: 'Chord symbol' })).toHaveValue('C/E');
-    expect(board()).toHaveAccessibleName(/^Fretboard: C\/E chord/);
+    // The picker has it as the typed symbol.
+    expect(chordsPage().getByRole('heading', { level: 2, name: 'C/E' })).toBeInTheDocument();
+    expect(chordPicker().getByRole('radio', { name: 'Typed symbol' })).toBeChecked();
+    expect(chordPicker().getByRole('textbox', { name: 'Chord symbol' })).toHaveValue('C/E');
     expect(lookup().getByRole('button', { name: /^C\/E/ })).toHaveAttribute('aria-pressed', 'true');
   });
 
@@ -247,8 +249,8 @@ describe('reverse lookup on the fretboard', () => {
 
   it('makes a clicked scale the explorer’s scale and root', async () => {
     await startApp();
-    await fireEvent.click(on('Chords').getByRole('radio', { name: 'Root and quality' }));
-    await fireEvent.change(on('Chords').getByRole('combobox', { name: 'Chord quality' }), {
+    await fireEvent.click(chordPicker().getByRole('radio', { name: 'Root and quality' }));
+    await fireEvent.change(chordPicker().getByRole('combobox', { name: 'Chord quality' }), {
       target: { value: 'minor' },
     });
     await fireEvent.click(selectMode());
@@ -260,8 +262,10 @@ describe('reverse lookup on the fretboard', () => {
       'aria-pressed',
       'true',
     );
-    // The chosen chord is cleared, so the neck shows the scale.
     expect(board()).toHaveAccessibleName(/^Fretboard: A Major pentatonic,/);
+    // The Scales page stays, and the chosen chord is kept.
+    expect(pageTab('Scales')).toHaveAttribute('aria-current', 'page');
+    expect(chordsPage().getByRole('heading', { level: 2, name: 'Cm' })).toBeInTheDocument();
   });
 
   it('hands the selection to the chord editor, on the bass', async () => {

@@ -5,7 +5,7 @@ import '../../styles/base.css';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '../../App.svelte';
-import { goTo } from '../../test-shell';
+import { chordPicker, goTo } from '../../test-shell';
 import { cMajorHarmonizer } from '../chords/fixture-harmonizer';
 import { PNG_SIGNATURE, type Printer } from '../export';
 import { defaultSettings, SETTINGS_DOCUMENT, serializeSettings } from '../settings';
@@ -35,6 +35,9 @@ class RecordingFiles implements UserFiles {
 }
 
 const click = (name: string | RegExp) => fireEvent.click(screen.getByRole('button', { name }));
+/** Picks in the chord picker, opening its drawer. */
+const pickChord = (name: string, value: string) =>
+  fireEvent.change(chordPicker().getByRole('combobox', { name }), { target: { value } });
 const pick = (name: string, value: string) =>
   fireEvent.change(screen.getByRole('combobox', { name }), { target: { value } });
 
@@ -92,11 +95,11 @@ describe('sheet export', { timeout: 15_000 }, () => {
     await click('Add scale to sheet');
     await click('Add tab to sheet');
     goTo('Chords');
-    await pick('Chord root', 'G');
-    await pick('Chord quality', 'dom7');
+    await pickChord('Chord root', 'G');
+    await pickChord('Chord quality', 'dom7');
     await click('Add chord to sheet');
-    await pick('Chord root', 'C');
-    await pick('Chord quality', 'major');
+    await pickChord('Chord root', 'C');
+    await pickChord('Chord quality', 'major');
     await fireEvent.click(screen.getByRole('button', { name: /^\d+\. x32010(,|$)/ }));
     await click('Add shape to sheet');
     await click(/^Sheet \(\d+\)$/);

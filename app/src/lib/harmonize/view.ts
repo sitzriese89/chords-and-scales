@@ -2,9 +2,9 @@
  * The harmonize row (SPEC §5.5, ADR-34): the chord on every degree of the explorer's scale,
  * with its Roman numeral, or "no chord" where no stack of thirds forms.
  *
- * Nothing here is theory. Each degree is asked through the chord panel's `Harmonizer` seam
+ * Nothing here is theory. Each degree is asked through the chord picker's `Harmonizer` seam
  * (ADR-32), which the app answers from the core's harmonize (ADR-30), so the row and the
- * panel's degree input cannot disagree. The chord's name is written by `chordSymbol` in the
+ * picker's degree input cannot disagree. The chord's name is written by `chordSymbol` in the
  * Standard or Jazz style from the settings (ADR-33).
  */
 import { chordSymbol, type ChordSize, type Harmonizer } from '../chords';
@@ -58,7 +58,7 @@ export function harmonizeRow(
       accidentals: settings.accidentals,
     });
     // A chord id the catalog doesn't have (a user chord just deleted) counts as no chord, as
-    // in the chord panel.
+    // in the chord picker.
     const info = found ? getChord(found.chordId) : undefined;
     const chord =
       found && info

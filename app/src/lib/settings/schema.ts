@@ -2,10 +2,10 @@
  * The settings document `settings.toml` (ADR-17): display preferences and the last view.
  *
  * Tables: `display`, `instrument`, `last_view`, `tab` (the tab view's position, ADR-25),
- * `audio` (volume and mute, ADR-28), `chord_panel` (collapsed and height, ADR-32),
- * `voicings` (the voicing browser's constraints, ADR-37), and the top-level `page`: the page
- * shown under the toolbar (Scales, Chords or Sheet, ADR-51). The retired `scale_picker` and `settings_panel` tables
- * (ADR-50) are read without a warning and not written back (ADR-53).
+ * `audio` (volume and mute, ADR-28), `voicings` (the voicing browser's constraints, ADR-37),
+ * and the top-level `page`: the page shown under the toolbar (Scales, Chords or Sheet,
+ * ADR-51). The retired `scale_picker` and `settings_panel` tables (ADR-50) and `chord_panel`
+ * (ADR-32) are read without a warning and not written back (ADR-53, ADR-54).
  * `display.chord_symbols` is the style chord names are written in (ADR-33).
  * `display.theme` is the colour scheme (light, dark or the OS's) and `display.theme_id` the
  * theme shown in it (ADR-40).
@@ -40,11 +40,6 @@ export const PAGES = ['scales', 'chords', 'sheet'] as const;
 
 /** Volume is a whole percent. */
 export const MAX_VOLUME = 100;
-
-/** The chord panel's height in pixels (ADR-32). */
-export const MIN_PANEL_HEIGHT = 96;
-export const MAX_PANEL_HEIGHT = 640;
-export const DEFAULT_PANEL_HEIGHT = 220;
 
 /** The voicing browser's widest fret span (SPEC §5.6; the core's limit, ADR-35). */
 export const MAX_VOICING_SPAN = 6;
@@ -122,13 +117,6 @@ export interface Settings {
     /** No sound at all; the volume is kept. */
     muted: boolean;
   };
-  /** The docked chord panel (ADR-32). */
-  chordPanel: {
-    /** Only the panel's title bar is shown. */
-    collapsed: boolean;
-    /** Height of the open panel in pixels. */
-    height: number;
-  };
   /** The voicing browser's constraints (SPEC §5.6, ADR-37); the defaults are the core's. */
   voicings: {
     /** The most frets the fretted notes may cover, 1 to `MAX_VOICING_SPAN`. */
@@ -172,7 +160,6 @@ export const DEFAULT_SETTINGS: Readonly<Settings> = Object.freeze({
     highlight: true,
   }),
   audio: Object.freeze({ volume: 70, muted: false }),
-  chordPanel: Object.freeze({ collapsed: false, height: DEFAULT_PANEL_HEIGHT }),
   voicings: Object.freeze({
     maxSpan: 4,
     openStrings: true,
@@ -191,10 +178,11 @@ const MAX_TEXT = 64;
 
 /**
  * Tables older versions of the app wrote and this one no longer uses: the collapsible side
- * panels' (ADR-50, retired by ADR-51). They are skipped without a warning, so an old file
- * opens cleanly, and the next save leaves them out (ADR-53).
+ * panels' (ADR-50, retired by ADR-51) and the docked chord panel's (ADR-32, retired by
+ * ADR-54). They are skipped without a warning, so an old file opens cleanly, and the next save
+ * leaves them out (ADR-53).
  */
-const RETIRED_TABLES = ['scale_picker', 'settings_panel'] as const;
+const RETIRED_TABLES = ['scale_picker', 'settings_panel', 'chord_panel'] as const;
 
 /** The outcome of reading a settings file. */
 export type ParsedSettings =
@@ -391,13 +379,6 @@ export function parseSettings(text: string): ParsedSettings {
   };
   audioTable.unknownKeys();
 
-  const panelTable = root.section('chord_panel');
-  const chordPanel: Settings['chordPanel'] = {
-    collapsed: panelTable.boolean('collapsed', d.chordPanel.collapsed),
-    height: panelTable.integer('height', MIN_PANEL_HEIGHT, MAX_PANEL_HEIGHT, d.chordPanel.height),
-  };
-  panelTable.unknownKeys();
-
   for (const table of RETIRED_TABLES) root.skip(table);
 
   const voicingTable = root.section('voicings');
@@ -426,7 +407,6 @@ export function parseSettings(text: string): ParsedSettings {
       lastView: { root: rootNote, scale },
       tab,
       audio,
-      chordPanel,
       voicings,
     },
     problems,
@@ -461,10 +441,6 @@ export function serializeSettings(settings: Settings): string {
       highlight: settings.tab.highlight,
     },
     audio: { volume: settings.audio.volume, muted: settings.audio.muted },
-    chord_panel: {
-      collapsed: settings.chordPanel.collapsed,
-      height: settings.chordPanel.height,
-    },
     voicings: {
       max_span: settings.voicings.maxSpan,
       open_strings: settings.voicings.openStrings,

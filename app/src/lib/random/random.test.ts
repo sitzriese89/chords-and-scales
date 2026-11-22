@@ -3,7 +3,7 @@
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import App from '../../App.svelte';
-import { chordPanel, scalePicker } from '../../test-shell';
+import { chordPicker, chordsPage, scalePicker } from '../../test-shell';
 import { chordSymbol } from '../chords/display';
 import { defaultSettings, SETTINGS_DOCUMENT, serializeSettings, type Settings } from '../settings';
 import { BrowserStorage, type Storage } from '../storage';
@@ -113,7 +113,7 @@ const scaleList = () => picker().getByRole('listbox', { name: 'Scale' });
 const rootInput = () => picker().getByRole('combobox', { name: 'Root' });
 const scaleChips = () => within(picker().getByRole('group', { name: 'Filter scales by tag' }));
 const randomScale = () => picker().getByRole('button', { name: 'Random scale' });
-const panel = chordPanel;
+const panel = chordPicker;
 const chordRoot = () => panel().getByRole('combobox', { name: 'Chord root' });
 const quality = () => panel().getByRole('combobox', { name: 'Chord quality' });
 const chordChips = () => within(panel().getByRole('group', { name: 'Filter chords by tag' }));
@@ -231,9 +231,9 @@ describe('Random scale and Random chord', { timeout: 30_000 }, () => {
       seen.add(chord);
       // The panel shows the chord: its symbol, its notes and its tags.
       const symbol = chordSymbol(root, getChord(chord)!, 'standard');
-      expect(panel().getByRole('heading', { level: 3, name: symbol })).toBeInTheDocument();
-      expect(panel().getByLabelText(`Notes of ${symbol}`)).toBeInTheDocument();
-      expect(panel().getByText(/^Tags: /)).toHaveTextContent(
+      expect(chordsPage().getByRole('heading', { level: 2, name: symbol })).toBeInTheDocument();
+      expect(chordsPage().getByLabelText(`Notes of ${symbol}`)).toBeInTheDocument();
+      expect(chordsPage().getByText(/^Tags: /)).toHaveTextContent(
         `Tags: ${chordTags(chord).join(', ')}`,
       );
     }
@@ -247,7 +247,7 @@ describe('Random scale and Random chord', { timeout: 30_000 }, () => {
     await fireEvent.click(panel().getByRole('radio', { name: 'Root and quality' }));
     await fireEvent.click(randomChord());
     expect((quality() as HTMLSelectElement).value).not.toBe('');
-    expect(panel().getByLabelText(/^Notes of /)).toBeInTheDocument();
+    expect(chordsPage().getByLabelText(/^Notes of /)).toBeInTheDocument();
   });
 
   it('is disabled, and says why, when nothing has the tags', async () => {

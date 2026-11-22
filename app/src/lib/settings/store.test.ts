@@ -133,26 +133,6 @@ describe('audio and chord panel settings in both Storage implementations (ADR-4)
   });
 
   it.each(implementations)(
-    'keeps the chord panel collapsed state and height across a restart: %s',
-    async (_, make) => {
-      const open = make();
-      const first = new SettingsStore(open());
-      await first.load();
-      expect(first.current.chordPanel).toEqual({ collapsed: false, height: 220 });
-      await first.update({ chordPanel: { collapsed: true } });
-      await first.update({ chordPanel: { height: 340 } });
-
-      const second = new SettingsStore(open());
-      await second.load();
-      expect(second.warning).toBeNull();
-      expect(second.current.chordPanel).toEqual({ collapsed: true, height: 340 });
-      expect(await open().read(SETTINGS_DOCUMENT)).toMatch(
-        /\[chord_panel\]\ncollapsed = true\nheight = 340/,
-      );
-    },
-  );
-
-  it.each(implementations)(
     'keeps the chosen page across a restart (ADR-51): %s',
     async (_, make) => {
       const open = make();
@@ -175,7 +155,8 @@ describe('audio and chord panel settings in both Storage implementations (ADR-4)
       const open = make();
       await open().write(
         SETTINGS_DOCUMENT,
-        'version = 1\n[scale_picker]\ncollapsed = true\n[settings_panel]\ncollapsed = true\n',
+        'version = 1\n[scale_picker]\ncollapsed = true\n[settings_panel]\ncollapsed = true\n' +
+          '[chord_panel]\ncollapsed = true\nheight = 340\n',
       );
       const store = new SettingsStore(open());
       await store.load();
@@ -183,19 +164,10 @@ describe('audio and chord panel settings in both Storage implementations (ADR-4)
       expect(store.current).toEqual(defaultSettings());
       await store.update({ page: 'sheet' });
       const text = await open().read(SETTINGS_DOCUMENT);
-      expect(text).not.toMatch(/scale_picker|settings_panel/);
+      expect(text).not.toMatch(/scale_picker|settings_panel|chord_panel/);
       expect(text).toMatch(/^page = "sheet"$/m);
     },
   );
-
-  it('refuses a panel height the file could not hold', async () => {
-    window.localStorage.clear();
-    const store = await startApp();
-    await expect(store.update({ chordPanel: { height: 2000 } })).rejects.toThrow(
-      /chord_panel\.height/,
-    );
-    expect(store.current.chordPanel.height).toBe(220);
-  });
 
   it('refuses a volume the file could not hold', async () => {
     window.localStorage.clear();

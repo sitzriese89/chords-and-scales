@@ -11,7 +11,7 @@ import {
 } from './lib/settings';
 import { BrowserStorage, TauriStorage, type Storage } from './lib/storage';
 import { fakeCommands } from './lib/storage/fake-commands';
-import { appReady, instrumentButton, pageTab } from './test-shell';
+import { appReady, chordPicker, instrumentButton, pageTab } from './test-shell';
 
 async function startApp(storage: Storage) {
   render(App, { storage });
@@ -59,10 +59,11 @@ describe('the app shell', () => {
       await fireEvent.click(pageTab('Chords'));
       expect(currentPage()).toEqual(['Chords']);
       expect(screen.getByRole('main', { name: 'Chords' })).toBeVisible();
-      expect(screen.getByRole('combobox', { name: 'Chord quality' })).toBeVisible();
+      expect(screen.getByText(/^Choose a chord with ☰ Choose chord/)).toBeVisible();
       expect(screen.queryByRole('grid', { name: /^Fretboard/ })).toBeNull();
-      // The picker button belongs to Scales.
+      // Each page has its own picker button.
       expect(screen.queryByRole('button', { name: 'Choose scale' })).toBeNull();
+      expect(screen.getByRole('button', { name: 'Choose chord' })).toBeVisible();
 
       await fireEvent.click(pageTab('Sheet'));
       expect(currentPage()).toEqual(['Sheet (0)']);
@@ -89,14 +90,14 @@ describe('the app shell', () => {
 
     it('keeps what was chosen on a page while another is shown', async () => {
       await startApp(new BrowserStorage(window.localStorage));
-      await fireEvent.click(pageTab('Chords'));
-      await fireEvent.click(screen.getByRole('radio', { name: 'Typed symbol' }));
-      await fireEvent.input(screen.getByRole('textbox', { name: 'Chord symbol' }), {
+      await fireEvent.click(chordPicker().getByRole('radio', { name: 'Typed symbol' }));
+      await fireEvent.input(chordPicker().getByRole('textbox', { name: 'Chord symbol' }), {
         target: { value: 'Am7' },
       });
       await fireEvent.click(pageTab('Scales'));
       await fireEvent.click(pageTab('Chords'));
-      expect(screen.getByRole('textbox', { name: 'Chord symbol' })).toHaveValue('Am7');
+      expect(screen.getByRole('heading', { level: 2, name: 'Am7' })).toBeVisible();
+      expect(chordPicker().getByRole('textbox', { name: 'Chord symbol' })).toHaveValue('Am7');
     });
 
     it.each([

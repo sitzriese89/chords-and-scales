@@ -43,7 +43,7 @@ export interface ExplorerView {
    */
   dots: FretboardDot[];
   /**
-   * The chord shown on the neck, if one is chosen in the chord panel (SPEC §5.3): its name,
+   * The chord shown on the neck, if one was passed (a sheet's chord item, ADR-43): its name,
    * and whether the scale is drawn dimmed behind it.
    */
   chord: { name: string; overScale: boolean } | null;
@@ -126,8 +126,8 @@ type ViewSettings = Pick<
 /**
  * What to show for `settings`. Unusable stored values fall back to the defaults. With a
  * `chord` the neck shows its tones instead of the scale: over the scale, dimmed, when the
- * chord comes from it, alone otherwise; with a voicing chosen (`chord.shape`), only its
- * positions. The tab below the neck stays the scale's.
+ * chord comes from it, alone otherwise. The tab below the neck stays the scale's. The app's
+ * neck passes no chord (ADR-54); the export sheet's chord items do.
  */
 export function explorerView(settings: ViewSettings, chord?: ChordOnNeck | null): ExplorerView {
   const { root, scale, fallbacks } = resolveScale(settings);
@@ -188,14 +188,12 @@ export function explorerView(settings: ViewSettings, chord?: ChordOnNeck | null)
       labels: settings.labels,
       chord: chordNotes(chord.chordId, chord.root, settings.accidentals),
       scale: chord.fromScale ? notes : null,
-      shape: chord.shape,
     });
     dots = overlay.dots;
     pitched = overlay.positions;
     chordInfo = {
       name: chordSymbol(chord.root, definition, settings.chordSymbols, chord.bass),
-      // A chosen voicing is drawn alone, without the scale.
-      overScale: chord.fromScale && !chord.shape,
+      overScale: chord.fromScale,
     };
   }
 

@@ -1,5 +1,6 @@
 export { default as ChordEditorDialog } from './ChordEditorDialog.svelte';
-export { default as ChordPanel } from './ChordPanel.svelte';
+export { default as ChordPicker } from './ChordPicker.svelte';
+export { default as ChordSummary } from './ChordSummary.svelte';
 export { chordSymbol } from './display';
 export {
   harmonizer,
@@ -8,7 +9,7 @@ export {
   type DegreeChordRequest,
   type Harmonizer,
 } from './harmonize';
-export { chordOverlay, shapePositions, type ChordOnNeck } from './overlay';
+export { chordOverlay, type ChordOnNeck } from './overlay';
 export {
   ChordState,
   getChordState,
@@ -19,4 +20,4 @@ export {
   type SymbolProblem,
 } from './state.svelte';
 export { shapePitches, strumPitches } from './strum';
-export { chordPanelView, type ChordPanelView } from './view';
+export { chordView, type ChordView } from './view';

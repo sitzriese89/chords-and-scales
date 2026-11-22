@@ -1,9 +1,9 @@
 // The voicing browser in the real app: the real WASM core, settings and storage, a fake
 // AudioContext and the C major fixture for the harmonize seam.
-import { cleanup, fireEvent, render, within } from '@testing-library/svelte';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import App from '../../App.svelte';
-import { appReady, chordPanel, goTo, instrumentPanel, on } from '../../test-shell';
+import { appReady, chordPicker, chordsPage, goTo, instrumentPanel, on } from '../../test-shell';
 import { AudioEngine, midiToHz } from '../audio';
 import { FakeAudioContext, FakeGesture } from '../audio/fake-context';
 import { cMajorHarmonizer } from '../chords/fixture-harmonizer';
@@ -45,7 +45,12 @@ async function startApp(
 
 const pick = (name: string, value: string) =>
   fireEvent.change(
-    (name === 'Tuning' ? instrumentPanel() : chordPanel()).getByRole('combobox', { name }),
+    (name === 'Tuning'
+      ? instrumentPanel()
+      : name === 'Max fret span'
+        ? chordsPage()
+        : chordPicker()
+    ).getByRole('combobox', { name }),
     { target: { value } },
   );
 
@@ -115,8 +120,8 @@ describe('voicing browser', () => {
     await pick('Chord quality', 'major');
     expect(on('Chords').queryByText(/bass isn't voiced/)).not.toBeInTheDocument();
 
-    await fireEvent.click(on('Chords').getByRole('radio', { name: 'Typed symbol' }));
-    await fireEvent.input(on('Chords').getByRole('textbox', { name: 'Chord symbol' }), {
+    await fireEvent.click(chordPicker().getByRole('radio', { name: 'Typed symbol' }));
+    await fireEvent.input(chordPicker().getByRole('textbox', { name: 'Chord symbol' }), {
       target: { value: 'Am7/G' },
     });
     expect(on('Chords').getByRole('heading', { name: 'Voicings of Am7' })).toBeInTheDocument();
@@ -222,75 +227,73 @@ describe('voicing browser', () => {
     ).toBeInTheDocument();
   });
 
-  it('shows a chosen shape alone on the neck and strums it; choosing it again shows all', async () => {
+  it('marks a chosen shape, strums it and enables "Add shape to sheet"; choosing it again unmarks it', async () => {
     const { audio, gesture, frequencies } = audioSetup();
     await startApp({ audio });
     await pick('Chord quality', 'major');
-    const everywhere = neck();
-    expect(everywhere.length).toBeGreaterThan(20);
+    const addShape = () => chordsPage().getByRole('button', { name: 'Add shape to sheet' });
+    expect(addShape()).toBeDisabled();
+    expect(chordsPage().queryByRole('button', { pressed: true })).not.toBeInTheDocument();
     gesture.happen();
 
     await fireEvent.click(shapeButton('x32010'));
     expect(shapeButton('x32010')).toHaveAttribute('aria-pressed', 'true');
-    expect(neck()).toEqual(['1:0', '2:1', '3:0', '4:2', '5:3']);
-    // Still drawn and named as the chord.
-    expect(on('Scales').getByRole('grid', { name: /^Fretboard: C chord/ })).toBeInTheDocument();
+    expect(chordsPage().getAllByRole('button', { pressed: true })).toHaveLength(1);
+    expect(addShape()).toBeEnabled();
     // C3 E3 G3 C4 E4, lowest string first: pitches from the core.
     expect(frequencies).toEqual([48, 52, 55, 60, 64].map(midiToHz));
+    // "Show all positions" went with the neck.
+    expect(screen.queryByRole('button', { name: 'Show all positions' })).not.toBeInTheDocument();
+
+    await fireEvent.click(addShape());
+    expect(chordsPage().getByRole('status')).toHaveTextContent('Added to the sheet (1 item).');
 
     await fireEvent.click(shapeButton('x32010'));
     expect(shapeButton('x32010')).toHaveAttribute('aria-pressed', 'false');
-    expect(neck()).toEqual(everywhere);
-
-    await fireEvent.click(shapeButton('x32010'));
-    await fireEvent.click(on('Chords').getByRole('button', { name: 'Show all positions' }));
-    expect(neck()).toEqual(everywhere);
+    expect(addShape()).toBeDisabled();
   });
 
-  it('draws the shape without the scale for a chord on a degree', async () => {
+  it('draws no chord and no shape on the Scales neck', async () => {
     await startApp();
-    await fireEvent.click(on('Chords').getByRole('radio', { name: 'Degree of the scale' }));
+    const scaleNeck = neck();
+    await fireEvent.click(chordPicker().getByRole('radio', { name: 'Degree of the scale' }));
     await pick('Degree of C Major', '4');
-    goTo('Scales');
-    expect(
-      document.querySelectorAll('svg.fretboard g.dot[data-role="dim"]').length,
-    ).toBeGreaterThan(0);
+    expect(neck()).toEqual(scaleNeck);
     await fireEvent.click(shapeButton('320003'));
-    expect(neck()).toEqual(['1:3', '2:0', '3:0', '4:0', '5:2', '6:3']);
-    goTo('Scales');
+    expect(neck()).toEqual(scaleNeck);
     expect(document.querySelectorAll('svg.fretboard g.dot[data-role="dim"]')).toHaveLength(0);
-    expect(on('Scales').getByRole('grid', { name: /^Fretboard: G chord/ })).toBeInTheDocument();
+    expect(on('Scales').getByRole('grid', { name: /^Fretboard: C Major, / })).toBeInTheDocument();
   });
 
   it('drops the chosen shape when the chord, the tuning or a constraint changes', async () => {
     await startApp();
     await pick('Chord quality', 'major');
-    const everywhere = neck();
+    const pressed = () => chordsPage().queryByRole('button', { pressed: true });
 
     await fireEvent.click(shapeButton('x32010'));
     await pick('Chord quality', 'minor');
     expect(on('Chords').getByRole('heading', { name: 'Voicings of Cm' })).toBeInTheDocument();
-    expect(chordPanel().queryByRole('button', { pressed: true })).not.toBeInTheDocument();
+    expect(pressed()).not.toBeInTheDocument();
     // Back to C major: the shape is not chosen again.
     await pick('Chord quality', 'major');
-    expect(neck()).toEqual(everywhere);
+    expect(pressed()).not.toBeInTheDocument();
 
+    // Clear chord and the same chord again: no shape comes back (ADR-53).
     await fireEvent.click(shapeButton('x32010'));
-    await fireEvent.click(on('Chords').getByRole('button', { name: 'Clear chord' }));
+    await fireEvent.click(chordsPage().getByRole('button', { name: 'Clear chord' }));
     await pick('Chord quality', 'major');
-    expect(chordPanel().queryByRole('button', { pressed: true })).not.toBeInTheDocument();
-    expect(neck()).toEqual(everywhere);
+    expect(pressed()).not.toBeInTheDocument();
+    expect(chordsPage().getByRole('button', { name: 'Add shape to sheet' })).toBeDisabled();
 
     await fireEvent.click(shapeButton('x32010'));
     await pick('Tuning', 'guitar-6-drop-d');
-    expect(chordPanel().queryByRole('button', { pressed: true })).not.toBeInTheDocument();
+    expect(pressed()).not.toBeInTheDocument();
     await pick('Tuning', 'guitar-6-standard');
-    expect(neck()).toEqual(everywhere);
+    expect(pressed()).not.toBeInTheDocument();
 
     await fireEvent.click(shapeButton('x32010'));
     await fireEvent.click(on('Chords').getByRole('checkbox', { name: 'Inversions' }));
-    expect(chordPanel().queryByRole('button', { pressed: true })).not.toBeInTheDocument();
-    expect(neck().length).toBeGreaterThan(20);
+    expect(pressed()).not.toBeInTheDocument();
   });
 
   it('keeps the chosen shape when only the labels change, and labels the dots alike', async () => {
@@ -304,7 +307,15 @@ describe('voicing browser', () => {
     await fireEvent.click(on('Scales').getByRole('radio', { name: 'Intervals' }));
     expect(labels()).toEqual(['1', '3', '1']);
     expect(shapeButton('x32010')).toHaveAttribute('aria-pressed', 'true');
-    expect(neck()).toEqual(['1:0', '2:1', '3:0', '4:2', '5:3']);
+  });
+
+  it('draws the grid larger than its natural size, the same drawing scaled', async () => {
+    await startApp();
+    await pick('Chord quality', 'major');
+    const svg = on('Chords').getByRole('img', { name: 'C: x32010' });
+    const [, , width, height] = svg.getAttribute('viewBox')!.split(' ').map(Number);
+    expect(Number(svg.getAttribute('width'))).toBe(width * 1.5);
+    expect(Number(svg.getAttribute('height'))).toBe(height * 1.5);
   });
 
   it('mirrors the diagrams when left-handed', async () => {

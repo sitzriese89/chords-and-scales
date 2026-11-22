@@ -35,6 +35,8 @@
     label?: (note: VoicedString) => string;
     /** Accessible name of the diagram. */
     ariaLabel?: string;
+    /** Drawn this many times its natural size; the drawing itself is the same. */
+    scale?: number;
   }
 
   let {
@@ -43,6 +45,7 @@
     leftHanded = false,
     label = (note) => note.interval,
     ariaLabel = 'Chord diagram',
+    scale = 1,
   }: Props = $props();
 
   const count = $derived(voicing.strings.length);
@@ -90,8 +93,8 @@
   class="chord-diagram"
   role="img"
   aria-label={ariaLabel}
-  width={size.width}
-  height={size.height}
+  width={size.width * scale}
+  height={size.height * scale}
   viewBox="0 0 {size.width} {size.height}"
   data-start={frame.start}
   data-first-fret={frame.firstFret}

@@ -135,7 +135,7 @@ toolbar, Sound and Appearance in a Settings dialog (ADR-51, prototype variant C3
 |---|---|---|---|
 | M6.1 App shell: pages, toolbar, scale picker drawer, Settings dialog | [#94][94] |  | Done (#99) |
 | M6.2 Scales page: Harmonize and Select notes in one row | [#95][95] |  | Done (#98) |
-| M6.3 Chords page: chord picker drawer, full-width shapes, no chord on the neck | [#96][96] | M6.1, M6.2 | Open |
+| M6.3 Chords page: chord picker drawer, full-width shapes, no chord on the neck | [#96][96] | M6.1, M6.2 | Done (#100) |
 
 Suggested waves: (1) M6.1, M6.2 → (2) M6.3. M6.1 owns `App.svelte` and the settings, M6.2
 `ScaleExplorer.svelte`; M6.3 changes both, so it waits.

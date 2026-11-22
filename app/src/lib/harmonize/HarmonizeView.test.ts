@@ -4,7 +4,7 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/sve
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { flushSync } from 'svelte';
 import App from '../../App.svelte';
-import { goTo, on, scalePicker } from '../../test-shell';
+import { chordPicker, chordsPage, goTo, on, pageTab, scalePicker } from '../../test-shell';
 import type { Harmonizer } from '../chords';
 import { cMajorHarmonizer } from '../chords/fixture-harmonizer';
 import { defaultSettings, SETTINGS_DOCUMENT, serializeSettings, type Settings } from '../settings';
@@ -44,8 +44,8 @@ function neck(): Record<string, Set<string>> {
 const harmonizeSection = () => screen.getByRole('region', { name: /^Harmonize / });
 const openRow = () => fireEvent.click(screen.getByRole('button', { name: 'Harmonize' }));
 /**
- * The Scales page with the row open. The chord panel is on the Chords page (ADR-51), and the
- * row closes when the Scales page is left, so a test that checks the panel comes back here.
+ * The Scales page with the row open. The chord picker is on the Chords page (ADR-51), and the
+ * a chord click switches there, so a test that checks the row comes back here.
  */
 function onRow() {
   const screenOnScales = on('Scales');
@@ -132,39 +132,49 @@ describe('harmonize view', () => {
     ]);
   });
 
-  it('opens a clicked chord in the chord panel, over the dimmed scale', async () => {
-    await startApp({ change: (s) => ((s.lastView.root = 'D'), (s.lastView.scale = 'dorian')) });
+  it('opens a clicked chord on the Chords page, with its shapes', async () => {
+    const storage = await startApp({
+      change: (s) => ((s.lastView.root = 'D'), (s.lastView.scale = 'dorian')),
+    });
+    const scaleNeck = neck();
     await openRow();
     await pickSize('7th chords');
     const g7 = () => onRow().getByRole('button', { name: 'IV7 G7' });
     expect(g7()).toHaveAttribute('aria-pressed', 'false');
 
     await fireEvent.click(g7());
-    expect(g7()).toHaveAttribute('aria-pressed', 'true');
-    // The chord panel shows it chosen by degree, in the same size.
-    const panel = on('Chords');
-    expect(panel.getByRole('radio', { name: 'Degree of the scale' })).toBeChecked();
-    expect(panel.getByRole('combobox', { name: 'Degree of D Dorian' })).toHaveValue('3');
+    // The Chords page is shown, with the chord and its shapes.
+    expect(pageTab('Chords')).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('main', { name: 'Chords' })).toBeVisible();
+    expect(screen.queryByRole('main', { name: 'Scales' })).toBeNull();
+    const page = chordsPage();
+    expect(page.getByRole('heading', { level: 2, name: 'G7' })).toBeInTheDocument();
+    expect(page.getByText(/Dominant seventh \(IV7\) on degree 4 of D Dorian/)).toBeInTheDocument();
+    expect(page.getByRole('heading', { name: 'Voicings of G7' })).toBeInTheDocument();
+    expect(page.getAllByRole('img', { name: /^G7: / }).length).toBeGreaterThan(0);
+    await expect.poll(() => storage.read(SETTINGS_DOCUMENT)).toMatch(/^page = "chords"$/m);
+
+    // The chord picker has it chosen by degree, in the same size.
+    const picker = chordPicker();
+    expect(picker.getByRole('radio', { name: 'Degree of the scale' })).toBeChecked();
+    expect(picker.getByRole('combobox', { name: 'Degree of D Dorian' })).toHaveValue('3');
     expect(
-      within(panel.getByRole('group', { name: 'Chord size' })).getByRole('radio', {
+      within(picker.getByRole('group', { name: 'Chord size' })).getByRole('radio', {
         name: '7th chords',
       }),
     ).toBeChecked();
-    expect(panel.getByRole('heading', { name: 'G7' })).toBeInTheDocument();
-    expect(panel.getByText(/Dominant seventh \(IV7\) on degree 4 of D Dorian/)).toBeInTheDocument();
-    expect(neck()).toEqual({
-      root: new Set(['G']),
-      tone: new Set(['B', 'D', 'F']),
-      dim: new Set(['E', 'A', 'C']),
-    });
 
-    // The size toggle in the row is the panel's: switching it turns G7 into G.
+    // Back on Scales the row marks it, and the neck still shows the scale alone.
+    expect(g7()).toHaveAttribute('aria-pressed', 'true');
+    expect(neck()).toEqual(scaleNeck);
+
+    // The size toggle in the row is the picker's: switching it turns G7 into G.
     await pickSize('Triads');
     expect(onRow().getByRole('button', { name: 'IV G' })).toHaveAttribute('aria-pressed', 'true');
-    expect(on('Chords').getByRole('heading', { name: 'G' })).toBeInTheDocument();
+    expect(chordsPage().getByRole('heading', { level: 2, name: 'G' })).toBeInTheDocument();
 
     // Clearing the chord leaves nothing pressed.
-    await fireEvent.click(on('Chords').getByRole('button', { name: 'Clear chord' }));
+    await fireEvent.click(chordsPage().getByRole('button', { name: 'Clear chord' }));
     expect(onRow().getByRole('button', { name: 'IV G' })).toHaveAttribute('aria-pressed', 'false');
   });
 
@@ -174,7 +184,7 @@ describe('harmonize view', () => {
     await pickSize('7th chords');
     expect(row('D Dorian')).toContain('viø7 Bm7♭5');
 
-    await fireEvent.click(on('Chords').getByRole('radio', { name: /^Jazz/ }));
+    await fireEvent.click(chordPicker().getByRole('radio', { name: /^Jazz/ }));
     expect(row('D Dorian')).toEqual([
       'i7 Dm7',
       'ii7 Em7',
@@ -186,47 +196,42 @@ describe('harmonize view', () => {
     ]);
   });
 
-  it('switches the chord panel from a typed symbol to the clicked degree', async () => {
+  it('switches the chord picker from a typed symbol to the clicked degree', async () => {
     await startApp({ change: (s) => ((s.lastView.root = 'D'), (s.lastView.scale = 'dorian')) });
-    await fireEvent.click(on('Chords').getByRole('radio', { name: 'Typed symbol' }));
-    await fireEvent.input(screen.getByRole('textbox', { name: 'Chord symbol' }), {
+    await fireEvent.click(chordPicker().getByRole('radio', { name: 'Typed symbol' }));
+    await fireEvent.input(chordPicker().getByRole('textbox', { name: 'Chord symbol' }), {
       target: { value: 'Em' },
     });
-    expect(screen.getByRole('heading', { name: 'Em' })).toBeInTheDocument();
+    expect(chordsPage().getByRole('heading', { level: 2, name: 'Em' })).toBeInTheDocument();
 
     // The typed Em is the second degree's chord, but it wasn't chosen there.
     const em = () => onRow().getByRole('button', { name: 'ii Em' });
     expect(em()).toHaveAttribute('aria-pressed', 'false');
 
     await fireEvent.click(em());
+    expect(pageTab('Chords')).toHaveAttribute('aria-current', 'page');
+    expect(chordsPage().getByText(/\(ii\) on degree 2 of D Dorian/)).toBeInTheDocument();
+    const picker = chordPicker();
+    expect(picker.getByRole('radio', { name: 'Degree of the scale' })).toBeChecked();
+    expect(picker.getByRole('combobox', { name: 'Degree of D Dorian' })).toHaveValue('1');
     expect(em()).toHaveAttribute('aria-pressed', 'true');
-    const panel = on('Chords');
-    expect(panel.getByRole('radio', { name: 'Degree of the scale' })).toBeChecked();
-    expect(panel.getByRole('combobox', { name: 'Degree of D Dorian' })).toHaveValue('1');
-    expect(panel.getByText(/\(ii\) on degree 2 of D Dorian/)).toBeInTheDocument();
-    // Over the dimmed scale now, which a typed symbol is not.
-    expect(neck()).toEqual({
-      root: new Set(['E']),
-      tone: new Set(['G', 'B']),
-      dim: new Set(['D', 'F', 'A', 'C']),
-    });
 
-    // Back to the typed symbol: the row's chord is no longer the panel's.
-    await fireEvent.click(on('Chords').getByRole('radio', { name: 'Typed symbol' }));
-    expect(screen.getByRole('textbox', { name: 'Chord symbol' })).toHaveValue('Em');
+    // Back to the typed symbol: the row's chord is no longer the picker's.
+    await fireEvent.click(chordPicker().getByRole('radio', { name: 'Typed symbol' }));
+    expect(chordPicker().getByRole('textbox', { name: 'Chord symbol' })).toHaveValue('Em');
     expect(em()).toHaveAttribute('aria-pressed', 'false');
   });
 
-  it('expands the chord panel when a chord is clicked while it is collapsed', async () => {
-    const storage = await startApp({ change: (s) => (s.chordPanel.collapsed = true) });
+  it('leaves no picker open on the way to the Chords page', async () => {
+    await startApp();
+    scalePicker();
     await openRow();
     await fireEvent.click(screen.getByRole('button', { name: 'V G' }));
-    expect(on('Chords').getByRole('button', { name: 'Collapse' })).toHaveAttribute(
-      'aria-expanded',
-      'true',
-    );
-    expect(screen.getByRole('heading', { name: 'G' })).toBeInTheDocument();
-    await expect.poll(() => storage.read(SETTINGS_DOCUMENT)).toMatch(/collapsed = false/);
+    expect(pageTab('Chords')).toHaveAttribute('aria-current', 'page');
+    expect(screen.queryByRole('dialog', { name: 'Choose scale' })).toBeNull();
+    expect(screen.queryByRole('dialog', { name: 'Choose chord' })).toBeNull();
+    goTo('Scales');
+    expect(screen.queryByRole('dialog', { name: 'Choose scale' })).toBeNull();
   });
 
   it('follows the scale picked in the explorer', async () => {
