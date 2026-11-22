@@ -152,6 +152,28 @@ describe('audio and chord panel settings in both Storage implementations (ADR-4)
     },
   );
 
+  it.each(implementations)(
+    'keeps the side panels collapsed across a restart: %s',
+    async (_, make) => {
+      const open = make();
+      const first = new SettingsStore(open());
+      await first.load();
+      expect(first.current.scalePicker).toEqual({ collapsed: false });
+      expect(first.current.settingsPanel).toEqual({ collapsed: false });
+      await first.update({ scalePicker: { collapsed: true } });
+      await first.update({ settingsPanel: { collapsed: true } });
+
+      const second = new SettingsStore(open());
+      await second.load();
+      expect(second.warning).toBeNull();
+      expect(second.current.scalePicker).toEqual({ collapsed: true });
+      expect(second.current.settingsPanel).toEqual({ collapsed: true });
+      expect(await open().read(SETTINGS_DOCUMENT)).toMatch(
+        /\[scale_picker\]\ncollapsed = true\n\n\[settings_panel\]\ncollapsed = true/,
+      );
+    },
+  );
+
   it('refuses a panel height the file could not hold', async () => {
     window.localStorage.clear();
     const store = await startApp();

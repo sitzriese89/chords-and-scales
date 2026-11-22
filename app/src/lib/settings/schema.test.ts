@@ -28,6 +28,8 @@ const custom: Settings = {
   },
   audio: { volume: 35, muted: true },
   chordPanel: { collapsed: true, height: 300 },
+  scalePicker: { collapsed: true },
+  settingsPanel: { collapsed: true },
   voicings: { maxSpan: 6, openStrings: false, mutedStrings: false, inversions: true, startFret: 9 },
 };
 
@@ -81,6 +83,8 @@ describe('serializeSettings', () => {
       },
       audio: { volume: 35, muted: true },
       chord_panel: { collapsed: true, height: 300 },
+      scale_picker: { collapsed: true },
+      settings_panel: { collapsed: true },
       voicings: {
         max_span: 6,
         open_strings: false,
@@ -206,6 +210,25 @@ direction = "both"
     const result = parsed('version = 1\n[last_view]\nroot = "G"\n');
     expect(result.problems).toEqual([]);
     expect(result.settings.chordPanel).toEqual({ collapsed: false, height: 220 });
+  });
+
+  it('reads whether the side panels are collapsed, and falls back per value (ADR-50)', () => {
+    const result = parsed(
+      'version = 1\n[scale_picker]\ncollapsed = true\n[settings_panel]\ncollapsed = "yes"\nwidth = 3\n',
+    );
+    expect(result.settings.scalePicker).toEqual({ collapsed: true });
+    expect(result.settings.settingsPanel).toEqual({ collapsed: false });
+    expect(result.problems).toEqual([
+      'settings_panel.collapsed should be true or false, not "yes"',
+      'settings_panel.width is not a known setting',
+    ]);
+  });
+
+  it('reads a version 1 file written before the side panel tables existed: both expanded', () => {
+    const result = parsed('version = 1\n[chord_panel]\ncollapsed = true\n');
+    expect(result.problems).toEqual([]);
+    expect(result.settings.scalePicker).toEqual({ collapsed: false });
+    expect(result.settings.settingsPanel).toEqual({ collapsed: false });
   });
 
   it('reads the voicing constraints and falls back per value', () => {

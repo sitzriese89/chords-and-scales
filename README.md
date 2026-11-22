@@ -42,6 +42,9 @@ as chord diagrams, best first; set the widest fret span and whether open strings
 strings and inversions are allowed. Click a shape to hear it and to see just that shape on
 the neck; click it again (or **Show all positions**) to see the whole neck again.
 **Collapse** and the panel's top edge (drag, or the arrow keys) fold and resize the panel.
+The scale picker on the left and the settings on the right have a **Collapse** button too: a
+collapsed one is a narrow strip with its title and **Expand**, and the neck gets its width. The
+app remembers which panels are collapsed.
 **New chord**, under the chord quality, makes your own chord: pick intervals over two octaves
 (`♭9`, `♯11`, `13` above the octave) or click notes on the neck, give it a name, the symbol
 written after the root (`m7b5`) and, if you like, a Jazz symbol and a family. Your chords are

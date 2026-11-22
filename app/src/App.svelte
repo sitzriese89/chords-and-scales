@@ -16,6 +16,7 @@
   } from './lib/explorer';
   import { createPrinter, svgToPng, type Printer, type Rasterize } from './lib/export';
   import { InstrumentPanel } from './lib/instrument';
+  import { CollapsiblePanel } from './lib/panels';
   import { SettingsStore, setSettings } from './lib/settings';
   import type { Random } from './lib/random';
   import { setSheet, SheetStore, SheetView } from './lib/sheet';
@@ -101,6 +102,15 @@
   // The chosen theme in the chosen scheme; with "System" it follows the OS until either
   // changes (ADR-40).
   $effect(() => applyTheme(themes.get(settings.current.themeId), settings.current.theme));
+
+  // The side panels collapse to a strip and the board takes their width; whether they are is
+  // saved (ADR-50). A failed save is shown by the store's warning.
+  const pickerCollapsed = $derived(settings.current.scalePicker.collapsed);
+  const settingsCollapsed = $derived(settings.current.settingsPanel.collapsed);
+  const togglePicker = () =>
+    settings.update({ scalePicker: { collapsed: !pickerCollapsed } }).catch(() => {});
+  const toggleSettings = () =>
+    settings.update({ settingsPanel: { collapsed: !settingsCollapsed } }).catch(() => {});
 </script>
 
 {#if settings.warning}
@@ -118,10 +128,16 @@
               left-handed; ADR-24), the sound (volume, mute; ADR-28) and the appearance
               (theme and light/dark; ADR-40). The view toggles stay in board.
   - chords:   the docked chord panel (SPEC §5.3, ADR-10, ADR-32): collapsible and resizable.
-  On narrow windows the regions stack in that order.
+  Picker and settings collapse to a strip with their title and an Expand button, and the
+  board's column takes their width (ADR-50).
+  On narrow windows the regions stack in that order; a collapsed one shows only its title bar.
   The header's Explorer / Sheet buttons swap these regions for the export sheet (ADR-43).
 -->
-<div class="layout">
+<div
+  class="layout"
+  class:picker-collapsed={pickerCollapsed}
+  class:settings-collapsed={settingsCollapsed}
+>
   <header class="title">
     <h1>Chords &amp; Scales</h1>
     <nav class="pages" aria-label="Pages">
@@ -157,7 +173,14 @@
     </main>
   {:else if ready}
     <nav class="region picker" aria-label="Scale picker">
-      <ScalePicker {random} />
+      <CollapsiblePanel
+        id="scale-picker"
+        title="Scale picker"
+        collapsed={pickerCollapsed}
+        ontoggle={togglePicker}
+      >
+        <ScalePicker {random} />
+      </CollapsiblePanel>
     </nav>
 
     <main class="region board">
@@ -166,12 +189,19 @@
     </main>
 
     <aside class="region settings" aria-label="Settings">
-      <h2>Instrument</h2>
-      <InstrumentPanel />
-      <h2 class="section">Sound</h2>
-      <AudioControls />
-      <h2 class="section">Appearance</h2>
-      <ThemePicker />
+      <CollapsiblePanel
+        id="settings-panel"
+        title="Settings"
+        collapsed={settingsCollapsed}
+        ontoggle={toggleSettings}
+      >
+        <h2>Instrument</h2>
+        <InstrumentPanel />
+        <h2 class="section">Sound</h2>
+        <AudioControls />
+        <h2 class="section">Appearance</h2>
+        <ThemePicker />
+      </CollapsiblePanel>
     </aside>
 
     <aside class="region chords" aria-label="Chords">
@@ -225,13 +255,24 @@
   .layout {
     display: grid;
     gap: 1rem 1.5rem;
-    grid-template-columns: minmax(13rem, 16rem) minmax(0, 1fr) minmax(12rem, 15rem);
+    --picker-column: minmax(13rem, 16rem);
+    --settings-column: minmax(12rem, 15rem);
+    grid-template-columns: var(--picker-column) minmax(0, 1fr) var(--settings-column);
     grid-template-areas:
       'title title title'
       'picker board settings'
       'picker chords settings'
       'footer footer footer';
     align-items: start;
+  }
+
+  /* A collapsed side panel is a strip as wide as its vertical title bar. */
+  .layout.picker-collapsed {
+    --picker-column: auto;
+  }
+
+  .layout.settings-collapsed {
+    --settings-column: auto;
   }
 
   .title {
@@ -335,6 +376,8 @@
     .layout {
       grid-template-columns: minmax(0, 1fr);
       grid-template-areas: 'title' 'picker' 'board' 'settings' 'chords' 'footer';
+      /* Stacked, a collapsed panel is a title bar, not a strip (ADR-50). */
+      --collapsible-panel-writing-mode: horizontal-tb;
     }
   }
 </style>
