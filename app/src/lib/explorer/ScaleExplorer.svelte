@@ -2,26 +2,27 @@
   @component
   The neck for the current last view: the scale's notes on the root across the whole neck of
   the current instrument (tuning, fret count, capo, left-handed from the settings), with a
-  summary of the scale and its Harmonize row (ADR-34) above it, and under it the tab of one
-  position with its controls (ADR-25); the position's notes are highlighted on the neck. Everything shown comes from the
-  core (`explorerView`). "Add scale to sheet" and "Add tab to sheet" put the neck or the tab, as
-  shown, on the export sheet (ADR-43).
+  summary of the scale above it, then the tool row (`ScaleTools`, ADR-52: Harmonize, ADR-34, and
+  Select notes, ADR-38) between the summary and the neck, and under the neck the tab of one
+  position with its controls (ADR-25); the position's notes are highlighted on the neck.
+  Everything shown comes from the core (`explorerView`). "Add scale to sheet" and "Add tab to
+  sheet" put the neck or the tab, as shown, on the export sheet (ADR-43).
 
-  Reverse lookup (ADR-38) sits above the neck: in its select mode a click on the neck selects or
-  unselects the note there (playing it when it is added) instead of only playing it, and the
-  selected notes are ringed on the neck over what it shows.
+  In reverse lookup's select mode (ADR-38) a click on the neck selects or unselects the note
+  there (playing it when it is added) instead of only playing it, and the selected notes are
+  ringed on the neck over what it shows.
 -->
 <script lang="ts">
   import { getAudio } from '../audio';
   import { getChordState } from '../chords';
   import { Fretboard, type FretPosition } from '../fretboard';
-  import { HarmonizeView } from '../harmonize';
-  import { FretboardLookup, NoteSelection, withSelection } from '../lookup';
+  import { NoteSelection, withSelection } from '../lookup';
   import { getSettings } from '../settings';
   import AddToSheet from '../sheet/AddToSheet.svelte';
   import { scaleItem, tabItem } from '../sheet/capture';
   import { PositionControls, TabView } from '../tab';
   import { getUserCatalogs } from '../user-catalogs.svelte';
+  import ScaleTools from './ScaleTools.svelte';
   import { explorerView, positionKey } from './view';
 
   const settings = getSettings();
@@ -84,9 +85,7 @@
     <AddToSheet what="scale" make={() => scaleItem(settings.current)} />
   </div>
 
-  <HarmonizeView />
-
-  <FretboardLookup {selection} />
+  <ScaleTools {selection} />
 
   {#each view.fallbacks as fallback (fallback)}
     <p class="fallback">{fallback}</p>
