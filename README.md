@@ -32,10 +32,10 @@ press **Play** next to the tab to hear the position; volume and mute are under *
 Scales page's neck always shows the scale alone. **☰ Choose chord** opens the chord picker:
 pick a root and a chord quality, a degree of the current scale as a triad or 7th chord, or
 type a symbol such as `F#m7b5`, `CΔ7` or `G7/B` (a symbol it can't read is marked where it
-goes wrong). **Harmonize**, next to the scale's notes, lists the chord on every degree of
+goes wrong). **Harmonize**, under the neck, lists the chord on every degree of
 the scale with its Roman numeral (triads or 7th chords; "no chord" where none forms, as on
 most degrees of a pentatonic scale); click one to open it on the Chords page. **Select
-notes**, above the neck, works the other way round: click notes on the neck (click one again
+notes**, next to it, works the other way round: click notes on the neck (click one again
 to take it out) and the chords they make (slash chords and chords without their 5th
 included, the lowest note as the bass) and the scales that contain them are listed, best
 first, as you click. Click a chord to open it on the Chords page, or a scale to make it the

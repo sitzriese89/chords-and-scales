@@ -22,6 +22,17 @@ const PAD_TOP = 8;
 const TAIL = 10;
 /** Room under the board for fret numbers. */
 const NUMBERS_HEIGHT = 22;
+/** Width of the whole drawing in user units, the same for every fret and string count. */
+export const DRAWING_WIDTH = 2 * PAD_X + OPEN_WIDTH + NUT_WIDTH + NECK_WIDTH + TAIL;
+/**
+ * The smallest scale (CSS pixels per user unit) the Scales page draws its neck at (ADR-55).
+ * At 0.7 a full-size dot is about 15 px across, its label and the 10-unit fret numbers about
+ * 7 px high, and neighbouring strings 20 px apart; any smaller and the labels stop being
+ * readable and the dots hard to hit.
+ */
+export const MIN_NECK_SCALE = 0.7;
+/** The neck's minimum width in CSS pixels: below it the neck scrolls sideways (954 px). */
+export const MIN_NECK_WIDTH = Math.ceil(DRAWING_WIDTH * MIN_NECK_SCALE);
 
 export interface Span {
   /** Left edge in the drawing (after mirroring). */

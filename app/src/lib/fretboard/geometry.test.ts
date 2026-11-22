@@ -1,5 +1,31 @@
 import { describe, expect, it } from 'vitest';
-import { DOT_CLEARANCE, MAX_DOT_RADIUS, fretboardLayout, inlayFrets } from './geometry';
+import {
+  DOT_CLEARANCE,
+  DRAWING_WIDTH,
+  MAX_DOT_RADIUS,
+  MIN_NECK_SCALE,
+  MIN_NECK_WIDTH,
+  STRING_GAP,
+  fretboardLayout,
+  inlayFrets,
+} from './geometry';
+
+describe('minimum neck width', () => {
+  it('is the drawing at the smallest readable scale, for any neck', () => {
+    for (const frets of [12, 24, 27]) {
+      for (const strings of [4, 6, 9]) {
+        expect(fretboardLayout({ strings, frets }).width).toBeCloseTo(DRAWING_WIDTH, 9);
+      }
+    }
+    expect(MIN_NECK_WIDTH).toBe(954);
+    const scale = MIN_NECK_WIDTH / DRAWING_WIDTH;
+    expect(scale).toBeGreaterThanOrEqual(MIN_NECK_SCALE);
+    // A 24-fret neck at that width: dots about 15 px across, strings 20 px apart.
+    const l = fretboardLayout({ strings: 6, frets: 24 });
+    expect(2 * l.dotRadius * scale).toBeGreaterThan(14);
+    expect(STRING_GAP * scale).toBeGreaterThan(19);
+  });
+});
 
 describe('fretboardLayout', () => {
   it('spaces frets like a real neck: each space 2^(1/12) narrower than the last', () => {

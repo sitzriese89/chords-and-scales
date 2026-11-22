@@ -14,7 +14,6 @@
     ScaleEditorState,
     ScaleExplorer,
     ScalePicker,
-    ViewControls,
     setScaleEditor,
   } from './lib/explorer';
   import { createPrinter, svgToPng, type Printer, type Rasterize } from './lib/export';
@@ -232,7 +231,6 @@
     <!-- Scales and Chords stay mounted while hidden, so a selection, an open row or a typed
          symbol is still there on coming back (ADR-53). -->
     <main class="page scales" aria-label="Scales" hidden={page !== 'scales'}>
-      <ViewControls />
       <ScaleExplorer />
     </main>
     <main class="page chords" aria-label="Chords" hidden={page !== 'chords'}>

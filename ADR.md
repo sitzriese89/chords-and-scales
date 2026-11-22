@@ -58,10 +58,11 @@ ADR-1 to ADR-13 come from the design interview behind [SPEC.md](SPEC.md) (decisi
 | 48 | [Built-in themes after editor palettes: the original's own variants, nudged to pass the rules, credited in the file](#adr-48-built-in-themes-after-editor-palettes-the-originals-own-variants-nudged-to-pass-the-rules-credited-in-the-file) | Accepted |
 | 49 | [Chord diagrams lie like the neck: strings across, the nut on the left, the lowest fret numbered under its column](#adr-49-chord-diagrams-lie-like-the-neck-strings-across-the-nut-on-the-left-the-lowest-fret-numbered-under-its-column) | Accepted |
 | 50 | [Collapsible side panels: one stateless component, the parent keeps the state and the width, a table per panel](#adr-50-collapsible-side-panels-one-stateless-component-the-parent-keeps-the-state-and-the-width-a-table-per-panel) | Superseded by ADR-51 |
-| 51 | [Three pages under one toolbar, pickers in a drawer, instrument in the toolbar, Sound and Appearance in a dialog](#adr-51-three-pages-under-one-toolbar-pickers-in-a-drawer-instrument-in-the-toolbar-sound-and-appearance-in-a-dialog) | Accepted; the Chords page detailed by ADR-54 |
-| 52 | [The Scales tool row: the toggles in one row, their panels under it, in button order](#adr-52-the-scales-tool-row-the-toggles-in-one-row-their-panels-under-it-in-button-order) | Accepted |
+| 51 | [Three pages under one toolbar, pickers in a drawer, instrument in the toolbar, Sound and Appearance in a dialog](#adr-51-three-pages-under-one-toolbar-pickers-in-a-drawer-instrument-in-the-toolbar-sound-and-appearance-in-a-dialog) | Accepted; the Chords page detailed by ADR-54; the Scales page's order superseded by ADR-55 |
+| 52 | [The Scales tool row: the toggles in one row, their panels under it, in button order](#adr-52-the-scales-tool-row-the-toggles-in-one-row-their-panels-under-it-in-button-order) | Accepted; the row's place above the neck superseded by ADR-55 |
 | 53 | [The app shell: stateless drawer, light-dismiss overlays, a native Settings dialog, pages kept mounted, `page` at the top of the settings](#adr-53-the-app-shell-stateless-drawer-light-dismiss-overlays-a-native-settings-dialog-pages-kept-mounted-page-at-the-top-of-the-settings) | Accepted |
 | 54 | [The Chords page: the picker in the drawer, a heading row over the shapes, no chord on any neck](#adr-54-the-chords-page-the-picker-in-the-drawer-a-heading-row-over-the-shapes-no-chord-on-any-neck) | Accepted |
+| 55 | [The Scales page, neck first: summary row, neck, tool row, tab](#adr-55-the-scales-page-neck-first-summary-row-neck-tool-row-tab) | Accepted |
 
 ---
 
@@ -2088,6 +2089,9 @@ crowded and asked for Scales, Chords and Sheet as separate tabs. A throwaway pro
   part of the neck.
 - Implemented as M6.1 (shell), M6.2 (Scales tool row) and M6.3 (Chords page), #94–#96.
 
+*Superseded in part by ADR-55:* the Scales page now reads the summary row (name, notes, view
+toggles), the neck, the tool row with "Add scale to sheet", then the tab.
+
 ## ADR-52: The Scales tool row: the toggles in one row, their panels under it, in button order
 
 **Context.** ADR-51 puts Harmonize and Select notes side by side in one row between the scale's
@@ -2118,6 +2122,10 @@ the two components side by side in a flex row.
 - The "Find chords and scales" region exists only while select mode is on, and the Select
   notes button is outside it; the lookup tests find the button in the row.
 - M6.3 changes what a Harmonize click does, inside `HarmonizeView`; the row is unaffected.
+
+*Superseded in part by ADR-55:* the row and its panels sit under the neck, not between the
+scale's notes and the neck, and "Add scale to sheet" ends the row's line. The row itself, its
+panels in button order and the reading order inside it are unchanged.
 
 ## ADR-53: The app shell: stateless drawer, light-dismiss overlays, a native Settings dialog, pages kept mounted, `page` at the top of the settings
 
@@ -2241,3 +2249,52 @@ drawn at the sheet's size, about five frets in 124 px.
   page until it is closed.
 - Tests reach the parts through `chordPicker()` (opens the drawer) and `chordsPage()` in
   `src/test-shell.ts`; `chordPanel()` is gone.
+
+## ADR-55: The Scales page, neck first: summary row, neck, tool row, tab
+
+**Context.** The neck is what the Scales page is for, but after M6 it came fourth: the view
+toggles in a row of their own, the scale's name and notes as boxed cards with "Add scale to
+sheet", the tool row (ADR-52), then the neck and the tab. Of the Scales page mockups the user
+chose layout **B · Neck first** (#102, M7.1).
+
+**Decision.**
+- **Order, top to bottom** (also the DOM, reading and tab order): the summary row, the neck,
+  the tool row with the panels it opens, the tab section. `ScaleExplorer` renders all of it,
+  `ViewControls` included, so `App` puts only `<ScaleExplorer />` on the Scales page.
+- **The summary row** is the scale's name (`h2`, 1.5rem), its notes as one inline line, and
+  at its right end the view toggles (Labels, Accidentals), which wrap below on a narrow
+  window. The notes are a `<ul>` labelled "Notes of <scale>", one item per note: the name
+  bold in `--text`, the interval in `--text-muted`, a " · " between items drawn as generated
+  content with empty alternative text, so a screen reader reads "A 1", "C ♭3"… and not the
+  dots. The **root is underlined** (2px, in `--fretboard-root`): the line marks it whatever
+  the colour, as the square does on the neck (SPEC §5.1, never colour alone); its interval
+  "1" says it again in text.
+- **The neck sits on a raised panel** (`--surface-raised`, 1px `--border`, 0.5rem radius,
+  0.75rem padding). The drawing keeps a minimum width, `MIN_NECK_WIDTH` in
+  `lib/fretboard/geometry.ts`, and the panel scrolls sideways below it instead of the dots
+  shrinking. The drawing is 1362 user units wide for any fret and string count; at a scale of
+  0.7 (954 px) a full-size dot is about 15 px across, its label and the fret numbers about
+  7 px high and the strings 20 px apart, the least that stays readable and easy to hit. The
+  minimum applies on the Scales page only; the export sheet's necks are unaffected.
+- **The tool row moves under the neck.** Harmonize and Select notes stay in their group
+  (ADR-52); "Add scale to sheet" is passed to `ScaleTools` as a snippet (`end`) and pushed to
+  the right end of the row's line, outside the "Scale tools" group, so the group still holds
+  just the two toggles. The panels unfold under the row in button order, as before.
+- **The tab section** has a 1px `--border` line above it and two columns: the heading,
+  Play, "Add tab to sheet" and the position controls on the left (at most 24rem), the tab on
+  the right; one column under 40rem, like the drawer and the voicing grid.
+- No new tokens, settings or behaviour: every control does what it did.
+- Rejected: the root marked by colour or weight alone (weight already marks every note name);
+  a "(root)" word after it (the interval "1" says so, and it would lengthen a one-line
+  summary); `App` passing `ViewControls` into the explorer (the explorer already owns the
+  page's layout); shrinking the neck with the window, as before (on a 640 px window the
+  labels were about 4 px high).
+
+**Consequences.**
+- Supersedes ADR-52's placement of the row between the notes and the neck, and ADR-51's order
+  of the Scales page. Select notes now sits under the neck it works on; the lookup's panel and
+  results come right under the row.
+- On a window narrower than about 1000 px the neck scrolls sideways inside its panel; the
+  rest of the page keeps the window's width.
+- Tests pin the order (summary with the toggles, neck, tool row, tab), the inline notes with
+  the marked root and the neck's minimum width.
