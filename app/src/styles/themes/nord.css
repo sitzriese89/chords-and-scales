@@ -1,0 +1,148 @@
+/*
+ * Nord theme (ADR-40, ADR-46): dark on Polar Night (nord0–nord3), light on Snow Storm
+ * (nord4–nord6), with Frost (nord7–nord10) and Aurora (nord11–nord15) as accents.
+ * Palette: Nord, https://www.nordtheme.com (https://github.com/nordtheme/nord), MIT
+ * licence.
+ * Mapping: nord0–nord2 or nord4–nord6 for the surfaces and fingerboard, nord8 (dark) or
+ * nord10 (light) for the accent, links and focus, nord9 or nord10 for note dots, nord11 for
+ * danger and the root, nord12 for the selection ring. Degrees: nord11, nord12, nord13,
+ * nord14, nord7, nord8, nord9, nord10, nord15 in hue order, the gaps filled with OKLCH
+ * midpoints of their neighbours. The dark sunken surface (nord0 darkened) and the light
+ * raised surface #ffffff are derived. Nord's accents are soft by design, so the light
+ * scheme darkens most of them.
+ *
+ * Values that missed the contrast rules in tokens.test.ts were nudged as little as possible
+ * (OKLCH lightness, and for the degree palette the smallest change that keeps the 12
+ * colours apart with colour-vision deficiencies): upstream or derived value → value used.
+ * The root is degree-0; the accent hover is the accent a little darker (light) or lighter
+ * (dark). Format: docs/theme-tokens.md.
+ *
+ * Snow Storm (light):
+ * --text-link: #5e81ac → #486a94
+ * --text-danger: #bf616a → #a64b55
+ * --accent: #5e81ac → #4c6e98
+ * --fretboard-dot: #5e81ac → #4c6e98
+ * --fretboard-focus: #5e81ac → #5c7faa
+ * --fretboard-selected: #d08770 → #b26b55
+ * --degree-0: #bf616a → #ab4f59
+ * --degree-1: #c9746b → #835537
+ * --degree-2: #d08770 → #7d3134
+ * --degree-3: #ebcb8b → #5d3e00
+ * --degree-4: #c6c687 → #657307
+ * --degree-5: #a3be8c → #016a02
+ * --degree-6: #8fbcbb → #365650
+ * --degree-7: #88c0d0 → #497074
+ * --degree-8: #81a1c1 → #5550b1
+ * --degree-9: #5e81ac → #1170b5
+ * --degree-10: #b48ead → #875c96
+ * --degree-11: #bb7793 → #83376f
+ *
+ * Polar Night (dark):
+ * --border-strong: #4c566a → #838ea4
+ * --text-danger: #bf616a → #f6929a
+ * --fretboard-fret: #4c566a → #838ea4
+ * --degree-0: #bf616a → #e28088
+ * --degree-1: #c9746b → #f97634
+ * --degree-2: #d08770 → #e9a68f
+ * --degree-3: #ebcb8b → #f5ce91
+ * --degree-4: #c6c687 → #cccb54
+ * --degree-5: #a3be8c → #a0b56b
+ * --degree-6: #8fbcbb → #75c9b4
+ * --degree-7: #88c0d0 → #94d3f0
+ * --degree-8: #81a1c1 → #8cb1d1
+ * --degree-9: #5e81ac → #55a0ee
+ * --degree-10: #b48ead → #c5a6f3
+ * --degree-11: #bb7793 → #b491b4
+ */
+
+:root {
+  --theme-name: 'Nord';
+}
+
+[data-scheme='light'] {
+  --surface: #eceff4;
+  --surface-raised: #ffffff;
+  --surface-sunken: #e5e9f0;
+  --border: #d8dee9;
+  --border-strong: #4c566a;
+  --text: #2e3440;
+  --text-muted: #4c566a;
+  --text-link: #486a94;
+  --text-danger: #a64b55;
+  --accent: #4c6e98;
+  --accent-hover: #3b5d86;
+  --accent-text: #eceff4;
+  --focus-ring: #5e81ac;
+
+  --fretboard-wood: #d8dee9;
+  --fretboard-nut: #2e3440;
+  --fretboard-fret: #4c566a;
+  --fretboard-string: #434c5e;
+  --fretboard-inlay: #e5e9f0;
+  --fretboard-dot: #4c6e98;
+  --fretboard-dot-text: #eceff4;
+  --fretboard-root: #ab4f59;
+  --fretboard-root-text: #eceff4;
+  --fretboard-dim: #e5e9f0;
+  --fretboard-dim-text: #2e3440;
+  --fretboard-focus: #5c7faa;
+  --fretboard-capo: #3b4252;
+  --fretboard-selected: #b26b55;
+
+  --degree-0: #ab4f59;
+  --degree-1: #835537;
+  --degree-2: #7d3134;
+  --degree-3: #5d3e00;
+  --degree-4: #657307;
+  --degree-5: #016a02;
+  --degree-6: #365650;
+  --degree-7: #497074;
+  --degree-8: #5550b1;
+  --degree-9: #1170b5;
+  --degree-10: #875c96;
+  --degree-11: #83376f;
+}
+
+[data-scheme='dark'] {
+  --surface: #2e3440;
+  --surface-raised: #3b4252;
+  --surface-sunken: #272c38;
+  --border: #434c5e;
+  --border-strong: #838ea4;
+  --text: #eceff4;
+  --text-muted: #d8dee9;
+  --text-link: #88c0d0;
+  --text-danger: #f6929a;
+  --accent: #88c0d0;
+  --accent-hover: #98d0e0;
+  --accent-text: #2e3440;
+  --focus-ring: #88c0d0;
+
+  --fretboard-wood: #3b4252;
+  --fretboard-nut: #eceff4;
+  --fretboard-fret: #838ea4;
+  --fretboard-string: #d8dee9;
+  --fretboard-inlay: #434c5e;
+  --fretboard-dot: #81a1c1;
+  --fretboard-dot-text: #2e3440;
+  --fretboard-root: #e28088;
+  --fretboard-root-text: #2e3440;
+  --fretboard-dim: #4c566a;
+  --fretboard-dim-text: #eceff4;
+  --fretboard-focus: #88c0d0;
+  --fretboard-capo: #d8dee9;
+  --fretboard-selected: #d08770;
+
+  --degree-0: #e28088;
+  --degree-1: #f97634;
+  --degree-2: #e9a68f;
+  --degree-3: #f5ce91;
+  --degree-4: #cccb54;
+  --degree-5: #a0b56b;
+  --degree-6: #75c9b4;
+  --degree-7: #94d3f0;
+  --degree-8: #8cb1d1;
+  --degree-9: #55a0ee;
+  --degree-10: #c5a6f3;
+  --degree-11: #b491b4;
+}

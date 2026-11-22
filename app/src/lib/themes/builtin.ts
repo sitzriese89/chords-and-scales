@@ -3,18 +3,29 @@
  * and read with the same parser as user themes. `tokens.test.ts` holds each to the contrast
  * rules in every scheme it has.
  */
+import atomOneCss from '../../styles/themes/atom-one.css?raw';
+import catppuccinCss from '../../styles/themes/catppuccin.css?raw';
 import defaultCss from '../../styles/themes/default.css?raw';
+import draculaCss from '../../styles/themes/dracula.css?raw';
 import highContrastCss from '../../styles/themes/high-contrast.css?raw';
+import nordCss from '../../styles/themes/nord.css?raw';
 import printCss from '../../styles/themes/print.css?raw';
 import { buildTheme, parseThemeFile, type Theme } from './theme';
 
 /** The theme in use when none is chosen, and the source of a user theme's missing tokens. */
 export const DEFAULT_THEME_ID = 'default';
 
-/** Built-in theme files by id, in picker order. */
+/**
+ * Built-in theme files by id, in picker order: the app's own two, then the themes after
+ * editor palettes (ADR-46) alphabetically, then Print.
+ */
 export const BUILT_IN_THEME_FILES: Readonly<Record<string, string>> = {
   [DEFAULT_THEME_ID]: defaultCss,
   'high-contrast': highContrastCss,
+  'atom-one': atomOneCss,
+  catppuccin: catppuccinCss,
+  dracula: draculaCss,
+  nord: nordCss,
   print: printCss,
 };
 

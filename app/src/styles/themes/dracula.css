@@ -1,0 +1,140 @@
+/*
+ * Dracula theme (ADR-40, ADR-46): dark is Dracula, light is Alucard, its official light
+ * variant.
+ * Palette: Dracula, https://spec.draculatheme.com
+ * (https://github.com/dracula/dracula-theme), MIT licence.
+ * Mapping: background and its darker and lighter shades for the surfaces and the dark
+ * fingerboard, current line for the dark borders and dimmed notes, selection for the light
+ * borders and fingerboard, comment for muted text and lines, cyan for links, purple for the
+ * accent and note dots, pink for focus, red for danger and the root, orange for the
+ * selection ring. Degrees: red, orange, yellow, green, cyan, purple, pink in hue order, the
+ * gaps filled with OKLCH midpoints of their neighbours. Derived: the dark string (a mix of
+ * foreground and comment), Alucard's #ffffff raised surface and the OKLab mixes of its
+ * background and selection (sunken surface, inlays, dimmed notes).
+ *
+ * Values that missed the contrast rules in tokens.test.ts were nudged as little as possible
+ * (OKLCH lightness, and for the degree palette the smallest change that keeps the 12
+ * colours apart with colour-vision deficiencies): upstream or derived value → value used.
+ * The root is degree-0; the accent hover is the accent a little darker (light) or lighter
+ * (dark). Format: docs/theme-tokens.md.
+ *
+ * Alucard (light):
+ * --text-danger: #cb3a2a → #c53324
+ * --degree-1: #b74519 → #a0302d
+ * --degree-2: #a34d14 → #712b00
+ * --degree-3: #846e15 → #6d7843
+ * --degree-4: #616f05 → #625000
+ * --degree-5: #14710a → #007049
+ * --degree-6: #0a6e69 → #005350
+ * --degree-7: #036a96 → #0c729f
+ * --degree-8: #3160b6 → #244fa6
+ * --degree-10: #912d96 → #8a268f
+ * --degree-11: #a3144d → #8d0045
+ *
+ * Dracula (dark):
+ * --border-strong: #6272a4 → #6f80b3
+ * --text-muted: #6272a4 → #8ea0d5
+ * --text-danger: #ff5555 → #fb7a74
+ * --degree-1: #fd8f5a → #ff8246
+ * --degree-2: #ffb86c → #ffb966
+ * --degree-3: #f1fa8c → #f6ff9f
+ * --degree-4: #baf974 → #baf973
+ * --degree-5: #50fa7b → #14f28d
+ * --degree-6: #17f7db → #20fcdd
+ * --degree-7: #8be9fd → #96e7fd
+ * --degree-9: #bd93f9 → #ba97ff
+ * --degree-10: #e086e7 → #d173d8
+ * --degree-11: #ff79c6 → #ff7cc5
+ */
+
+:root {
+  --theme-name: 'Dracula';
+}
+
+[data-scheme='light'] {
+  --surface: #fffbeb;
+  --surface-raised: #ffffff;
+  --surface-sunken: #eeebe7;
+  --border: #cfcfde;
+  --border-strong: #635d97;
+  --text: #1f1f1f;
+  --text-muted: #635d97;
+  --text-link: #036a96;
+  --text-danger: #c53324;
+  --accent: #644ac9;
+  --accent-hover: #5436b5;
+  --accent-text: #fffbeb;
+  --focus-ring: #a3144d;
+
+  --fretboard-wood: #cfcfde;
+  --fretboard-nut: #1f1f1f;
+  --fretboard-fret: #6c664b;
+  --fretboard-string: #635d97;
+  --fretboard-inlay: #e9e7e5;
+  --fretboard-dot: #644ac9;
+  --fretboard-dot-text: #fffbeb;
+  --fretboard-root: #cb3a2a;
+  --fretboard-root-text: #fffbeb;
+  --fretboard-dim: #f0eee7;
+  --fretboard-dim-text: #1f1f1f;
+  --fretboard-focus: #a3144d;
+  --fretboard-capo: #1f1f1f;
+  --fretboard-selected: #a34d14;
+
+  --degree-0: #cb3a2a;
+  --degree-1: #a0302d;
+  --degree-2: #712b00;
+  --degree-3: #6d7843;
+  --degree-4: #625000;
+  --degree-5: #007049;
+  --degree-6: #005350;
+  --degree-7: #0c729f;
+  --degree-8: #244fa6;
+  --degree-9: #644ac9;
+  --degree-10: #8a268f;
+  --degree-11: #8d0045;
+}
+
+[data-scheme='dark'] {
+  --surface: #282a36;
+  --surface-raised: #343746;
+  --surface-sunken: #21222c;
+  --border: #44475a;
+  --border-strong: #6f80b3;
+  --text: #f8f8f2;
+  --text-muted: #8ea0d5;
+  --text-link: #8be9fd;
+  --text-danger: #fb7a74;
+  --accent: #bd93f9;
+  --accent-hover: #c9a8fc;
+  --accent-text: #191a21;
+  --focus-ring: #ff79c6;
+
+  --fretboard-wood: #191a21;
+  --fretboard-nut: #f8f8f2;
+  --fretboard-fret: #6272a4;
+  --fretboard-string: #94bdb9;
+  --fretboard-inlay: #44475a;
+  --fretboard-dot: #bd93f9;
+  --fretboard-dot-text: #191a21;
+  --fretboard-root: #ff5555;
+  --fretboard-root-text: #191a21;
+  --fretboard-dim: #44475a;
+  --fretboard-dim-text: #f8f8f2;
+  --fretboard-focus: #ff79c6;
+  --fretboard-capo: #f8f8f2;
+  --fretboard-selected: #ffb86c;
+
+  --degree-0: #ff5555;
+  --degree-1: #ff8246;
+  --degree-2: #ffb966;
+  --degree-3: #f6ff9f;
+  --degree-4: #baf973;
+  --degree-5: #14f28d;
+  --degree-6: #20fcdd;
+  --degree-7: #96e7fd;
+  --degree-8: #9bc4fe;
+  --degree-9: #ba97ff;
+  --degree-10: #d173d8;
+  --degree-11: #ff7cc5;
+}

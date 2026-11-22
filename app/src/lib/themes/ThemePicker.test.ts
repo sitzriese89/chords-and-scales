@@ -49,7 +49,12 @@ describe('theme picker', () => {
 
   it('offers the built-in themes and shows the Default one, following the OS', async () => {
     await startApp(storage);
-    expect(offered()).toEqual([['Built-in', ['Default', 'High contrast', 'Print']]]);
+    expect(offered()).toEqual([
+      [
+        'Built-in',
+        ['Default', 'High contrast', 'Atom One', 'Catppuccin', 'Dracula', 'Nord', 'Print'],
+      ],
+    ]);
     expect(themeSelect()).toHaveValue('default');
     expect(radio('System')).toBeChecked();
     // jsdom has no matchMedia, so the OS preference here is light.
@@ -93,7 +98,10 @@ describe('theme picker', () => {
     await store.write('theme-solar.css', SOLAR);
     await startApp(store);
     expect(offered()).toEqual([
-      ['Built-in', ['Default', 'High contrast', 'Print']],
+      [
+        'Built-in',
+        ['Default', 'High contrast', 'Atom One', 'Catppuccin', 'Dracula', 'Nord', 'Print'],
+      ],
       ['Your themes', ['Solar']],
     ]);
     await fireEvent.change(themeSelect(), { target: { value: 'solar' } });

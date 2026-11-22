@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { BrowserStorage, TauriStorage, type Storage } from '../storage';
 import { fakeCommands } from '../storage/fake-commands';
-import { DEFAULT_THEME } from './builtin';
+import { BUILT_IN_THEMES, DEFAULT_THEME } from './builtin';
 import { ThemeLibrary, themeIdOf } from './library.svelte';
 
 const SOLAR = `:root { --theme-name: 'Solar'; }
@@ -38,7 +38,15 @@ describe.each(implementations)('ThemeLibrary on %s storage', (_, open) => {
   it('offers the built-ins alone when there are no theme files', async () => {
     const library = new ThemeLibrary(open());
     await library.load();
-    expect(library.themes.map((t) => t.id)).toEqual(['default', 'high-contrast', 'print']);
+    expect(library.themes.map((t) => t.id)).toEqual([
+      'default',
+      'high-contrast',
+      'atom-one',
+      'catppuccin',
+      'dracula',
+      'nord',
+      'print',
+    ]);
     expect(library.userThemes).toEqual([]);
     expect(library.problems).toEqual([]);
   });
@@ -52,6 +60,10 @@ describe.each(implementations)('ThemeLibrary on %s storage', (_, open) => {
     expect(library.themes.map((t) => t.name)).toEqual([
       'Default',
       'High contrast',
+      'Atom One',
+      'Catppuccin',
+      'Dracula',
+      'Nord',
       'Print',
       'Solar',
     ]);
@@ -84,7 +96,14 @@ describe.each(implementations)('ThemeLibrary on %s storage', (_, open) => {
     );
     const library = new ThemeLibrary(storage);
     await library.load();
-    expect(library.builtIn.map((t) => t.id)).toEqual(['default', 'high-contrast']);
+    expect(library.builtIn.map((t) => t.id)).toEqual([
+      'default',
+      'high-contrast',
+      'atom-one',
+      'catppuccin',
+      'dracula',
+      'nord',
+    ]);
     expect(library.get('print').name).toBe('My print');
   });
 
@@ -102,7 +121,7 @@ describe('ThemeLibrary', () => {
     });
     const library = new ThemeLibrary(storage);
     await library.load();
-    expect(library.themes).toHaveLength(3);
+    expect(library.themes).toHaveLength(BUILT_IN_THEMES.length);
     expect(library.problems).toEqual(['Theme files could not be listed: disk on fire']);
   });
 });

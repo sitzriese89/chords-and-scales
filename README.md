@@ -14,7 +14,8 @@ give it a name and, if you like, a family. Your scales are listed with the other
 switch the dot labels between note names, intervals and none, and the spelling between
 sharps and flats (the root keeps the spelling you chose). On the right, pick the number of
 strings (4–9) and a tuning, set the fret count and a capo, mirror the neck for left-handed
-playing; under **Appearance**, pick a theme (Default, High contrast, Print or your own) and
+playing; under **Appearance**, pick a theme (Default, High contrast, Atom One, Catppuccin, Dracula, Nord,
+Print or your own) and
 light, dark or follow the system. Under the neck, the scale is shown as tab
 in one position: a 3-notes-per-string pattern (those that fit the neck) or a fret window you
 set with a start fret and a width, played up, down or up and back down; the position's notes

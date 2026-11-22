@@ -1,0 +1,146 @@
+/*
+ * Atom One theme (ADR-40, ADR-46), after the One Dark and One Light syntax themes of the
+ * Atom editor: dark is One Dark, light is One Light.
+ * Palette: Atom one-dark-syntax and one-light-syntax,
+ * https://github.com/atom/atom/tree/master/packages/one-dark-syntax and
+ * .../one-light-syntax, MIT licence.
+ * Mapping: the editor background (#282c34, #fafafa), line highlight (#2c313c) and the One
+ * Dark / One Light UI shades (#21252b, #eaeaeb) for the surfaces and fingerboard, the
+ * selection (#3e4451, #e5e5e6) for borders, dimmed notes and the light fingerboard,
+ * mono-1/2/3 for text and lines, hue-2 blue for links and note dots, the cursor blue
+ * (#528bff, #526fff) for focus and the light accent, hue-5 red for danger and the root,
+ * hue-6 orange for the selection ring. Degrees: the red, orange, yellow, green, cyan, blue
+ * and purple hues in hue order, the gaps filled with OKLCH midpoints of their neighbours.
+ * In the light scheme #ffffff, #d4d4d6 and #f2f2f2 are derived.
+ *
+ * Values that missed the contrast rules in tokens.test.ts were nudged as little as possible
+ * (OKLCH lightness, and for the degree palette the smallest change that keeps the 12
+ * colours apart with colour-vision deficiencies): upstream or derived value → value used.
+ * The root is degree-0; the accent hover is the accent a little darker (light) or lighter
+ * (dark). Format: docs/theme-tokens.md.
+ *
+ * One Light (light):
+ * --border-strong: #a0a1a7 → #84858b
+ * --text-muted: #696c77 → #666974
+ * --text-link: #4078f2 → #2c61d9
+ * --accent: #526fff → #4a64f4
+ * --fretboard-dot: #4078f2 → #356be4
+ * --degree-0: #e45649 → #d92c4e
+ * --degree-1: #d76e17 → #bd5300
+ * --degree-2: #c18401 → #8a5100
+ * --degree-3: #959506 → #6e772d
+ * --degree-4: #50a14f → #077856
+ * --degree-5: #079791 → #006274
+ * --degree-6: #0184bc → #0074b8
+ * --degree-7: #4078f2 → #0268ff
+ * --degree-9: #a626a4 → #a11f9c
+ * --degree-10: #bd1578 → #9a1762
+ * --degree-11: #ca1243 → #9e0020
+ *
+ * One Dark (dark):
+ * --border-strong: #5c6370 → #737b88
+ * --text-muted: #828997 → #9299a7
+ * --text-danger: #e06c75 → #ea757d
+ * --degree-1: #be5046 → #cd6525
+ * --degree-2: #d19a66 → #cc9563
+ * --degree-3: #e5c07b → #e3b874
+ * --degree-4: #c3c271 → #ccdc80
+ * --degree-5: #98c379 → #9abd45
+ * --degree-6: #64c1a2 → #76c29a
+ * --degree-7: #56b6c2 → #44b2c2
+ * --degree-8: #61afef → #5db9ff
+ * --degree-10: #c678dd → #c375d8
+ * --degree-11: #dc6daa → #ed7bb7
+ */
+
+:root {
+  --theme-name: 'Atom One';
+}
+
+[data-scheme='light'] {
+  --surface: #fafafa;
+  --surface-raised: #ffffff;
+  --surface-sunken: #eaeaeb;
+  --border: #e5e5e6;
+  --border-strong: #84858b;
+  --text: #383a42;
+  --text-muted: #666974;
+  --text-link: #2c61d9;
+  --text-danger: #ca1243;
+  --accent: #4a64f4;
+  --accent-hover: #3b50df;
+  --accent-text: #fafafa;
+  --focus-ring: #526fff;
+
+  --fretboard-wood: #e5e5e6;
+  --fretboard-nut: #383a42;
+  --fretboard-fret: #696c77;
+  --fretboard-string: #696c77;
+  --fretboard-inlay: #d4d4d6;
+  --fretboard-dot: #356be4;
+  --fretboard-dot-text: #fafafa;
+  --fretboard-root: #d92c4e;
+  --fretboard-root-text: #fafafa;
+  --fretboard-dim: #f2f2f2;
+  --fretboard-dim-text: #383a42;
+  --fretboard-focus: #526fff;
+  --fretboard-capo: #383a42;
+  --fretboard-selected: #986801;
+
+  --degree-0: #d92c4e;
+  --degree-1: #bd5300;
+  --degree-2: #8a5100;
+  --degree-3: #6e772d;
+  --degree-4: #077856;
+  --degree-5: #006274;
+  --degree-6: #0074b8;
+  --degree-7: #0268ff;
+  --degree-8: #8351db;
+  --degree-9: #a11f9c;
+  --degree-10: #9a1762;
+  --degree-11: #9e0020;
+}
+
+[data-scheme='dark'] {
+  --surface: #282c34;
+  --surface-raised: #2c313c;
+  --surface-sunken: #21252b;
+  --border: #3e4451;
+  --border-strong: #737b88;
+  --text: #abb2bf;
+  --text-muted: #9299a7;
+  --text-link: #61afef;
+  --text-danger: #ea757d;
+  --accent: #61afef;
+  --accent-hover: #75bffd;
+  --accent-text: #181a1f;
+  --focus-ring: #528bff;
+
+  --fretboard-wood: #21252b;
+  --fretboard-nut: #abb2bf;
+  --fretboard-fret: #828997;
+  --fretboard-string: #abb2bf;
+  --fretboard-inlay: #3e4451;
+  --fretboard-dot: #61afef;
+  --fretboard-dot-text: #181a1f;
+  --fretboard-root: #e06c75;
+  --fretboard-root-text: #181a1f;
+  --fretboard-dim: #3e4451;
+  --fretboard-dim-text: #abb2bf;
+  --fretboard-focus: #528bff;
+  --fretboard-capo: #abb2bf;
+  --fretboard-selected: #d19a66;
+
+  --degree-0: #e06c75;
+  --degree-1: #cd6525;
+  --degree-2: #cc9563;
+  --degree-3: #e3b874;
+  --degree-4: #ccdc80;
+  --degree-5: #9abd45;
+  --degree-6: #76c29a;
+  --degree-7: #44b2c2;
+  --degree-8: #5db9ff;
+  --degree-9: #9495f8;
+  --degree-10: #c375d8;
+  --degree-11: #ed7bb7;
+}
