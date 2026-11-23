@@ -257,8 +257,6 @@
     float: left;
     padding: 0;
     margin-right: 0.25rem;
-    font-size: 0.875rem;
-    font-weight: 600;
   }
 
   fieldset label {
@@ -266,16 +264,6 @@
     align-items: center;
     gap: 0.375rem;
     font-size: 0.875rem;
-  }
-
-  select,
-  input[type='number'] {
-    font: inherit;
-    color: var(--text);
-    background: var(--surface);
-    border: 1px solid var(--border-strong);
-    border-radius: 0.375rem;
-    padding: 0.125rem 0.375rem;
   }
 
   input[type='number'] {
@@ -288,21 +276,6 @@
     font-size: 0.875rem;
   }
 
-  button {
-    font: inherit;
-    font-size: 0.875rem;
-    color: var(--text);
-    background: var(--surface-raised);
-    border: 1px solid var(--border-strong);
-    border-radius: 0.375rem;
-    padding: 0.25rem 0.75rem;
-    cursor: pointer;
-  }
-
-  button:hover {
-    border-color: var(--accent);
-  }
-
   .list {
     display: flex;
     flex-wrap: wrap;
@@ -312,23 +285,18 @@
     list-style: none;
   }
 
+  /* A voicing card: the diagram over its note. */
   .voicing {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 0.125rem;
     padding: 0.375rem 0.25rem 0.25rem;
-    border-color: var(--border);
   }
 
   .voicing[aria-pressed='true'] {
     border-color: var(--accent);
     box-shadow: 0 0 0 1px var(--accent);
-  }
-
-  .voicing:focus-visible {
-    outline: 2px solid var(--focus-ring);
-    outline-offset: 2px;
   }
 
   .note {

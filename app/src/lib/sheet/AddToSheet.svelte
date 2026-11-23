@@ -45,26 +45,6 @@
     gap: 0.25rem 0.5rem;
   }
 
-  button {
-    font: inherit;
-    font-size: 0.875rem;
-    color: var(--text);
-    background: var(--surface-raised);
-    border: 1px solid var(--border-strong);
-    border-radius: 0.375rem;
-    padding: 0.25rem 0.75rem;
-    cursor: pointer;
-  }
-
-  button:hover:not(:disabled) {
-    border-color: var(--accent);
-  }
-
-  button:disabled {
-    opacity: 0.5;
-    cursor: default;
-  }
-
   .status {
     color: var(--text-muted);
     font-size: 0.875rem;

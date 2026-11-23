@@ -158,6 +158,7 @@
 {/each}
 
 <style>
+  /* Position and Direction are segmented controls, styled in base.css (ADR-56). */
   .controls {
     display: flex;
     flex-wrap: wrap;
@@ -165,75 +166,13 @@
     gap: 0.75rem 1.5rem;
   }
 
-  fieldset {
-    display: flex;
-    gap: 0.25rem;
-    margin: 0;
-    padding: 0;
-    border: 0;
-    align-items: center;
-  }
-
-  legend,
-  .field > label {
-    float: left;
-    margin-right: 0.5rem;
-    font-weight: 600;
-    font-size: 0.875rem;
-  }
-
   .field {
     display: flex;
     align-items: center;
   }
 
-  .segmented label {
-    position: relative;
-  }
-
-  /* Radios drawn as a segmented control, as in the view toggles. */
-  .segmented input {
-    position: absolute;
-    opacity: 0;
-    inset: 0;
-    margin: 0;
-    cursor: pointer;
-  }
-
-  .segmented label > span {
-    display: inline-block;
-    padding: 0.25rem 0.625rem;
-    border: 1px solid var(--border-strong);
-    border-radius: 0.375rem;
-    background: var(--surface-raised);
-    color: var(--text);
-    font-size: 0.875rem;
-  }
-
-  .segmented input:checked + span {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: var(--accent-text);
-  }
-
-  .segmented input:hover:not(:checked) + span {
-    border-color: var(--accent);
-  }
-
-  .segmented input:focus-visible + span {
-    outline: 2px solid var(--focus-ring);
-    outline-offset: 2px;
-  }
-
-  input[type='number'],
-  select {
-    font: inherit;
-    font-size: 0.875rem;
-    color: var(--text);
-    background: var(--surface-raised);
-    border: 1px solid var(--border-strong);
-    border-radius: 0.375rem;
-    padding: 0.25rem 0.375rem;
+  .field > label {
+    margin-right: 0.625rem;
   }
 
   input[type='number'] {

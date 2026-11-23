@@ -60,11 +60,6 @@
     min-width: 0;
   }
 
-  .field > label {
-    font-weight: 600;
-    font-size: 0.875rem;
-  }
-
   .check {
     display: flex;
     align-items: center;

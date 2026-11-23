@@ -207,7 +207,9 @@
   {#if settings.warning}
     <div class="settings-warning" role="status">
       <p>{settings.warning}</p>
-      <button type="button" onclick={() => settings.dismissWarning()}>Dismiss</button>
+      <button type="button" class="primary" onclick={() => settings.dismissWarning()}
+        >Dismiss</button
+      >
     </div>
   {/if}
 
@@ -284,46 +286,43 @@
 
   h1 {
     margin: 0;
-    font-size: 1.25rem;
+    font-size: 1.0625rem;
+    letter-spacing: -0.01em;
   }
 
   .gap {
     flex: 1;
   }
 
-  button {
-    font: inherit;
-    font-size: 0.875rem;
-    color: var(--text);
-    background: var(--surface-raised);
-    border: 1px solid var(--border-strong);
-    border-radius: 0.375rem;
-    padding: 0.25rem 0.75rem;
-    cursor: pointer;
-  }
-
-  button:hover {
-    background: var(--surface-sunken);
-  }
-
+  /* Page tabs read as navigation, not as an option (ADR-56): a recessed strip, the current
+     page raised and bold, the others muted. */
   .pages {
     display: flex;
-    gap: 0.25rem;
+    gap: 0.125rem;
+    padding: 0.1875rem;
+    border: 1px solid var(--border);
+    border-radius: calc(var(--radius) + 0.1875rem);
+    background: var(--surface-sunken);
   }
 
   .pages button {
-    background: transparent;
+    min-height: 1.75rem;
     border-color: transparent;
+    background: transparent;
+    color: var(--text-muted);
   }
 
   .pages button:hover {
-    background: var(--surface-sunken);
+    border-color: transparent;
+    color: var(--text);
   }
 
   .pages button[aria-current='page'] {
-    color: var(--accent-text);
-    background: var(--accent);
-    border-color: var(--accent);
+    color: var(--text);
+    background: var(--surface-raised);
+    border-color: var(--border);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.12);
+    font-weight: 600;
   }
 
   .picker-button[aria-expanded='true'] {
@@ -349,7 +348,7 @@
     padding: 0.5rem 0.75rem;
     border: 1px solid var(--border-strong);
     border-left: 4px solid var(--text-danger);
-    border-radius: 0.375rem;
+    border-radius: var(--radius);
     background: var(--surface-raised);
     color: var(--text);
     font-size: 0.875rem;
@@ -357,16 +356,6 @@
 
   .settings-warning p {
     margin: 0;
-  }
-
-  .settings-warning button {
-    color: var(--accent-text);
-    background: var(--accent);
-    border-color: var(--accent);
-  }
-
-  .settings-warning button:hover {
-    background: var(--accent-hover);
   }
 
   .muted {

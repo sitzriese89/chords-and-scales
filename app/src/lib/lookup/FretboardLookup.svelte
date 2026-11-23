@@ -164,31 +164,6 @@
     gap: 0.375rem;
   }
 
-  button {
-    font: inherit;
-    font-size: 0.875rem;
-    color: var(--text);
-    background: var(--surface-raised);
-    border: 1px solid var(--border-strong);
-    border-radius: 0.375rem;
-    padding: 0.25rem 0.75rem;
-    cursor: pointer;
-  }
-
-  button:hover:not(:disabled) {
-    border-color: var(--accent);
-  }
-
-  button:disabled {
-    opacity: 0.5;
-    cursor: default;
-  }
-
-  button:focus-visible {
-    outline: 2px solid var(--focus-ring);
-    outline-offset: 2px;
-  }
-
   .selected,
   .hint {
     margin: 0;
@@ -227,6 +202,7 @@
     list-style: none;
   }
 
+  /* A result is a two-line card: the name, then how it matches. */
   .result {
     display: flex;
     flex-direction: column;

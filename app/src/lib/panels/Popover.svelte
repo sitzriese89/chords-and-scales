@@ -80,29 +80,18 @@
     min-width: 0;
   }
 
+  /* The shared button style; the summary may wrap on a narrow window. */
   .trigger {
     display: inline-flex;
-    align-items: baseline;
+    align-items: center;
     gap: 0.375rem;
     max-width: 100%;
-    font: inherit;
-    font-size: 0.875rem;
-    color: var(--text);
-    background: var(--surface-raised);
-    border: 1px solid var(--border-strong);
-    border-radius: 0.375rem;
-    padding: 0.25rem 0.75rem;
-    cursor: pointer;
+    padding-block: 0.25rem;
     text-align: start;
   }
 
-  .trigger:hover {
-    background: var(--surface-sunken);
-  }
-
-  .trigger:focus-visible {
-    outline: 2px solid var(--focus-ring);
-    outline-offset: 1px;
+  .trigger[aria-expanded='true'] {
+    border-color: var(--accent);
   }
 
   .panel {
@@ -118,7 +107,7 @@
     color: var(--text);
     background: var(--surface-raised);
     border: 1px solid var(--border-strong);
-    border-radius: 0.5rem;
+    border-radius: var(--radius);
     box-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 0.25);
   }
 

@@ -112,26 +112,8 @@
     min-width: 0;
   }
 
-  .field > label,
-  legend {
-    font-weight: 600;
-    font-size: 0.875rem;
-  }
-
   select {
-    font: inherit;
-    color: var(--text);
-    background: var(--surface-raised);
-    border: 1px solid var(--border-strong);
-    border-radius: 0.375rem;
-    padding: 0.375rem 0.5rem;
     min-width: 0;
-  }
-
-  select:focus-visible,
-  input:focus-visible {
-    outline: 2px solid var(--focus-ring);
-    outline-offset: 2px;
   }
 
   optgroup {
@@ -154,6 +136,7 @@
     margin-bottom: 0.25rem;
   }
 
+  /* A plain radio group, not a segmented control. */
   .schemes {
     display: flex;
     flex-wrap: wrap;

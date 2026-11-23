@@ -1,5 +1,13 @@
 /* Element defaults for the app, built on the theme tokens (docs/theme-tokens.md). */
 
+/*
+  Layout custom properties, not theme tokens: themes set colours only (ADR-40, ADR-56).
+*/
+:root {
+  --radius: 0.5rem;
+  --control-h: 2rem;
+}
+
 html {
   background: var(--surface);
   color: var(--text);
@@ -26,4 +34,171 @@ a {
 :focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
+}
+
+/*
+  One control style (ADR-56). The selectors sit in :where() so any component rule wins: a
+  component sets only what differs (accent states, chips, cells, icon buttons, cards).
+*/
+:where(button, select, input:is([type='text'], [type='number'], [type='search'], :not([type]))) {
+  box-sizing: border-box;
+  min-height: var(--control-h);
+  padding: 0 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.875rem;
+  line-height: 1.25;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+:where(button) {
+  cursor: pointer;
+}
+
+:where(button, select):where(:not(:disabled):hover) {
+  border-color: var(--border-strong);
+}
+
+/*
+  A text field has no label inside it, so its outline is what identifies it: it keeps
+  --border-strong, the token held to 3:1 for that (docs/theme-tokens.md, ADR-57).
+*/
+:where(input:is([type='text'], [type='number'], [type='search'], :not([type]))) {
+  border-color: var(--border-strong);
+}
+
+:where(input[type='number']) {
+  padding-inline: 0.5rem;
+}
+
+:where(button, select, input):where(:disabled) {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* The accent action of a view: Play, Strum, Save. */
+:where(button.primary) {
+  color: var(--accent-text);
+  background: var(--accent);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+:where(button.primary):where(:not(:disabled):hover) {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+/* A destructive action, such as Delete. */
+:where(button.danger) {
+  color: var(--text-danger);
+  border-color: var(--text-danger);
+}
+
+/*
+  Segmented controls: a radio group drawn as one joined row of buttons (ADR-56). The native
+  radios lie invisibly over their segments, so focus, arrow keys and screen readers work as
+  for any radio group.
+
+    <fieldset class="segmented">
+      <legend>Labels</legend>
+      <label><input type="radio" name="…" /><span>Note</span></label>
+      …
+    </fieldset>
+*/
+fieldset.segmented {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+fieldset.segmented > legend {
+  float: left;
+  margin-right: 0.625rem;
+  padding: 0;
+}
+
+fieldset.segmented > label {
+  position: relative;
+}
+
+fieldset.segmented > label > input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+fieldset.segmented > label > span {
+  display: block;
+  box-sizing: border-box;
+  min-height: var(--control-h);
+  /* Centres one line of text; inline-flex would drop the space in "♯ Sharps". */
+  line-height: calc(var(--control-h) - 2px);
+  margin-left: -1px;
+  padding: 0 0.75rem;
+  border: 1px solid var(--border);
+  background: var(--surface-raised);
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  white-space: nowrap;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+fieldset.segmented > label:first-of-type > span {
+  margin-left: 0;
+  border-radius: var(--radius) 0 0 var(--radius);
+}
+
+fieldset.segmented > label:last-of-type > span {
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+fieldset.segmented > label:only-of-type > span {
+  border-radius: var(--radius);
+}
+
+fieldset.segmented > label > input:hover:not(:checked) + span {
+  position: relative;
+  z-index: 1;
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+fieldset.segmented > label > input:checked + span {
+  position: relative;
+  z-index: 1;
+  color: var(--accent-text);
+  background: var(--accent);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+fieldset.segmented > label > input:focus-visible + span {
+  position: relative;
+  z-index: 2;
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* Labels are small and muted, so the values carry the weight (ADR-56). */
+:where(legend, .field > label, .field > .label) {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }

@@ -305,26 +305,7 @@
     min-width: 0;
   }
 
-  button {
-    font: inherit;
-    font-size: 0.875rem;
-    color: var(--text);
-    background: var(--surface-raised);
-    border: 1px solid var(--border-strong);
-    border-radius: 0.375rem;
-    padding: 0.25rem 0.75rem;
-    cursor: pointer;
-  }
-
-  button:hover:not(:disabled) {
-    border-color: var(--accent);
-  }
-
-  button:disabled {
-    opacity: 0.5;
-    cursor: default;
-  }
-
+  /* Plain radio groups, not segmented controls. */
   fieldset {
     display: flex;
     flex-wrap: wrap;
@@ -337,8 +318,6 @@
   legend {
     padding: 0;
     margin-bottom: 0.25rem;
-    font-size: 0.875rem;
-    font-weight: 600;
   }
 
   fieldset label {
@@ -354,23 +333,12 @@
     gap: 0.25rem;
   }
 
-  .field label,
-  .field .label {
-    font-size: 0.875rem;
-    font-weight: 600;
-  }
-
   .example {
     color: var(--text-muted);
   }
 
-  input[type='text'] {
-    font: inherit;
-    color: var(--text);
-    background: var(--surface);
-    border: 1px solid var(--border-strong);
-    border-radius: 0.375rem;
-    padding: 0.25rem 0.5rem;
+  input[type='text'],
+  select {
     max-width: 100%;
   }
 
@@ -404,16 +372,6 @@
   mark.end {
     border-bottom: 2px solid var(--text-danger);
     text-decoration: none;
-  }
-
-  select {
-    font: inherit;
-    color: var(--text);
-    background: var(--surface);
-    border: 1px solid var(--border-strong);
-    border-radius: 0.375rem;
-    padding: 0.25rem 0.5rem;
-    max-width: 100%;
   }
 
   .muted {

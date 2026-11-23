@@ -123,7 +123,7 @@
         <h3 id="tab-title">Tab: {view.position.description}</h3>
         <button
           type="button"
-          class="play"
+          class="play primary"
           disabled={view.tabNotes.length === 0}
           aria-label="Play {view.position.description}"
           onclick={playPosition}
@@ -224,7 +224,7 @@
   .neck {
     padding: 0.75rem;
     border: 1px solid var(--border);
-    border-radius: 0.5rem;
+    border-radius: var(--radius);
     background: var(--surface-raised);
     overflow-x: auto;
   }
@@ -266,26 +266,6 @@
     flex-wrap: wrap;
     align-items: center;
     gap: 0.5rem 1rem;
-  }
-
-  .play {
-    font: inherit;
-    font-size: 0.875rem;
-    color: var(--accent-text);
-    background: var(--accent);
-    border: 1px solid var(--accent);
-    border-radius: 0.375rem;
-    padding: 0.25rem 0.75rem;
-    cursor: pointer;
-  }
-
-  .play:hover:not(:disabled) {
-    background: var(--accent-hover);
-  }
-
-  .play:disabled {
-    opacity: 0.5;
-    cursor: default;
   }
 
   .muted-note {

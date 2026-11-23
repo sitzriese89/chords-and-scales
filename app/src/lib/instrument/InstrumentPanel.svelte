@@ -304,31 +304,13 @@
     gap: 0.5rem;
   }
 
-  .field > label {
-    font-weight: 600;
-    font-size: 0.875rem;
-  }
-
   input[type='number'],
   select {
-    font: inherit;
-    color: var(--text);
-    background: var(--surface-raised);
-    border: 1px solid var(--border-strong);
-    border-radius: 0.375rem;
-    padding: 0.375rem 0.5rem;
     min-width: 0;
   }
 
   [aria-invalid='true'] {
     border-color: var(--text-danger);
-  }
-
-  input:focus-visible,
-  select:focus-visible,
-  button:focus-visible {
-    outline: 2px solid var(--focus-ring);
-    outline-offset: 2px;
   }
 
   optgroup {
@@ -372,27 +354,7 @@
     padding: 0.5rem;
     border: 1px solid var(--border-strong);
     border-left: 4px solid var(--text-danger);
-    border-radius: 0.375rem;
-  }
-
-  button {
-    font: inherit;
-    font-size: 0.875rem;
-    color: var(--text);
-    background: var(--surface-raised);
-    border: 1px solid var(--border-strong);
-    border-radius: 0.375rem;
-    padding: 0.25rem 0.625rem;
-    cursor: pointer;
-  }
-
-  button:hover {
-    border-color: var(--accent);
-  }
-
-  button.danger {
-    border-color: var(--text-danger);
-    color: var(--text-danger);
+    border-radius: var(--radius);
   }
 
   .check {
