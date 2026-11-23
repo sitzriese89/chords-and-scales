@@ -152,4 +152,22 @@ describe('scales page, neck first', () => {
         .map((b) => b.textContent?.trim()),
     ).toEqual(['Select notes']);
   });
+
+  it('docks the tool row under the neck panel, with the open panels under the row', async () => {
+    await startApp();
+    await fireEvent.click(within(toolRow()).getByRole('button', { name: 'Harmonize' }));
+    await fireEvent.click(within(toolRow()).getByRole('button', { name: 'Select notes' }));
+    // The neck panel and the row's strip are one card: the strip comes right after the panel.
+    const panel = neck().closest('.neck')!;
+    const bar = toolRow().parentElement!;
+    expect(bar).toHaveClass('bar');
+    expect(panel.parentElement).toHaveClass('neck-card');
+    expect(panel.nextElementSibling?.firstElementChild).toBe(bar);
+    // What the tools open is outside the strip, under it.
+    expect(bar.contains(harmonizePanel())).toBe(false);
+    expect(bar.contains(lookupPanel())).toBe(false);
+    expect(inOrder(bar, harmonizePanel(), lookupPanel(), tabSection())).toBe(true);
+    // The tab sits in its card with no second frame around it.
+    expect(tabSection().querySelector('figure.tab')).not.toHaveClass('framed');
+  });
 });

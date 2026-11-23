@@ -30,9 +30,11 @@
     capo?: number;
     /** Accessible name of the tab. */
     ariaLabel?: string;
+    /** Draw a frame around the tab; off where a card already frames it (ADR-56). */
+    framed?: boolean;
   }
 
-  let { strings, notes, capo = 0, ariaLabel = 'Tab' }: Props = $props();
+  let { strings, notes, capo = 0, ariaLabel = 'Tab', framed = true }: Props = $props();
 
   const LINE_GAP = 22;
   const COLUMN = 30;
@@ -55,7 +57,7 @@
   );
 </script>
 
-<figure class="tab">
+<figure class="tab" class:framed>
   {#if capo > 0}
     <figcaption class="capo">Capo {capo} (fret numbers are absolute)</figcaption>
   {/if}
@@ -115,11 +117,14 @@
 <style>
   .tab {
     margin: 0;
+    overflow-x: auto;
+  }
+
+  .tab.framed {
     padding: 0.5rem;
     border: 1px solid var(--border);
     border-radius: 0.375rem;
     background: var(--surface-raised);
-    overflow-x: auto;
   }
 
   .capo {
