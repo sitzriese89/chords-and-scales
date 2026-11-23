@@ -14,6 +14,8 @@
     (left/right follow the drawing, so they are mirrored when left-handed), Home/End jump to
     the first/last fret, Enter or Space activate. Click activates too. Each cell has a name
     such as "String 2, fret 5, C, root".
+  - `dim` dots are small hollow rings without a label; their cell's name still gives the note
+    and "dimmed" (ADR-56).
   - `selected` positions get a ring around their dot (around the empty position if there is
     none), the shape of the dot, and "selected" in their name: the notes picked for reverse
     lookup (ADR-38).
@@ -312,7 +314,7 @@
           r={dot.role === 'dim' ? layout.dimRadius : layout.dotRadius}
         />
       {/if}
-      {#if dot.label}
+      {#if dot.label && dot.role !== 'dim'}
         <text class="label" x={cx} y={cy}>{dot.label}</text>
       {/if}
     </g>
@@ -381,7 +383,8 @@
   .fret-number {
     fill: currentColor;
     opacity: 0.6;
-    font-size: 10px;
+    font-size: 11px;
+    font-weight: 600;
     text-anchor: middle;
     dominant-baseline: central;
   }
@@ -416,8 +419,11 @@
     fill: var(--dot-fill, var(--fretboard-root, #c0392b));
   }
 
+  /* A hollow ring: the notes in position stand out, the rest of the scale stays in view. */
   .dot.dim .shape {
-    fill: var(--fretboard-dim, #bdb6aa);
+    fill: transparent;
+    stroke: var(--fretboard-dim, #bdb6aa);
+    stroke-width: 2;
   }
 
   .label {
@@ -436,12 +442,6 @@
   /* --fretboard-dot-text is the label colour on every --degree-* colour, the root's included. */
   .degrees .dot:not(.dim) .label {
     fill: var(--fretboard-dot-text, #ffffff);
-  }
-
-  .dot.dim .label {
-    fill: var(--fretboard-dim-text, #4a4640);
-    font-size: calc(var(--label-size) * 0.75);
-    font-weight: 500;
   }
 
   .selection {

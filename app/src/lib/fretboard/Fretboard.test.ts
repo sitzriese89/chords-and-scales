@@ -17,9 +17,11 @@ function dotEl(container: Element, string: number, fret: number): Element {
   return el;
 }
 
-/** Centre x of a dot, read from its label. */
+/** Centre x of a dot, read from its shape (a circle's centre, or the middle of the square). */
 function dotX(container: Element, string: number, fret: number): number {
-  return Number(dotEl(container, string, fret).querySelector('text')!.getAttribute('x'));
+  const shape = dotEl(container, string, fret).querySelector('.shape')!;
+  if (shape.tagName === 'circle') return Number(shape.getAttribute('cx'));
+  return Number(shape.getAttribute('x')) + Number(shape.getAttribute('width')) / 2;
 }
 
 function viewBoxWidth(container: Element): number {
@@ -80,6 +82,31 @@ describe('Fretboard', () => {
     expect(dim).toBeLessThan(tone);
   });
 
+  it('draws dimmed notes as rings without a label, still named for assistive tech', () => {
+    const { container } = render(Fretboard, { strings: 6, frets: 24, dots });
+    const dim = dotEl(container, 4, 5);
+    expect(dim.querySelector('circle.shape')).not.toBeNull();
+    expect(dim.querySelector('text')).toBeNull();
+    expect(dim).toHaveTextContent('');
+    // Other dots keep their labels.
+    expect(dotEl(container, 6, 8).querySelector('text.label')).toHaveTextContent('C');
+    expect(
+      screen.getByRole('gridcell', { name: 'String 4, fret 5, G, dimmed' }),
+    ).toBeInTheDocument();
+  });
+
+  it('uses the roomier ADR-56 neck: 36 units between strings, dots up to 13', () => {
+    const { container } = render(Fretboard, { strings: 6, frets: 12, dots });
+    const ys = [...container.querySelectorAll('line.string')].map((l) =>
+      Number(l.getAttribute('y1')),
+    );
+    for (let i = 1; i < ys.length; i++) expect(ys[i] - ys[i - 1]).toBe(36);
+    const cell = container.querySelector('[data-cell="1:3"]')!;
+    expect(cell.getAttribute('height')).toBe('36');
+    // A full-size dot on a 12-fret neck.
+    expect(dotEl(container, 6, 8).querySelector('circle')!.getAttribute('r')).toBe('13');
+  });
+
   it('draws one dot per position, the last one given', () => {
     const { container } = render(Fretboard, {
       strings: 6,
@@ -97,7 +124,9 @@ describe('Fretboard', () => {
   it('shows the labels it is given', () => {
     render(Fretboard, { strings: 6, frets: 24, dots });
     expect(screen.getByText('A')).toBeInTheDocument();
-    expect(screen.getByText('G')).toBeInTheDocument();
+    expect(screen.getByText('C')).toBeInTheDocument();
+    // G is dimmed: a ring without a label.
+    expect(screen.queryByText('G')).toBeNull();
   });
 
   it('colours by degree token only when asked', () => {

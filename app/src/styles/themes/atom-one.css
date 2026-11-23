@@ -25,6 +25,7 @@
  * --text-link: #4078f2 → #2c61d9
  * --accent: #526fff → #4a64f4
  * --fretboard-dot: #4078f2 → #356be4
+ * --fretboard-dim: #f2f2f2 → #bcbcbc
  * --degree-0: #e45649 → #d92c4e
  * --degree-1: #d76e17 → #bd5300
  * --degree-2: #c18401 → #8a5100
@@ -81,7 +82,7 @@
   --fretboard-dot-text: #fafafa;
   --fretboard-root: #d92c4e;
   --fretboard-root-text: #fafafa;
-  --fretboard-dim: #f2f2f2;
+  --fretboard-dim: #bcbcbc;
   --fretboard-dim-text: #383a42;
   --fretboard-focus: #526fff;
   --fretboard-capo: #383a42;

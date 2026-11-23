@@ -18,7 +18,8 @@
  * --text-link: #1e66f5 → #145deb
  * --text-danger: #d20f39 → #d00937
  * --fretboard-dot: #1e66f5 → #1a62f1
- * --fretboard-dim: #bcc0cc → #c0c4d0
+ * --fretboard-dim: #bcc0cc → #a6aab6
+ * --fretboard-dim-text: #4c4f69 → #3b3d56
  * --fretboard-selected: #fe640b → #c54e0e
  * --degree-1: #e64553 → #ae2363
  * --degree-2: #fe640b → #983200
@@ -74,8 +75,8 @@
   --fretboard-dot-text: #eff1f5;
   --fretboard-root: #d20f39;
   --fretboard-root-text: #eff1f5;
-  --fretboard-dim: #c0c4d0;
-  --fretboard-dim-text: #4c4f69;
+  --fretboard-dim: #a6aab6;
+  --fretboard-dim-text: #3b3d56;
   --fretboard-focus: #8839ef;
   --fretboard-capo: #4c4f69;
   --fretboard-selected: #c54e0e;

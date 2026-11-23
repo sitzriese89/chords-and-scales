@@ -73,6 +73,16 @@ export function perceivedDistance(a: string, b: string, matrix: readonly number[
 export const TEXT_MINIMUM = 4.5;
 /** WCAG 1.4.11 (AA): graphics needed to understand the content need 3:1. */
 export const GRAPHIC_MINIMUM = 3;
+/**
+ * Dimmed notes are hollow rings without a label (ADR-56). They step back on purpose, so WCAG's
+ * 3:1 does not apply, but below about 1.5:1 a 2-unit ring fades into the wood (ADR-58).
+ */
+export const DIM_MINIMUM = 1.5;
+
+/** [foreground, background] pairs held to `DIM_MINIMUM`. */
+export const DIM_PAIRS: readonly (readonly [string, string])[] = [
+  ['--fretboard-dim', '--fretboard-wood'],
+];
 
 /** [foreground, background] pairs held to `TEXT_MINIMUM`. */
 export const TEXT_PAIRS: readonly (readonly [string, string])[] = [
@@ -124,6 +134,7 @@ export function contrastProblems(tokens: Tokens): string[] {
   const pairs = [
     ...TEXT_PAIRS.map((pair) => [...pair, TEXT_MINIMUM] as const),
     ...GRAPHIC_PAIRS.map((pair) => [...pair, GRAPHIC_MINIMUM] as const),
+    ...DIM_PAIRS.map((pair) => [...pair, DIM_MINIMUM] as const),
   ];
   for (const [fg, bg, minimum] of pairs) {
     const value = contrastRatio(tokens[fg], tokens[bg]);

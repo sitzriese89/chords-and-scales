@@ -111,6 +111,9 @@ Everything below is listed under the theme picker ("N problems with your theme f
   - **Graphics, 3:1** (WCAG 1.4.11 AA): `--border-strong`, `--accent` and `--focus-ring` on
     each `--surface*`; the nut, frets, strings, capo, dots, root, focus ring, selection ring
     and every `--degree-*` on `--fretboard-wood`.
+  - **Dimmed notes, 1.5:1:** `--fretboard-dim` on `--fretboard-wood`. Dimmed notes are hollow
+    rings drawn in `--fretboard-dim` (ADR-56); they step back on purpose, so they are held
+    below WCAG's 3:1 but kept visible (ADR-58).
   - **Degree palette:** any two `--degree-*` colours stay apart (OKLab distance at least 0.09,
     and at least 0.045 with simulated protanopia, deuteranopia and tritanopia).
 - Colour is never the only cue (ADR-11): the root also differs by shape, and dots carry labels.
@@ -148,8 +151,8 @@ Also used by the tab view and chord diagrams (ADR-3).
 | `--fretboard-dot-text` | Dot labels on `--fretboard-dot` and on every `--degree-*` |
 | `--fretboard-root` | Root note dots (same colour as `--degree-0` in the built-in themes) |
 | `--fretboard-root-text` | Labels on `--fretboard-root` |
-| `--fretboard-dim` | De-emphasised dots, such as scale notes outside an overlaid chord (deliberately low contrast to the wood) |
-| `--fretboard-dim-text` | Labels on `--fretboard-dim` |
+| `--fretboard-dim` | The ring of a de-emphasised note, such as a scale note outside the tab position or outside an overlaid chord (deliberately low contrast to the wood, at least 1.5:1) |
+| `--fretboard-dim-text` | Labels on `--fretboard-dim` (dimmed notes are drawn without a label since ADR-56; kept so theme files stay valid) |
 | `--fretboard-focus` | Keyboard focus ring around a fretboard position |
 | `--fretboard-capo` | The capo bar; also the shade over the frets behind the capo, drawn at 25% opacity |
 | `--fretboard-selected` | The ring around a position selected for reverse lookup |

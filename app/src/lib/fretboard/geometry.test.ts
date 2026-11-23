@@ -20,10 +20,24 @@ describe('minimum neck width', () => {
     expect(MIN_NECK_WIDTH).toBe(954);
     const scale = MIN_NECK_WIDTH / DRAWING_WIDTH;
     expect(scale).toBeGreaterThanOrEqual(MIN_NECK_SCALE);
-    // A 24-fret neck at that width: dots about 15 px across, strings 20 px apart.
+    // A 24-fret neck at that width: dots about 15 px across (the last fret space limits them,
+    // not MAX_DOT_RADIUS), strings 25 px apart.
     const l = fretboardLayout({ strings: 6, frets: 24 });
     expect(2 * l.dotRadius * scale).toBeGreaterThan(14);
-    expect(STRING_GAP * scale).toBeGreaterThan(19);
+    expect(STRING_GAP * scale).toBeGreaterThan(25);
+  });
+});
+
+describe('neck size (ADR-56)', () => {
+  it('puts strings 36 units apart and caps dots at a radius of 13', () => {
+    expect(STRING_GAP).toBe(36);
+    expect(MAX_DOT_RADIUS).toBe(13);
+    const l = fretboardLayout({ strings: 6, frets: 12 });
+    expect(l.stringY(2) - l.stringY(1)).toBe(36);
+    expect(l.boardBottom - l.boardTop).toBe(6 * 36);
+    expect(l.dotRadius).toBe(13);
+    // A full-size dot still leaves room between neighbouring strings.
+    expect(2 * l.dotRadius).toBeLessThan(STRING_GAP);
   });
 });
 
