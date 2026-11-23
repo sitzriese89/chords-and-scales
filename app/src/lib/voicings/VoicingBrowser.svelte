@@ -276,22 +276,43 @@
     font-size: 0.875rem;
   }
 
+  /* The shapes fill the width (ADR-56): as many columns as fit, the cards stretched to them. */
   .list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(11.5rem, 1fr));
+    gap: 0.75rem;
     margin: 0;
     padding: 0;
     list-style: none;
   }
 
-  /* A voicing card: the diagram over its note. */
+  .list li {
+    min-width: 0;
+  }
+
+  /* A voicing card: the diagram, at its own size and centred, over its note. */
   .voicing {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 0.125rem;
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
     padding: 0.375rem 0.25rem 0.25rem;
+    transition:
+      border-color 120ms ease,
+      transform 120ms ease;
+  }
+
+  .voicing:hover {
+    transform: translateY(-1px);
+  }
+
+  /* A diagram wider than its column (a long fret span) shrinks to fit instead of spilling. */
+  .voicing :global(svg) {
+    max-width: 100%;
+    height: auto;
   }
 
   .voicing[aria-pressed='true'] {
@@ -304,20 +325,11 @@
     font-size: 0.75rem;
   }
 
-  /* A phone-wide window: two shapes in a row, shrunk to fit. */
+  /* A phone-wide window: two shapes in a row; a diagram shrinks only if it doesn't fit. */
   @media (max-width: 40rem) {
-    .list li {
-      flex: 0 0 calc(50% - 0.25rem);
-      min-width: 0;
-    }
-
-    .voicing {
-      width: 100%;
-    }
-
-    .voicing :global(svg) {
-      width: 100%;
-      height: auto;
+    .list {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.5rem;
     }
   }
 </style>
