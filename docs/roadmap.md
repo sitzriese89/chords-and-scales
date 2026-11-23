@@ -28,8 +28,9 @@ each PR names its issue with `Fixes #n`.
 5. **M4**, one item at a time (M4.2 → M4.3 → M4.4), then release **v0.4.0** (released 2026-11-21).
 6. **M5**, small adjustments before the UI redesign, then release **v0.5.0** (released 2026-11-22).
 7. **M6**, the UI redesign (M6.1 and M6.2, then M6.3), then release **v0.6.0**.
-8. **M7**, the Scales page layout (M7.1). **Now**
-9. Next scope: not planned yet. New items get a row and an issue before work starts.
+8. **M7**, the Scales page layout (M7.1).
+9. **M8**, the UI style pass (M8.1 and M8.2, then M8.3 and M8.4). **Now**
+10. Next scope: not planned yet. New items get a row and an issue before work starts.
 
 Items whose dependencies are done can run in parallel. The coordinator groups them into waves
 of issues that don't touch the same files (`implement` skill). Suggested waves from the
@@ -150,6 +151,23 @@ tab (ADR-55, Scales page mockup layout B · Neck first).
 |---|---|---|---|
 | M7.1 Scales page: neck first | [#102][102] |  | Done (#103) |
 
+## M8 · UI style pass
+
+Shared control styles, distinct page tabs, joined segmented toggles and a type scale for
+labels; a roomier neck whose out-of-position notes are hollow rings; the tool row docked under
+the neck, the tab in a card, a footer and a chord grid that fills the width; empty states
+(ADR-56, prototype variant B with variant C's neck on branch `prototype/style-pass`).
+
+| Item | Issue | Depends on | Status |
+|---|---|---|---|
+| M8.1 Shared control styles, page tabs, segmented toggles, label type scale | [#104][104] |  | Open |
+| M8.2 Roomier neck, out-of-position notes as hollow rings | [#105][105] |  | Open |
+| M8.3 Tool row under the neck, tab card, footer, chord grid fills the width | [#106][106] | M8.1 | Open |
+| M8.4 Empty states on Chords and Sheet | [#107][107] | M8.1 | Open |
+
+Suggested waves: (1) M8.1, M8.2 → (2) M8.3, M8.4. M8.1 restyles the controls in every
+component, so the items that change those components wait; M8.2 owns `lib/fretboard`.
+
 ## Release gates
 
 A milestone is released when all its items are Done, main is green, and the release workflow
@@ -205,3 +223,7 @@ A milestone is released when all its items are Done, main is green, and the rele
 [95]: https://github.com/sitzriese89/chords-and-scales/issues/95
 [96]: https://github.com/sitzriese89/chords-and-scales/issues/96
 [102]: https://github.com/sitzriese89/chords-and-scales/issues/102
+[104]: https://github.com/sitzriese89/chords-and-scales/issues/104
+[105]: https://github.com/sitzriese89/chords-and-scales/issues/105
+[106]: https://github.com/sitzriese89/chords-and-scales/issues/106
+[107]: https://github.com/sitzriese89/chords-and-scales/issues/107

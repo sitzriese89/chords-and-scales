@@ -2298,3 +2298,52 @@ chose layout **B · Neck first** (#102, M7.1).
   rest of the page keeps the window's width.
 - Tests pin the order (summary with the toggles, neck, tool row, tab), the inline notes with
   the marked root and the neck's minimum width.
+
+## ADR-56: The UI style pass: shared control styles, segmented toggles, quieter neck, cards, empty states
+
+**Context.** After M6 and M7 the layout is settled, but the styling has drifted. `base.css`
+styles only `html`, `body`, links and focus. 16 components each style their own buttons, with
+6 paddings and 9 font sizes between them. The active page tab uses the same filled pill as a
+chosen option. Radio groups are loose buttons. Labels and values share one size and weight.
+On the neck, notes outside the tab position are filled, labelled dots across the whole board.
+The tool rows float between panels, the Chords grid leaves a gap on the right, and the empty
+Chords and Sheet pages show a grey line. Three variants were prototyped on the running app
+(branch `prototype/style-pass`: A today, B a style pass, C B made bolder), and the user chose
+**B, with C's neck** (#104–#107, M8).
+
+**Decision.**
+- **One control style in `base.css`.** `button`, `select` and text/number `input` share one
+  geometry: `2rem` minimum height, `0.75rem` inline padding, `0.5rem` radius, `0.875rem`
+  text, a 1px `--border` that turns `--border-strong` on hover, and a `--surface-raised`
+  fill. `.primary` marks the accent action. `--radius` and `--control-h` are layout custom
+  properties in `base.css`, not theme tokens: themes set colours only (ADR-40). Components
+  keep only what differs.
+- **Page tabs read as navigation.** They sit in a recessed strip (`--surface-sunken`); the
+  current page is raised and bold, and the others are muted. Options keep the accent fill,
+  so a tab and a chosen option no longer look alike.
+- **Radio groups drawn as buttons are segmented controls**: one joined control with shared
+  borders, the checked segment in `--accent`, and native radios underneath for focus and keys.
+- **Labels are small and muted.** Legends and field labels are `0.75rem`, 600, upper-case
+  and `--text-muted`, so the values carry the weight.
+- **The neck is roomier and the position stands out.** The string gap grows from 28 to 36
+  units and the largest dot radius from 10.5 to 13. A `dim` dot is a hollow ring in
+  `--fretboard-dim` without a label, and its accessible text is unchanged. Fret numbers are
+  11px semibold.
+- **Panels are used the same way.** The tool row is the neck panel's footer strip, the tab
+  section is a card, and the app fills the window with the version in a footer. The voicing
+  grid uses auto-fill columns that stretch the cards across the width.
+- **Empty states** are one pattern: a centred dashed card with a title, a sentence and a
+  primary action. Chords without a chord gets **☰ Choose chord**. An empty Sheet gets
+  **Go to Scales**, and its export row and preview are hidden until it has an item.
+- No change to what any control does, no new settings, no new colour tokens.
+- Rejected: underlined page tabs and 1.875rem titles (variant C, heavier than the app needs);
+  faded but labelled out-of-position dots (variant B's neck, still busy); restyling through
+  one override stylesheet as the prototype did (the copies would stay in the components).
+
+**Consequences.**
+- Supersedes ADR-55's "a 1px `--border` line above" the tab section and its neck panel
+  padding. The order of the Scales page is unchanged.
+- The neck is taller. Geometry, fretboard and export tests that pin sizes change with it.
+  M8.2 records whether the export sheet's necks follow, and any change to `MIN_NECK_SCALE`.
+- Out-of-position note names are no longer printed on the neck; the position's notes, the
+  tab and the accessible text still give them.
