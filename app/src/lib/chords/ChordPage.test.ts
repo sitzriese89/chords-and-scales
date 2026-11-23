@@ -82,11 +82,12 @@ describe('Chords page', () => {
     await startApp({ change: (s) => (s.page = 'chords') });
     expect(document.querySelector('main[aria-label="Chords"] svg.fretboard')).toBeNull();
     expect(chordsPage().queryByRole('grid')).toBeNull();
+    expect(chordsPage().getByText('No chord chosen yet')).toBeVisible();
     expect(
       chordsPage().getByText(
-        /^Choose a chord with ☰ Choose chord, or a degree chord in Harmonize/,
+        /^Pick a chord to see its notes and all its shapes, or choose a degree chord in Harmonize/,
       ),
-    ).toBeInTheDocument();
+    ).toBeVisible();
     expect(chordsPage().queryByText(/on the neck/)).toBeNull();
 
     await pick('Chord quality', 'major');
@@ -122,6 +123,29 @@ describe('Chords page', () => {
     expect(screen.queryByRole('dialog', { name: 'Choose chord' })).toBeNull();
   });
 
+  it('opens the chord drawer from the empty state, focus back on the toolbar button after', async () => {
+    await startApp({ change: (s) => (s.page = 'chords') });
+    const toolbarButton = chordPickerButton();
+    expect(screen.queryByRole('dialog', { name: 'Choose chord' })).toBeNull();
+
+    const action = chordsPage().getByRole('button', { name: 'Choose chord' });
+    expect(action.querySelector('[aria-hidden="true"]')).toHaveTextContent('☰');
+    await fireEvent.click(action);
+    const drawer = screen.getByRole('dialog', { name: 'Choose chord' });
+    expect(drawer).toBeVisible();
+    expect(toolbarButton).toHaveAttribute('aria-expanded', 'true');
+    expect(drawer).toContainElement(document.activeElement as HTMLElement);
+
+    await fireEvent.keyDown(document.activeElement!, { key: 'Escape' });
+    expect(screen.queryByRole('dialog', { name: 'Choose chord' })).toBeNull();
+    expect(toolbarButton).toHaveFocus();
+
+    // Choosing a chord replaces the empty state with the chord.
+    await pick('Chord quality', 'major');
+    expect(heading('C')).toBeInTheDocument();
+    expect(chordsPage().queryByText('No chord chosen yet')).toBeNull();
+  });
+
   it('shows degree V of C major as G7, and never on the Scales neck', async () => {
     await startApp({});
     await pickMode('Degree of the scale');
@@ -152,7 +176,7 @@ describe('Chords page', () => {
   it('shows a chord from root and quality, and the Scales neck keeps the scale', async () => {
     await startApp({});
     await pick('Chord root', 'E♭');
-    expect(chordsPage().getByText(/^Choose a chord with/)).toBeInTheDocument();
+    expect(chordsPage().getByText('No chord chosen yet')).toBeInTheDocument();
     await pick('Chord quality', 'min7');
     expect(heading('E♭m7')).toBeInTheDocument();
     expect(chordsPage().getByLabelText('Notes of E♭m7')).toHaveTextContent('1 E♭♭3 F♯5 A♯♭7 C♯');
@@ -174,7 +198,7 @@ describe('Chords page', () => {
     await fireEvent.click(chordsPage().getByRole('button', { name: 'Clear chord' }));
     expect(chordsPage().queryByRole('heading', { level: 2 })).toBeNull();
     expect(chordsPage().queryByRole('heading', { name: /^Voicings/ })).toBeNull();
-    expect(chordsPage().getByText(/^Choose a chord with/)).toBeInTheDocument();
+    expect(chordsPage().getByText('No chord chosen yet')).toBeInTheDocument();
   });
 
   it('says so when a degree has no chord, in the picker and on the page', async () => {
@@ -330,6 +354,7 @@ describe('chord picker: typed symbols and the display style', () => {
   it('shows a typed symbol with its shapes', async () => {
     await startApp({});
     await pickMode('Typed symbol');
+    expect(chordsPage().queryByText('No chord chosen yet')).toBeNull();
     expect(
       chordsPage().getByText(
         'Type a chord symbol under ☰ Choose chord to see its notes and shapes.',

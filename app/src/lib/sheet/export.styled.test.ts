@@ -268,10 +268,18 @@ describe('sheet export', { timeout: 15_000 }, () => {
     render(App, { storage, harmonizer: cMajorHarmonizer, files });
     await screen.findByRole('grid', { name: /^Fretboard/ });
     await click(/^Sheet \(\d+\)$/);
-    expect(screen.getByRole('button', { name: 'Export sheet as SVG' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Export sheet as HTML' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Export sheet as PNG' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Print or save as PDF' })).toBeDisabled();
+    // Empty: no export row and no sheet to print (ADR-56).
+    expect(screen.queryByRole('group', { name: 'Export the sheet' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Print or save as PDF' })).toBeNull();
+    expect(document.querySelector('article[data-sheet]')).toBeNull();
+
+    goTo('Scales');
+    await click('Add scale to sheet');
+    await click(/^Sheet \(\d+\)$/);
+    for (const name of ['SVG', 'HTML', 'PNG']) {
+      expect(screen.getByRole('button', { name: `Export sheet as ${name}` })).toBeEnabled();
+    }
+    expect(screen.getByRole('button', { name: 'Print or save as PDF' })).toBeEnabled();
     const article = document.querySelector<HTMLElement>('article[data-sheet]')!;
     expect(within(article).queryAllByRole('button')).toHaveLength(0);
     expect(within(article).queryAllByRole('combobox')).toHaveLength(0);

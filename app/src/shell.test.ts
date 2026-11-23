@@ -11,7 +11,7 @@ import {
 } from './lib/settings';
 import { BrowserStorage, TauriStorage, type Storage } from './lib/storage';
 import { fakeCommands } from './lib/storage/fake-commands';
-import { appReady, chordPicker, instrumentButton, pageTab } from './test-shell';
+import { appReady, chordPicker, instrumentButton, pageTab, toolbar } from './test-shell';
 
 async function startApp(storage: Storage) {
   render(App, { storage });
@@ -59,11 +59,11 @@ describe('the app shell', () => {
       await fireEvent.click(pageTab('Chords'));
       expect(currentPage()).toEqual(['Chords']);
       expect(screen.getByRole('main', { name: 'Chords' })).toBeVisible();
-      expect(screen.getByText(/^Choose a chord with ☰ Choose chord/)).toBeVisible();
+      expect(screen.getByText('No chord chosen yet')).toBeVisible();
       expect(screen.queryByRole('grid', { name: /^Fretboard/ })).toBeNull();
       // Each page has its own picker button.
       expect(screen.queryByRole('button', { name: 'Choose scale' })).toBeNull();
-      expect(screen.getByRole('button', { name: 'Choose chord' })).toBeVisible();
+      expect(toolbar().getByRole('button', { name: 'Choose chord' })).toBeVisible();
 
       await fireEvent.click(pageTab('Sheet'));
       expect(currentPage()).toEqual(['Sheet (0)']);

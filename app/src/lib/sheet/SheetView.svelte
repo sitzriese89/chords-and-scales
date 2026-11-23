@@ -1,7 +1,9 @@
 <!--
   @component
   The export sheet (SPEC §5.10, ADR-43): its title, its own theme and light/dark choice, the
-  list of its items with Move up, Move down and Remove, and the sheet itself.
+  list of its items with Move up, Move down and Remove, and the sheet itself. While the sheet
+  is empty, an empty state with **Go to Scales** takes the place of the list, the export row
+  and the sheet (ADR-56).
 
   The sheet is one self-contained subtree, the `article[data-sheet]`: its theme's stylesheet
   (scoped to it, so the app's theme around it is untouched), the title, and one
@@ -27,6 +29,8 @@
     type Rasterize,
   } from '../export';
   import { Fretboard } from '../fretboard';
+  import { EmptyState } from '../panels';
+  import { getSettings } from '../settings';
   import type { FileFormat, UserFiles } from '../storage';
   import { TabView } from '../tab';
   import { BUILT_IN_THEMES, getThemes, resolveScheme, schemesOf, themeCss } from '../themes';
@@ -47,6 +51,12 @@
   const sheet = getSheet();
   const library = getThemes();
   const catalogs = getUserCatalogs();
+  const settings = getSettings();
+
+  /** The empty state's action: the Scales page, switched as a page tab does (saved). */
+  function goToScales() {
+    settings.update({ page: 'scales' }).catch(ignore);
+  }
 
   /** The selector the sheet's stylesheet is scoped to. */
   const SCOPE = '[data-sheet]';
@@ -210,11 +220,14 @@
     </fieldset>
   </div>
 
+  <!-- An empty sheet has nothing to export or preview: the empty state instead (ADR-56). The
+       preview's article is mounted only with items, so the print styles (ADR-45) apply only
+       then. -->
   {#if views.length === 0}
-    <p class="muted">
-      The sheet is empty. Add a scale, its tab, a chord or a voicing with the “Add … to sheet”
-      buttons next to them.
-    </p>
+    <EmptyState title="Your sheet is empty" action="Go to Scales" onaction={goToScales}>
+      Collect scales, tabs, chords and shapes with the “Add … to sheet” buttons, then export them
+      here as SVG, PNG, HTML or PDF.
+    </EmptyState>
   {:else}
     <ol class="items" aria-label="Items on the sheet">
       {#each views as { key, view }, index (key)}
@@ -250,86 +263,79 @@
         </li>
       {/each}
     </ol>
-  {/if}
 
-  <div class="export" role="group" aria-label="Export the sheet">
-    <button type="button" disabled={views.length === 0} onclick={() => exportSheet('svg')}
-      >Export sheet as SVG</button
-    >
-    <button type="button" disabled={views.length === 0} onclick={() => exportSheet('png')}
-      >Export sheet as PNG</button
-    >
-    <button type="button" disabled={views.length === 0} onclick={() => exportSheet('html')}
-      >Export sheet as HTML</button
-    >
-    <label class="scale">
-      PNG scale
-      <select
-        value={pngScale}
-        onchange={(e) => (pngScale = Number(e.currentTarget.value) as PngScale)}
+    <div class="export" role="group" aria-label="Export the sheet">
+      <button type="button" onclick={() => exportSheet('svg')}>Export sheet as SVG</button>
+      <button type="button" onclick={() => exportSheet('png')}>Export sheet as PNG</button>
+      <button type="button" onclick={() => exportSheet('html')}>Export sheet as HTML</button>
+      <label class="scale">
+        PNG scale
+        <select
+          value={pngScale}
+          onchange={(e) => (pngScale = Number(e.currentTarget.value) as PngScale)}
+        >
+          {#each PNG_SCALES as value (value)}
+            <option {value}>{value}×</option>
+          {/each}
+        </select>
+      </label>
+      <button type="button" onclick={print}>Print or save as PDF</button>
+      {#if exported}
+        <p class="muted" role="status">{exported}</p>
+      {/if}
+    </div>
+
+    <div class="preview">
+      <article
+        bind:this={article}
+        class="sheet"
+        data-sheet
+        data-scheme={scheme}
+        data-theme-id={theme.id}
+        aria-label="Sheet: {sheet.title}"
+        {@attach themeStyle(css)}
       >
-        {#each PNG_SCALES as value (value)}
-          <option {value}>{value}×</option>
-        {/each}
-      </select>
-    </label>
-    <button type="button" disabled={views.length === 0} onclick={print}>Print or save as PDF</button
-    >
-    {#if exported}
-      <p class="muted" role="status">{exported}</p>
-    {/if}
-  </div>
-
-  <div class="preview">
-    <article
-      bind:this={article}
-      class="sheet"
-      data-sheet
-      data-scheme={scheme}
-      data-theme-id={theme.id}
-      aria-label="Sheet: {sheet.title}"
-      {@attach themeStyle(css)}
-    >
-      <h2 class="sheet-title">{sheet.title}</h2>
-      {#each views as { key, view } (key)}
-        <figure class="sheet-item" data-sheet-item data-kind={view.kind}>
-          <figcaption>
-            <span class="title">{view.title}</span>
-            {#if view.kind !== 'missing'}
-              <span class="caption">{view.caption}</span>
+        <h2 class="sheet-title">{sheet.title}</h2>
+        {#each views as { key, view } (key)}
+          <figure class="sheet-item" data-sheet-item data-kind={view.kind}>
+            <figcaption>
+              <span class="title">{view.title}</span>
+              {#if view.kind !== 'missing'}
+                <span class="caption">{view.caption}</span>
+              {/if}
+            </figcaption>
+            {#if view.kind === 'fretboard'}
+              <Fretboard
+                strings={view.strings}
+                frets={view.frets}
+                capo={view.capo}
+                dots={view.dots}
+                leftHanded={view.leftHanded}
+                ariaLabel="Sheet fretboard: {view.title}"
+              />
+            {:else if view.kind === 'tab'}
+              <TabView
+                strings={view.strings}
+                notes={view.notes}
+                capo={view.capo}
+                ariaLabel="Sheet tab: {view.title}"
+              />
+            {:else if view.kind === 'diagram'}
+              <ChordDiagram
+                voicing={view.voicing}
+                capo={view.capo}
+                leftHanded={view.leftHanded}
+                label={view.label}
+                ariaLabel="Sheet chord diagram: {view.title}"
+              />
+            {:else}
+              <p class="missing" role="note">Missing: {view.reason}</p>
             {/if}
-          </figcaption>
-          {#if view.kind === 'fretboard'}
-            <Fretboard
-              strings={view.strings}
-              frets={view.frets}
-              capo={view.capo}
-              dots={view.dots}
-              leftHanded={view.leftHanded}
-              ariaLabel="Sheet fretboard: {view.title}"
-            />
-          {:else if view.kind === 'tab'}
-            <TabView
-              strings={view.strings}
-              notes={view.notes}
-              capo={view.capo}
-              ariaLabel="Sheet tab: {view.title}"
-            />
-          {:else if view.kind === 'diagram'}
-            <ChordDiagram
-              voicing={view.voicing}
-              capo={view.capo}
-              leftHanded={view.leftHanded}
-              label={view.label}
-              ariaLabel="Sheet chord diagram: {view.title}"
-            />
-          {:else}
-            <p class="missing" role="note">Missing: {view.reason}</p>
-          {/if}
-        </figure>
-      {/each}
-    </article>
-  </div>
+          </figure>
+        {/each}
+      </article>
+    </div>
+  {/if}
 </section>
 
 <style>

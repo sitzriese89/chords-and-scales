@@ -57,10 +57,18 @@ export function scalePicker() {
   return within(screen.getByRole('dialog', { name: 'Choose scale' }));
 }
 
-/** The "Choose chord" button in the toolbar (on the Chords page). */
+/** The toolbar, where the page tabs and the picker button are. */
+export function toolbar() {
+  return within(screen.getByRole('banner'));
+}
+
+/**
+ * The "Choose chord" button in the toolbar (on the Chords page). With no chord chosen the
+ * page's empty state has a button of the same name.
+ */
 export function chordPickerButton(): HTMLElement {
   goTo('Chords');
-  return screen.getByRole('button', { name: 'Choose chord' });
+  return toolbar().getByRole('button', { name: 'Choose chord' });
 }
 
 /** The chord picker, in its drawer on the Chords page, opened if it was closed. */

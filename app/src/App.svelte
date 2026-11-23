@@ -134,6 +134,9 @@
     openPicker = openPicker === page ? null : page;
   }
   const closePicker = () => (openPicker = null);
+  // The Chords page's empty state opens the same drawer as the toolbar button, and closing it
+  // returns focus to that button, as after the button opened it (ADR-53).
+  const openChordPicker = () => (openPicker = 'chords');
 </script>
 
 <!--
@@ -236,7 +239,7 @@
       <ScaleExplorer />
     </main>
     <main class="page chords" aria-label="Chords" hidden={page !== 'chords'}>
-      <ChordSummary />
+      <ChordSummary onchoose={openChordPicker} />
       <VoicingBrowser />
     </main>
     <!-- The sheet is mounted only while shown: its print styles print the sheet alone whenever

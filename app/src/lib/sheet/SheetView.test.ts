@@ -3,7 +3,7 @@
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import App from '../../App.svelte';
-import { appReady, chordPicker, goTo, scalePicker } from '../../test-shell';
+import { appReady, chordPicker, goTo, pageTab, scalePicker } from '../../test-shell';
 import { cMajorHarmonizer } from '../chords/fixture-harmonizer';
 import { defaultSettings, SETTINGS_DOCUMENT, serializeSettings } from '../settings';
 import { BrowserStorage, type Storage } from '../storage';
@@ -189,9 +189,42 @@ describe('export sheet', () => {
     await storage.write(SHEET_DOCUMENT, 'version = 1\ntheme_id = "gone"\n');
     await startApp(storage);
     await openSheet();
-    expect(sheetRoot().dataset.themeId).toBe('print');
+    expect(screen.getByRole('combobox', { name: 'Sheet theme' })).toHaveValue('print');
     expect(screen.getByText(/The theme “gone” was not found, so Print is shown/)).toBeVisible();
-    expect(screen.getByText(/The sheet is empty/)).toBeVisible();
+    expect(screen.getByText('Your sheet is empty')).toBeVisible();
+  });
+
+  it('shows an empty state instead of the export row and the preview until an item is added', async () => {
+    await startApp(storage);
+    await openSheet();
+    expect(screen.getByText('Your sheet is empty')).toBeVisible();
+    expect(screen.getByText(/^Collect scales, tabs, chords and shapes/)).toBeVisible();
+    expect(screen.queryByRole('group', { name: 'Export the sheet' })).toBeNull();
+    expect(screen.queryByRole('list', { name: 'Items on the sheet' })).toBeNull();
+    expect(document.querySelector('article[data-sheet]')).toBeNull();
+    // The title, theme and scheme stay.
+    expect(screen.getByRole('textbox', { name: 'Title' })).toBeVisible();
+    expect(screen.getByRole('combobox', { name: 'Sheet theme' })).toBeVisible();
+    expect(screen.getByRole('group', { name: 'Sheet light or dark' })).toBeVisible();
+
+    // Go to Scales switches the page, as its tab does, and saves it.
+    await click('Go to Scales');
+    expect(pageTab('Scales')).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('main', { name: 'Scales' })).toBeVisible();
+    await click('Add scale to sheet');
+    expect(await storage.read(SETTINGS_DOCUMENT)).toMatch(/^page = "scales"/m);
+
+    await openSheet();
+    expect(screen.queryByText('Your sheet is empty')).toBeNull();
+    expect(screen.getByRole('group', { name: 'Export the sheet' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Export sheet as SVG' })).toBeEnabled();
+    expect(sheetRoot()).toBeVisible();
+    expect(itemTitles()).toEqual(['A Dorian']);
+
+    // Removing the last item brings the empty state back.
+    await click('Remove A Dorian');
+    expect(screen.getByText('Your sheet is empty')).toBeVisible();
+    expect(screen.queryByRole('group', { name: 'Export the sheet' })).toBeNull();
   });
 
   it('shows an item whose scale is gone as missing and draws the rest', async () => {
