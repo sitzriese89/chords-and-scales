@@ -6,20 +6,29 @@
   "Add chord to sheet". Strum plays the shape chosen in the voicing browser if there is one,
   else the chord stacked up from its lowest root (lowest string first, ADR-28, ADR-32, ADR-37).
   "Add chord to sheet" puts the chord on the export sheet as a neck diagram: alone, or over the
-  scale for a chord on a degree (ADR-43). While no chord is chosen it says how to choose one,
-  or why the picked degree has none.
+  scale for a chord on a degree (ADR-43). While no chord is chosen it shows the empty state
+  (ADR-56), whose **☰ Choose chord** calls `onchoose` (the app opens the chord drawer); with
+  the symbol mode it says where to type one, and for a degree without a chord why.
 
   The page has no fretboard: the chord's shapes follow in the voicing browser, which the app
   places under this row.
 -->
 <script lang="ts">
   import { getAudio } from '../audio';
+  import { EmptyState } from '../panels';
   import { getSettings } from '../settings';
   import AddToSheet from '../sheet/AddToSheet.svelte';
   import { chordItem } from '../sheet/capture';
   import { getTagFilters } from '../tags';
   import { getChordState } from './state.svelte';
   import { chordView } from './view';
+
+  const {
+    onchoose,
+  }: {
+    /** Opens the chord picker: the empty state's action. */
+    onchoose: () => void;
+  } = $props();
 
   const settings = getSettings();
   const audio = getAudio();
@@ -87,10 +96,10 @@
   {:else if chordState.mode === 'symbol'}
     <p class="muted">Type a chord symbol under ☰ Choose chord to see its notes and shapes.</p>
   {:else}
-    <p class="muted">
-      Choose a chord with ☰ Choose chord, or a degree chord in Harmonize on the Scales page, to see
-      its notes and shapes.
-    </p>
+    <EmptyState title="No chord chosen yet" icon="☰" action="Choose chord" onaction={onchoose}>
+      Pick a chord to see its notes and all its shapes, or choose a degree chord in Harmonize on the
+      Scales page.
+    </EmptyState>
   {/if}
 </section>
 

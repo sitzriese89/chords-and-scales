@@ -163,7 +163,7 @@ the neck, the tab in a card, a footer and a chord grid that fills the width; emp
 | M8.1 Shared control styles, page tabs, segmented toggles, label type scale | [#104][104] |  | Done (#109) |
 | M8.2 Roomier neck, out-of-position notes as hollow rings | [#105][105] |  | Done (#110) |
 | M8.3 Tool row under the neck, tab card, footer, chord grid fills the width | [#106][106] | M8.1 | Done (#111) |
-| M8.4 Empty states on Chords and Sheet | [#107][107] | M8.1 | Open |
+| M8.4 Empty states on Chords and Sheet | [#107][107] | M8.1 | Done (#112) |
 
 Suggested waves: (1) M8.1, M8.2 → (2) M8.3, M8.4. M8.1 restyles the controls in every
 component, so the items that change those components wait; M8.2 owns `lib/fretboard`.
