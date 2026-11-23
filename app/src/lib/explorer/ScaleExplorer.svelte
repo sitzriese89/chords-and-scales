@@ -10,9 +10,10 @@
   2. the neck on a raised panel; on a narrow window it keeps a minimum width and scrolls
      sideways inside the panel instead of shrinking the dots;
   3. the tool row (`ScaleTools`, ADR-52: Harmonize, ADR-34, and Select notes, ADR-38, with
-     "Add scale to sheet" at its right end) and the panels the tools open;
-  4. the tab of one position (ADR-25): heading, Play, "Add tab to sheet" and the position
-     controls on the left, the tab on the right; one column on a narrow window. The
+     "Add scale to sheet" at its right end), docked under the neck as the panel's footer
+     strip (ADR-56), and under it the panels the tools open;
+  4. the tab of one position (ADR-25) in a card: heading, Play, "Add tab to sheet" and the
+     position controls on the left, the tab on the right; one column on a narrow window. The
      position's notes are highlighted on the neck.
 
   Everything shown comes from the core (`explorerView`). "Add scale to sheet" and "Add tab to
@@ -94,28 +95,32 @@
     <p class="fallback">{fallback}</p>
   {/each}
 
-  <div class="neck">
-    <div class="neck-drawing" style:min-width="{MIN_NECK_WIDTH}px">
-      <Fretboard
-        strings={view.tuning.notes.length}
-        frets={view.frets}
-        capo={view.capo}
-        {dots}
-        selected={selecting ? selection.notes : []}
-        leftHanded={settings.current.leftHanded}
-        ariaLabel="Fretboard: {title}, {view.tuning.name} tuning{selecting
-          ? ', selecting notes'
-          : ''}"
-        onactivate={activate}
-      />
+  <!-- The neck panel and, as its footer strip, the tool row; what the tools open unfolds
+       under the strip (ADR-52, ADR-55, ADR-56). -->
+  <div class="neck-card">
+    <div class="neck">
+      <div class="neck-drawing" style:min-width="{MIN_NECK_WIDTH}px">
+        <Fretboard
+          strings={view.tuning.notes.length}
+          frets={view.frets}
+          capo={view.capo}
+          {dots}
+          selected={selecting ? selection.notes : []}
+          leftHanded={settings.current.leftHanded}
+          ariaLabel="Fretboard: {title}, {view.tuning.name} tuning{selecting
+            ? ', selecting notes'
+            : ''}"
+          onactivate={activate}
+        />
+      </div>
     </div>
-  </div>
 
-  <ScaleTools {selection}>
-    {#snippet end()}
-      <AddToSheet what="scale" make={() => scaleItem(settings.current)} />
-    {/snippet}
-  </ScaleTools>
+    <ScaleTools {selection}>
+      {#snippet end()}
+        <AddToSheet what="scale" make={() => scaleItem(settings.current)} />
+      {/snippet}
+    </ScaleTools>
+  </div>
 
   <section class="tab-section" aria-labelledby="tab-title">
     <div class="tab-side">
@@ -148,6 +153,7 @@
           notes={view.tabNotes}
           capo={view.capo}
           ariaLabel="Tab: {title}, {view.position.description}"
+          framed={false}
         />
       </div>
     {/if}
@@ -158,7 +164,7 @@
   .explorer {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 1rem;
     min-width: 0;
   }
 
@@ -221,28 +227,41 @@
     font-size: 0.875rem;
   }
 
+  .neck-card {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  /* Open at the bottom: the tool row's strip (ScaleTools) closes the panel. */
   .neck {
-    padding: 0.75rem;
+    padding: 1rem 1rem 0.75rem;
     border: 1px solid var(--border);
-    border-radius: var(--radius);
+    border-bottom: 0;
+    border-radius: var(--radius) var(--radius) 0 0;
     background: var(--surface-raised);
+    box-shadow: var(--shadow-card);
     overflow-x: auto;
   }
 
+  /* The tab section is a card (ADR-56); the tab inside it has no frame of its own. */
   .tab-section {
     display: grid;
     grid-template-columns: minmax(0, 24rem) minmax(0, 1fr);
     align-items: start;
-    gap: 0.75rem 1.5rem;
+    gap: 1rem 2rem;
     min-width: 0;
-    padding-top: 0.75rem;
-    border-top: 1px solid var(--border);
+    padding: 1rem 1.25rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface-raised);
+    box-shadow: var(--shadow-card);
   }
 
   .tab-side {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.75rem;
     min-width: 0;
   }
 

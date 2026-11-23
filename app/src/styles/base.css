@@ -6,6 +6,8 @@
 :root {
   --radius: 0.5rem;
   --control-h: 2rem;
+  /* A hairline under a card (the neck panel, the tab card): a neutral shade, not a colour. */
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.06), 0 1px 1px rgb(0 0 0 / 0.04);
 }
 
 html {
@@ -17,13 +19,14 @@ html {
 
 body {
   margin: 0;
-  /* No top padding: the app's toolbar sticks to the top and pads itself. */
-  padding: 0 2rem 2rem;
+  /* Sides only: the toolbar sticks to the top and the footer closes the bottom, each padding
+     itself. */
+  padding: 0 1.5rem;
 }
 
 @media (max-width: 40rem) {
   body {
-    padding: 0 1rem 1rem;
+    padding: 0 1rem;
   }
 }
 

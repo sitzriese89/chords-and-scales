@@ -152,4 +152,13 @@ describe('TabView', () => {
       'String 6, fret 3, root',
     ]);
   });
+
+  it('draws its own frame unless a card already frames it', () => {
+    const tab = { strings: tabStrings(standard(), 'sharps'), notes: [{ string: 6, fret: 3 }] };
+    const framed = render(TabView, tab);
+    expect(framed.container.querySelector('figure.tab')).toHaveClass('framed');
+    framed.unmount();
+    const bare = render(TabView, { ...tab, framed: false });
+    expect(bare.container.querySelector('figure.tab')).not.toHaveClass('framed');
+  });
 });

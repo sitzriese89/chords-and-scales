@@ -1,7 +1,8 @@
 <!--
   @component
   The scale explorer's tool row (SPEC §5.1, ADR-52): **Harmonize** (§5.5, ADR-34) and **Select
-  notes** (§5.4, ADR-38) side by side in one wrapping row, under the neck (ADR-55); `end`, if
+  notes** (§5.4, ADR-38) side by side in one wrapping row, under the neck (ADR-55) and drawn as
+  the neck panel's footer strip (ADR-56); `end`, if
   given, sits at the row's right end (the explorer's "Add scale to sheet"), outside the
   "Scale tools" group. What a tool opens (the harmonize panel; the lookup's buttons and
   results) unfolds under the row across the full width, in the order of the buttons, so opening
@@ -70,11 +71,17 @@
     min-width: 0;
   }
 
+  /* The neck panel's footer strip (ADR-56): the explorer leaves the panel open at the bottom
+     and this closes it. */
   .bar {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 0.5rem 1rem;
+    padding: 0.625rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: 0 0 var(--radius) var(--radius);
+    background: var(--surface-sunken);
   }
 
   .end {

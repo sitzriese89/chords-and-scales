@@ -251,8 +251,9 @@
     {/if}
   {/if}
 
+  <!-- At the bottom of the window, however short the page (ADR-56). -->
   <footer class="footer">
-    <p class="muted">Theory core v{coreVersion}</p>
+    <p class="version">Theory core v{coreVersion}</p>
   </footer>
 </div>
 
@@ -262,10 +263,25 @@
 {/if}
 
 <style>
+  /* The app fills the window's height, so the footer sits at its bottom (ADR-56). */
   .app {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 1.25rem;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  .footer {
+    margin-top: auto;
+    padding: 0.75rem 0 1rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .version {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.75rem;
   }
 
   /* The toolbar stays in view; the drawer hangs under it. */
