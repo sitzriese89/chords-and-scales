@@ -63,6 +63,8 @@ ADR-1 to ADR-13 come from the design interview behind [SPEC.md](SPEC.md) (decisi
 | 53 | [The app shell: stateless drawer, light-dismiss overlays, a native Settings dialog, pages kept mounted, `page` at the top of the settings](#adr-53-the-app-shell-stateless-drawer-light-dismiss-overlays-a-native-settings-dialog-pages-kept-mounted-page-at-the-top-of-the-settings) | Accepted |
 | 54 | [The Chords page: the picker in the drawer, a heading row over the shapes, no chord on any neck](#adr-54-the-chords-page-the-picker-in-the-drawer-a-heading-row-over-the-shapes-no-chord-on-any-neck) | Accepted |
 | 55 | [The Scales page, neck first: summary row, neck, tool row, tab](#adr-55-the-scales-page-neck-first-summary-row-neck-tool-row-tab) | Accepted |
+| 56 | [The UI style pass: shared control styles, segmented toggles, quieter neck, cards, empty states](#adr-56-the-ui-style-pass-shared-control-styles-segmented-toggles-quieter-neck-cards-empty-states) | Accepted; control styles detailed by ADR-57 |
+| 57 | [Shared control styles in base.css under `:where()`; text fields keep the strong border](#adr-57-shared-control-styles-in-basecss-under-where-text-fields-keep-the-strong-border) | Accepted |
 
 ---
 
@@ -2347,3 +2349,37 @@ Chords and Sheet pages show a grey line. Three variants were prototyped on the r
   M8.2 records whether the export sheet's necks follow, and any change to `MIN_NECK_SCALE`.
 - Out-of-position note names are no longer printed on the neck; the position's notes, the
   tab and the accessible text still give them.
+
+## ADR-57: Shared control styles in base.css under `:where()`; text fields keep the strong border
+
+**Context.** ADR-56 moves the button, select and field styling of 16 components into one
+place. Svelte's scoped rules (a class per component) beat plain element selectors, so a shared
+rule shows only where the component's copy is gone, and a component that needs another shape
+must be able to override it without fighting specificity. ADR-56 also gives every control a
+1px `--border`, but `--border` has no contrast requirement ([theme tokens](docs/theme-tokens.md)):
+`--border-strong` is the token held to 3:1 for "outlines that identify a control, such as an
+input's border". A button or a select shows its text and arrow; an empty text field shows
+nothing but its outline.
+
+**Decision.**
+- `app/src/styles/base.css` holds the shared rules: `button`, `select` and text, number and
+  search `input`s, `.primary`, `.danger`, `fieldset.segmented` and the label type scale
+  (`legend`, `.field > label`, `.field > .label`). The element rules sit in `:where()`, so
+  their specificity is 0 and any component rule wins. `--radius` and `--control-h` are set on
+  `:root` there.
+- Components keep only what differs: accent and pressed states, chips (smaller), harmonize
+  cells, lookup results, voicing cards, semitone cells, square icon buttons, the joined root
+  combobox, the scale list box. A radio group drawn as buttons gets `class="segmented"`;
+  plain radio groups (Light or dark, Chord names, Harmonize as, …) stay plain.
+- Buttons and selects get ADR-56's `--border` outline, `--border-strong` on hover. Text and
+  number fields keep `--border-strong` at rest, so an empty field still meets 3:1.
+- A segment centres its text with `line-height`, not `inline-flex`, which would drop the space
+  in "♯ Sharps".
+- A test with the components' styles loaded (`controls.styled.test.ts`) checks that every text
+  button, select and field on each page, drawer, popover and dialog has the shared size, so a
+  copy put back into a component fails it.
+
+**Consequences.**
+- A new control needs no CSS for the default look. A new kind of button with its own shape
+  adds its selector to that test's exceptions.
+- Fields read slightly heavier than buttons and selects: that is the contrast rule, not drift.

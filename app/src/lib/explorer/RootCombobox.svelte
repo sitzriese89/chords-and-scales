@@ -183,6 +183,7 @@
     position: relative;
   }
 
+  /* The field and its ▾ button are one joined control. */
   .row {
     display: flex;
   }
@@ -190,13 +191,8 @@
   input {
     flex: 1;
     min-width: 0;
-    font: inherit;
-    color: var(--text);
-    background: var(--surface-raised);
-    border: 1px solid var(--border-strong);
     border-right: none;
-    border-radius: 0.375rem 0 0 0.375rem;
-    padding: 0.375rem 0.5rem;
+    border-radius: var(--radius) 0 0 var(--radius);
   }
 
   input[aria-invalid='true'] {
@@ -204,17 +200,9 @@
   }
 
   .toggle {
-    font: inherit;
-    color: var(--text);
-    background: var(--surface-raised);
-    border: 1px solid var(--border-strong);
-    border-radius: 0 0.375rem 0.375rem 0;
     padding: 0 0.625rem;
-    cursor: pointer;
-  }
-
-  .toggle:hover {
-    border-color: var(--accent);
+    border-color: var(--border-strong);
+    border-radius: 0 var(--radius) var(--radius) 0;
   }
 
   ul {
@@ -230,7 +218,7 @@
     list-style: none;
     background: var(--surface-raised);
     border: 1px solid var(--border-strong);
-    border-radius: 0.375rem;
+    border-radius: var(--radius);
     box-shadow: 0 0.25rem 0.75rem rgb(0 0 0 / 0.2);
   }
 

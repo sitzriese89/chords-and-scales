@@ -104,19 +104,7 @@
     min-width: 0;
   }
 
-  button {
-    font: inherit;
-    color: var(--text);
-    background: var(--surface-raised);
-    border: 1px solid var(--border-strong);
-    border-radius: 0.375rem;
-    cursor: pointer;
-  }
-
-  button:hover {
-    border-color: var(--accent);
-  }
-
+  /* A plain radio group, not a segmented control. */
   fieldset {
     display: flex;
     flex-wrap: wrap;
@@ -131,8 +119,6 @@
     float: left;
     padding: 0;
     margin-right: 0.25rem;
-    font-size: 0.875rem;
-    color: var(--text-muted);
   }
 
   fieldset label {
@@ -151,6 +137,7 @@
     list-style: none;
   }
 
+  /* The degree chords are cells, not text buttons: two lines, the symbol in body text. */
   .cell {
     display: flex;
     flex-direction: column;
@@ -158,7 +145,9 @@
     min-width: 3.5rem;
     padding: 0.25rem 0.5rem;
     border: 1px solid var(--border);
-    border-radius: 0.375rem;
+    border-radius: var(--radius);
+    font-size: 1rem;
+    line-height: 1.5;
   }
 
   .chord {

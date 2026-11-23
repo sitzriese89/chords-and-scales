@@ -31,14 +31,11 @@
     gap: 0.25rem;
   }
 
+  /* Chips are smaller than the shared buttons: a row of them reads as one filter. */
   button {
-    font: inherit;
+    min-height: 1.625rem;
+    padding: 0 0.5rem;
     font-size: 0.8125rem;
-    color: var(--text);
-    background: var(--surface-raised);
-    border: 1px solid var(--border-strong);
-    padding: 0.0625rem 0.5rem;
-    cursor: pointer;
   }
 
   .chip {
@@ -52,16 +49,6 @@
   }
 
   .clear {
-    border-radius: 0.375rem;
     color: var(--text-muted);
-  }
-
-  button:hover {
-    border-color: var(--accent);
-  }
-
-  button:focus-visible {
-    outline: 2px solid var(--focus-ring);
-    outline-offset: 2px;
   }
 </style>

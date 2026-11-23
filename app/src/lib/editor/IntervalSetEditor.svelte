@@ -230,12 +230,6 @@
     gap: 0.25rem;
   }
 
-  label,
-  legend {
-    font-weight: 600;
-    font-size: 0.875rem;
-  }
-
   fieldset {
     margin: 0;
     padding: 0;
@@ -249,12 +243,6 @@
   }
 
   input {
-    font: inherit;
-    color: var(--text);
-    background: var(--surface-raised);
-    border: 1px solid var(--border-strong);
-    border-radius: 0.375rem;
-    padding: 0.375rem 0.5rem;
     min-width: 0;
   }
 
@@ -268,23 +256,9 @@
     margin-top: 0.375rem;
   }
 
-  button {
-    font: inherit;
-    font-size: 0.875rem;
-    color: var(--text);
-    background: var(--surface-raised);
-    border: 1px solid var(--border-strong);
-    border-radius: 0.375rem;
-    padding: 0.25rem 0.75rem;
-    cursor: pointer;
-  }
-
-  button:hover {
-    border-color: var(--accent);
-  }
-
+  /* Grid cells: as wide as their column, the number centred. */
   .semitone {
-    padding: 0.375rem 0;
+    padding: 0;
     font-variant-numeric: tabular-nums;
   }
 
@@ -295,28 +269,9 @@
     font-weight: 600;
   }
 
-  button.primary {
-    color: var(--accent-text);
-    background: var(--accent);
-    border-color: var(--accent);
-  }
-
-  button.primary:hover {
-    background: var(--accent-hover);
-  }
-
-  button:disabled {
-    cursor: default;
-  }
-
-  button.primary:disabled {
-    opacity: 0.6;
-  }
-
-  input:focus-visible,
-  button:focus-visible {
-    outline: 2px solid var(--focus-ring);
-    outline-offset: 2px;
+  /* The root is always in the set: its cell can't be turned off, but stays solid. */
+  .semitone:disabled {
+    opacity: 1;
   }
 
   .neck {

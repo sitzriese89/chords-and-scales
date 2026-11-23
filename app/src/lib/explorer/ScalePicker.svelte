@@ -269,24 +269,10 @@
     gap: 0.25rem;
   }
 
-  label,
-  .label {
-    font-weight: 600;
-    font-size: 0.875rem;
-  }
-
-  input,
-  select {
-    font: inherit;
-    color: var(--text);
-    background: var(--surface-raised);
-    border: 1px solid var(--border-strong);
-    border-radius: 0.375rem;
-    padding: 0.375rem 0.5rem;
-  }
-
+  /* The scale list is a list box, not a drop-down. */
   select {
     min-height: 16rem;
+    padding: 0.25rem;
   }
 
   optgroup {
@@ -322,36 +308,6 @@
     display: flex;
     flex-wrap: wrap;
     gap: 0.375rem;
-  }
-
-  button {
-    font: inherit;
-    font-size: 0.875rem;
-    color: var(--text);
-    background: var(--surface-raised);
-    border: 1px solid var(--border-strong);
-    border-radius: 0.375rem;
-    padding: 0.25rem 0.75rem;
-    cursor: pointer;
-  }
-
-  button:disabled {
-    opacity: 0.5;
-    cursor: default;
-  }
-
-  button:hover:not(:disabled) {
-    border-color: var(--accent);
-  }
-
-  button:focus-visible {
-    outline: 2px solid var(--focus-ring);
-    outline-offset: 2px;
-  }
-
-  button.danger {
-    color: var(--text-danger);
-    border-color: var(--text-danger);
   }
 
   .confirm p {

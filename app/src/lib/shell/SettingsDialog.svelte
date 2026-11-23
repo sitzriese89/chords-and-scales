@@ -69,26 +69,6 @@
 </dialog>
 
 <style>
-  button {
-    font: inherit;
-    font-size: 0.875rem;
-    color: var(--text);
-    background: var(--surface-raised);
-    border: 1px solid var(--border-strong);
-    border-radius: 0.375rem;
-    padding: 0.25rem 0.75rem;
-    cursor: pointer;
-  }
-
-  button:hover {
-    background: var(--surface-sunken);
-  }
-
-  button:focus-visible {
-    outline: 2px solid var(--focus-ring);
-    outline-offset: 1px;
-  }
-
   .settings-dialog {
     width: min(28rem, calc(100vw - 2rem));
     max-height: calc(100dvh - 2rem);
@@ -96,7 +76,7 @@
     color: var(--text);
     background: var(--surface-raised);
     border: 1px solid var(--border-strong);
-    border-radius: 0.5rem;
+    border-radius: var(--radius);
     box-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 0.25);
   }
 
@@ -128,7 +108,9 @@
     font-size: 1rem;
   }
 
+  /* An icon button: square, the shared style otherwise. */
   .close {
-    padding: 0.125rem 0.5rem;
+    min-width: var(--control-h);
+    padding: 0 0.5rem;
   }
 </style>

@@ -26,7 +26,7 @@
 </script>
 
 <div class="controls">
-  <fieldset>
+  <fieldset class="segmented">
     <legend>Labels</legend>
     {#each labelModes as mode (mode.value)}
       <label>
@@ -42,7 +42,7 @@
     {/each}
   </fieldset>
 
-  <fieldset>
+  <fieldset class="segmented">
     <legend>Accidentals</legend>
     {#each accidentalChoices as choice (choice.value)}
       <label>
@@ -60,63 +60,10 @@
 </div>
 
 <style>
+  /* The groups are segmented controls, styled in base.css (ADR-56). */
   .controls {
     display: flex;
     flex-wrap: wrap;
     gap: 0.75rem 1.5rem;
-  }
-
-  fieldset {
-    display: flex;
-    gap: 0.25rem;
-    margin: 0;
-    padding: 0;
-    border: 0;
-    align-items: center;
-  }
-
-  legend {
-    float: left;
-    margin-right: 0.5rem;
-    font-weight: 600;
-    font-size: 0.875rem;
-  }
-
-  label {
-    position: relative;
-  }
-
-  /* Radios drawn as a segmented control; the native input keeps focus and keyboard use. */
-  input {
-    position: absolute;
-    opacity: 0;
-    inset: 0;
-    margin: 0;
-    cursor: pointer;
-  }
-
-  label > span {
-    display: inline-block;
-    padding: 0.25rem 0.625rem;
-    border: 1px solid var(--border-strong);
-    border-radius: 0.375rem;
-    background: var(--surface-raised);
-    color: var(--text);
-    font-size: 0.875rem;
-  }
-
-  input:checked + span {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: var(--accent-text);
-  }
-
-  input:hover:not(:checked) + span {
-    border-color: var(--accent);
-  }
-
-  input:focus-visible + span {
-    outline: 2px solid var(--focus-ring);
-    outline-offset: 2px;
   }
 </style>

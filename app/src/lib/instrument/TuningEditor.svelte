@@ -163,7 +163,7 @@
     gap: 0.625rem;
     padding: 0.625rem;
     border: 1px solid var(--border-strong);
-    border-radius: 0.375rem;
+    border-radius: var(--radius);
     background: var(--surface);
   }
 
@@ -178,15 +178,9 @@
     gap: 0.25rem;
   }
 
-  label,
-  legend,
+  .kinds label,
   .string {
     font-size: 0.875rem;
-  }
-
-  .field > label,
-  legend {
-    font-weight: 600;
   }
 
   fieldset {
@@ -200,6 +194,7 @@
     padding: 0;
   }
 
+  /* A plain radio group, not a segmented control. */
   .kinds {
     display: flex;
     flex-wrap: wrap;
@@ -220,24 +215,11 @@
   input[type='text'],
   input[type='number'],
   select {
-    font: inherit;
-    color: var(--text);
-    background: var(--surface-raised);
-    border: 1px solid var(--border-strong);
-    border-radius: 0.375rem;
-    padding: 0.25rem 0.375rem;
     min-width: 0;
   }
 
   [aria-invalid='true'] {
     border-color: var(--text-danger);
-  }
-
-  input:focus-visible,
-  select:focus-visible,
-  button:focus-visible {
-    outline: 2px solid var(--focus-ring);
-    outline-offset: 2px;
   }
 
   .hint {
@@ -259,35 +241,5 @@
   .actions {
     display: flex;
     gap: 0.5rem;
-  }
-
-  button {
-    font: inherit;
-    font-size: 0.875rem;
-    color: var(--text);
-    background: var(--surface-raised);
-    border: 1px solid var(--border-strong);
-    border-radius: 0.375rem;
-    padding: 0.25rem 0.75rem;
-    cursor: pointer;
-  }
-
-  button:hover {
-    border-color: var(--accent);
-  }
-
-  button.primary {
-    color: var(--accent-text);
-    background: var(--accent);
-    border-color: var(--accent);
-  }
-
-  button.primary:hover {
-    background: var(--accent-hover);
-  }
-
-  button:disabled {
-    cursor: default;
-    opacity: 0.6;
   }
 </style>

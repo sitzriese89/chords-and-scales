@@ -114,7 +114,7 @@
     color: var(--text);
     background: var(--surface-raised);
     border: 1px solid var(--border-strong);
-    border-radius: 0 0.5rem 0.5rem 0;
+    border-radius: 0 var(--radius) var(--radius) 0;
     box-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 0.25);
     translate: 0 0;
     transition:
@@ -143,7 +143,7 @@
   @media (max-width: 40rem) {
     .drawer {
       width: 100%;
-      border-radius: 0 0 0.5rem 0.5rem;
+      border-radius: 0 0 var(--radius) var(--radius);
     }
   }
 
@@ -159,22 +159,9 @@
     font-size: 1rem;
   }
 
+  /* An icon button: square, the shared style otherwise. */
   .close {
-    font: inherit;
-    color: var(--text);
-    background: var(--surface-raised);
-    border: 1px solid var(--border-strong);
-    border-radius: 0.375rem;
-    padding: 0.125rem 0.5rem;
-    cursor: pointer;
-  }
-
-  .close:hover {
-    background: var(--surface-sunken);
-  }
-
-  .close:focus-visible {
-    outline: 2px solid var(--focus-ring);
-    outline-offset: 1px;
+    min-width: var(--control-h);
+    padding: 0 0.5rem;
   }
 </style>

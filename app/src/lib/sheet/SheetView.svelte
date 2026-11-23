@@ -353,7 +353,7 @@
     padding: 0.5rem 0.75rem;
     border: 1px solid var(--border-strong);
     border-left: 4px solid var(--text-danger);
-    border-radius: 0.375rem;
+    border-radius: var(--radius);
     background: var(--surface-raised);
     font-size: 0.875rem;
   }
@@ -376,20 +376,11 @@
     font-size: 0.875rem;
   }
 
-  input[type='text'],
-  select {
-    font: inherit;
-    color: var(--text);
-    background: var(--surface);
-    border: 1px solid var(--border-strong);
-    border-radius: 0.375rem;
-    padding: 0.25rem 0.5rem;
-  }
-
   input[type='text'] {
     min-width: 16rem;
   }
 
+  /* A plain radio group, not a segmented control. */
   fieldset {
     display: flex;
     flex-wrap: wrap;
@@ -404,26 +395,6 @@
   legend {
     padding: 0;
     margin-bottom: 0.25rem;
-  }
-
-  button {
-    font: inherit;
-    font-size: 0.875rem;
-    color: var(--text);
-    background: var(--surface-raised);
-    border: 1px solid var(--border-strong);
-    border-radius: 0.375rem;
-    padding: 0.125rem 0.5rem;
-    cursor: pointer;
-  }
-
-  button:hover:not(:disabled) {
-    border-color: var(--accent);
-  }
-
-  button:disabled {
-    opacity: 0.5;
-    cursor: default;
   }
 
   .muted {

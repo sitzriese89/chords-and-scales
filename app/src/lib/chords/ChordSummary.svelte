@@ -65,7 +65,7 @@
       <div class="actions">
         <button
           type="button"
-          class="strum"
+          class="strum primary"
           disabled={view.strum.length === 0}
           aria-label="Strum {view.symbol}"
           onclick={() => audio.strum(view.strum)}
@@ -133,7 +133,7 @@
     min-width: 2.25rem;
     padding: 0.125rem 0.375rem;
     border: 1px solid var(--border);
-    border-radius: 0.375rem;
+    border-radius: var(--radius);
     background: var(--surface-raised);
   }
 
@@ -157,36 +157,6 @@
     flex-wrap: wrap;
     align-items: center;
     gap: 0.5rem 0.75rem;
-  }
-
-  button {
-    font: inherit;
-    font-size: 0.875rem;
-    color: var(--text);
-    background: var(--surface-raised);
-    border: 1px solid var(--border-strong);
-    border-radius: 0.375rem;
-    padding: 0.25rem 0.75rem;
-    cursor: pointer;
-  }
-
-  button:hover:not(:disabled) {
-    border-color: var(--accent);
-  }
-
-  button.strum {
-    color: var(--accent-text);
-    background: var(--accent);
-    border-color: var(--accent);
-  }
-
-  button.strum:hover:not(:disabled) {
-    background: var(--accent-hover);
-  }
-
-  button:disabled {
-    opacity: 0.5;
-    cursor: default;
   }
 
   .muted {

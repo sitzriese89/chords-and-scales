@@ -160,7 +160,7 @@ the neck, the tab in a card, a footer and a chord grid that fills the width; emp
 
 | Item | Issue | Depends on | Status |
 |---|---|---|---|
-| M8.1 Shared control styles, page tabs, segmented toggles, label type scale | [#104][104] |  | Open |
+| M8.1 Shared control styles, page tabs, segmented toggles, label type scale | [#104][104] |  | Done (#109) |
 | M8.2 Roomier neck, out-of-position notes as hollow rings | [#105][105] |  | Open |
 | M8.3 Tool row under the neck, tab card, footer, chord grid fills the width | [#106][106] | M8.1 | Open |
 | M8.4 Empty states on Chords and Sheet | [#107][107] | M8.1 | Open |
