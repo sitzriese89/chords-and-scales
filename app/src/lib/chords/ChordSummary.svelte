@@ -14,6 +14,7 @@
 -->
 <script lang="ts">
   import { getAudio } from '../audio';
+  import { stylePass } from '../prototype/variant';
   import { getSettings } from '../settings';
   import AddToSheet from '../sheet/AddToSheet.svelte';
   import { chordItem } from '../sheet/capture';
@@ -86,6 +87,21 @@
     <p class="muted">{chordState.problem}</p>
   {:else if chordState.mode === 'symbol'}
     <p class="muted">Type a chord symbol under ☰ Choose chord to see its notes and shapes.</p>
+  {:else if stylePass()}
+    <!-- PROTOTYPE (prototype/style-pass): an empty state with a call to action. -->
+    <div class="proto-empty">
+      <p class="proto-empty-title">No chord chosen yet</p>
+      <p class="muted">
+        Pick a chord to see its notes and every shape on the neck, or choose a degree chord in
+        Harmonize on the Scales page.
+      </p>
+      <button
+        type="button"
+        class="proto-empty-action"
+        onclick={() => document.querySelector<HTMLButtonElement>('.picker-button')?.click()}
+        >☰ Choose chord</button
+      >
+    </div>
   {:else}
     <p class="muted">
       Choose a chord with ☰ Choose chord, or a degree chord in Harmonize on the Scales page, to see

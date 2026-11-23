@@ -4,12 +4,15 @@
 // The drawing has the same width whatever the fret count, so in a given container the string
 // spacing is the same for 12 or 27 frets; only the frets get narrower.
 
+import { stylePass } from '../prototype/variant';
+
+// PROTOTYPE (prototype/style-pass): a roomier neck and bigger dots in variants B and C.
 /** Distance between neighbouring strings. */
-export const STRING_GAP = 28;
+export const STRING_GAP = stylePass() ? 36 : 28;
 /** Distance from the nut to the last fret wire. */
 export const NECK_WIDTH = 1300;
 /** Largest dot radius; the root square has the same half width. */
-export const MAX_DOT_RADIUS = 10.5;
+export const MAX_DOT_RADIUS = stylePass() ? 13 : 10.5;
 /** Room kept free between a dot and the fret wires of its space. */
 export const DOT_CLEARANCE = 5;
 /** Space left of the nut for open-string dots. */

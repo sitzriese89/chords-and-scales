@@ -29,6 +29,7 @@
   import { version } from './lib/theory';
   import { setUserCatalogs, UserCatalogs } from './lib/user-catalogs.svelte';
   import { VoicingBrowser } from './lib/voicings';
+  import PrototypeSwitcher from './lib/prototype/PrototypeSwitcher.svelte';
 
   // Tests pass their own storage, audio engine, harmonizer, random numbers, user files, PNG
   // rasterizer and printer; the app picks Tauri files or localStorage (ADR-4), the Web Audio
@@ -250,6 +251,8 @@
     <p class="muted">Theory core v{coreVersion}</p>
   </footer>
 </div>
+
+<PrototypeSwitcher />
 
 {#if ready}
   <ScaleEditorDialog />

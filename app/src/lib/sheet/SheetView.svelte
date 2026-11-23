@@ -27,6 +27,8 @@
     type Rasterize,
   } from '../export';
   import { Fretboard } from '../fretboard';
+  import { stylePass } from '../prototype/variant';
+  import { getSettings } from '../settings';
   import type { FileFormat, UserFiles } from '../storage';
   import { TabView } from '../tab';
   import { BUILT_IN_THEMES, getThemes, resolveScheme, schemesOf, themeCss } from '../themes';
@@ -46,6 +48,7 @@
 
   const sheet = getSheet();
   const library = getThemes();
+  const protoSettings = getSettings();
   const catalogs = getUserCatalogs();
 
   /** The selector the sheet's stylesheet is scoped to. */
@@ -210,7 +213,21 @@
     </fieldset>
   </div>
 
-  {#if views.length === 0}
+  {#if views.length === 0 && stylePass()}
+    <!-- PROTOTYPE (prototype/style-pass): an empty state with a call to action. -->
+    <div class="proto-empty">
+      <p class="proto-empty-title">Your sheet is empty</p>
+      <p class="muted">
+        Collect scales, tabs, chords and voicings with the “Add … to sheet” buttons, then export
+        them here as SVG, PNG, HTML or PDF.
+      </p>
+      <button
+        type="button"
+        class="proto-empty-action"
+        onclick={() => protoSettings.update({ page: 'scales' }).catch(() => {})}>Go to Scales</button
+      >
+    </div>
+  {:else if views.length === 0}
     <p class="muted">
       The sheet is empty. Add a scale, its tab, a chord or a voicing with the “Add … to sheet”
       buttons next to them.

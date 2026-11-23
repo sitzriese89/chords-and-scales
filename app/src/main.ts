@@ -3,6 +3,11 @@ import App from './App.svelte';
 import { applyTheme, DEFAULT_THEME } from './lib/themes';
 import { initTheory } from './lib/theory';
 import './styles/base.css';
+// PROTOTYPE (prototype/style-pass): variant styles and the ?variant= switch.
+import './styles/prototype-style-pass.css';
+import { applyVariant } from './lib/prototype/variant';
+
+applyVariant();
 
 // The Default theme until the settings say which one to show (ADR-40), so the page is never
 // unstyled while the core loads. App takes over from here.
