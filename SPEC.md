@@ -306,7 +306,9 @@ intervals = ["1", "b3", "b5", "b7"]
 - **Visual encoding:**
   - Root note visually emphasized: drawn as a square, other notes as circles
   - Optional per-interval/degree coloring
-  - Dimmed notes (e.g. the scale behind a chord) drawn smaller
+  - Dimmed notes (the scale's notes outside the tab position, the scale behind a chord on
+    the export sheet) drawn as smaller hollow rings without a label; their spoken name still
+    gives the note and "dimmed" (ADR-56, ADR-58)
   - Inlay markers at frets 3, 5, 7, 9, 12 (and octave repeats; double at 12 and 24)
   - Realistic fret spacing; the neck scales to the window width, down to a minimum width
     below which it scrolls sideways (ADR-55)

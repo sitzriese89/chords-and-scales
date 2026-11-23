@@ -22,6 +22,7 @@
  * --text-danger: #bf616a → #a64b55
  * --accent: #5e81ac → #4c6e98
  * --fretboard-dot: #5e81ac → #4c6e98
+ * --fretboard-dim: #e5e9f0 → #b2b6bd
  * --fretboard-focus: #5e81ac → #5c7faa
  * --fretboard-selected: #d08770 → #b26b55
  * --degree-0: #bf616a → #ab4f59
@@ -41,6 +42,7 @@
  * --border-strong: #4c566a → #838ea4
  * --text-danger: #bf616a → #f6929a
  * --fretboard-fret: #4c566a → #838ea4
+ * --fretboard-dim: #4c566a → #535d71
  * --degree-0: #bf616a → #e28088
  * --degree-1: #c9746b → #f97634
  * --degree-2: #d08770 → #e9a68f
@@ -83,7 +85,7 @@
   --fretboard-dot-text: #eceff4;
   --fretboard-root: #ab4f59;
   --fretboard-root-text: #eceff4;
-  --fretboard-dim: #e5e9f0;
+  --fretboard-dim: #b2b6bd;
   --fretboard-dim-text: #2e3440;
   --fretboard-focus: #5c7faa;
   --fretboard-capo: #3b4252;
@@ -127,7 +129,7 @@
   --fretboard-dot-text: #2e3440;
   --fretboard-root: #e28088;
   --fretboard-root-text: #2e3440;
-  --fretboard-dim: #4c566a;
+  --fretboard-dim: #535d71;
   --fretboard-dim-text: #eceff4;
   --fretboard-focus: #88c0d0;
   --fretboard-capo: #d8dee9;

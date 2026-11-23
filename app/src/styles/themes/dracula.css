@@ -20,6 +20,7 @@
  *
  * Alucard (light):
  * --text-danger: #cb3a2a → #c53324
+ * --fretboard-dim: #f0eee7 → #acaaa4
  * --degree-1: #b74519 → #a0302d
  * --degree-2: #a34d14 → #712b00
  * --degree-3: #846e15 → #6d7843
@@ -75,7 +76,7 @@
   --fretboard-dot-text: #fffbeb;
   --fretboard-root: #cb3a2a;
   --fretboard-root-text: #fffbeb;
-  --fretboard-dim: #f0eee7;
+  --fretboard-dim: #acaaa4;
   --fretboard-dim-text: #1f1f1f;
   --fretboard-focus: #a3144d;
   --fretboard-capo: #1f1f1f;

@@ -62,9 +62,10 @@ ADR-1 to ADR-13 come from the design interview behind [SPEC.md](SPEC.md) (decisi
 | 52 | [The Scales tool row: the toggles in one row, their panels under it, in button order](#adr-52-the-scales-tool-row-the-toggles-in-one-row-their-panels-under-it-in-button-order) | Accepted; the row's place above the neck superseded by ADR-55 |
 | 53 | [The app shell: stateless drawer, light-dismiss overlays, a native Settings dialog, pages kept mounted, `page` at the top of the settings](#adr-53-the-app-shell-stateless-drawer-light-dismiss-overlays-a-native-settings-dialog-pages-kept-mounted-page-at-the-top-of-the-settings) | Accepted |
 | 54 | [The Chords page: the picker in the drawer, a heading row over the shapes, no chord on any neck](#adr-54-the-chords-page-the-picker-in-the-drawer-a-heading-row-over-the-shapes-no-chord-on-any-neck) | Accepted |
-| 55 | [The Scales page, neck first: summary row, neck, tool row, tab](#adr-55-the-scales-page-neck-first-summary-row-neck-tool-row-tab) | Accepted |
-| 56 | [The UI style pass: shared control styles, segmented toggles, quieter neck, cards, empty states](#adr-56-the-ui-style-pass-shared-control-styles-segmented-toggles-quieter-neck-cards-empty-states) | Accepted; control styles detailed by ADR-57 |
+| 55 | [The Scales page, neck first: summary row, neck, tool row, tab](#adr-55-the-scales-page-neck-first-summary-row-neck-tool-row-tab) | Accepted; the minimum width's figures updated by ADR-58 |
+| 56 | [The UI style pass: shared control styles, segmented toggles, quieter neck, cards, empty states](#adr-56-the-ui-style-pass-shared-control-styles-segmented-toggles-quieter-neck-cards-empty-states) | Accepted; control styles detailed by ADR-57; the neck's open questions decided by ADR-58 |
 | 57 | [Shared control styles in base.css under `:where()`; text fields keep the strong border](#adr-57-shared-control-styles-in-basecss-under-where-text-fields-keep-the-strong-border) | Accepted |
+| 58 | [The roomier neck everywhere, the same minimum width, dimmed rings held to 1.5:1](#adr-58-the-roomier-neck-everywhere-the-same-minimum-width-dimmed-rings-held-to-151) | Accepted |
 
 ---
 
@@ -2383,3 +2384,48 @@ nothing but its outline.
 - A new control needs no CSS for the default look. A new kind of button with its own shape
   adds its selector to that test's exceptions.
 - Fields read slightly heavier than buttons and selects: that is the contrast rule, not drift.
+
+## ADR-58: The roomier neck everywhere, the same minimum width, dimmed rings held to 1.5:1
+
+**Context.** M8.2 (#105) builds ADR-56's neck: strings 36 units apart instead of 28, dots up
+to a radius of 13 instead of 10.5, `dim` dots as hollow rings in `--fretboard-dim` without a
+label, fret numbers 11px semibold. ADR-56 left two questions to M8.2: whether the export
+sheet's necks take the new size, and whether `MIN_NECK_SCALE` / `MIN_NECK_WIDTH` (ADR-55)
+change. Building it raised a third: `--fretboard-dim` was "deliberately low contrast" to the
+wood (1.1:1 in Atom One, Catppuccin and Nord light), enough for a filled dot with a dark
+label on it, but a 2-unit ring in that colour all but disappears.
+
+**Decision.**
+- **The export sheet's necks follow.** The sheet draws the same `Fretboard` (ADR-3, ADR-43),
+  so the sheet, its SVG, PNG and HTML exports and its print look like the Scales page. A neck
+  is about a quarter taller (a 6-string neck 246 units high instead of 198, at the same 1362
+  width); it still fits a printed page's width, and an item is still never split across
+  pages. No second, smaller size for the sheet.
+- **`MIN_NECK_SCALE` stays 0.7, `MIN_NECK_WIDTH` stays 954 px.** The drawing's width is
+  unchanged, and what limits a 24-fret neck's dots is its last fret space, not
+  `MAX_DOT_RADIUS`: at 0.7 they are still about 15 px across and their labels about 7 px
+  high, the least that stays readable. The bigger dots show on necks with fewer frets; the
+  strings are now 25 px apart at the minimum. Going below 0.7 would shrink the 24-fret labels
+  again.
+- **`--fretboard-dim` on `--fretboard-wood` is held to 1.5:1** (`DIM_MINIMUM`, `DIM_PAIRS` in
+  `lib/themes/contrast.ts`), checked for the built-in themes and reported for user themes
+  like the other contrast rules. It is below WCAG's 3:1 on purpose: the rings step back but
+  stay visible. The built-in values that missed it were moved in OKLCH lightness only, to the
+  first value that meets it (Atom One, Catppuccin, Dracula and Nord light, Nord dark, Default
+  light, Print). In the light schemes the ring is now darker than the wood, as Default and
+  High contrast already were, so it doesn't read as an inlay. Catppuccin Latte's
+  `--fretboard-dim-text` was darkened to keep its 4.5:1 on the new value.
+- `--fretboard-dim-text` stays in the token contract, and its rule stays, though dimmed notes
+  no longer carry a label: dropping a token would make every user theme file report it.
+- Rejected: a smaller neck for the sheet only (a second geometry to keep in step, and the
+  sheet would no longer look like the screen); stroking the ring in another token, such as
+  `--fretboard-dot` at reduced opacity (ADR-56 names `--fretboard-dim`, and themes set
+  colours, not opacities).
+
+**Consequences.**
+- A sheet exported again after this change looks different: taller necks, and rings instead
+  of labelled dimmed dots (the scale behind a chord, §5.10).
+- A user theme whose `--fretboard-dim` is within 1.5:1 of its wood now gets a contrast
+  problem when it loads; it still loads and is used as written.
+- ADR-55's figures for the minimum width (strings 20 px apart, 10-unit fret numbers) are
+  replaced by the ones above; its decision is unchanged.

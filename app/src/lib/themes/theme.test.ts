@@ -108,6 +108,19 @@ describe('buildTheme', () => {
     ]);
   });
 
+  it('reports dimmed-note rings that fade into the wood', () => {
+    const theme = buildTheme(
+      'faint',
+      usable(block('light', { '--fretboard-dim': '#e5d5b5' })),
+      DEFAULT_THEME,
+    );
+    expect(theme.problems).toEqual([
+      expect.stringMatching(
+        /^light: --fretboard-dim on --fretboard-wood has a contrast of 1\.\d+:1, below 1.5:1$/,
+      ),
+    ]);
+  });
+
   it('reports nothing for a complete theme that meets every rule', () => {
     const theme = buildTheme('copy', usable(block('light') + block('dark')), DEFAULT_THEME);
     expect(theme.problems).toEqual([]);

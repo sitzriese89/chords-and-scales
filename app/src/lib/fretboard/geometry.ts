@@ -5,11 +5,11 @@
 // spacing is the same for 12 or 27 frets; only the frets get narrower.
 
 /** Distance between neighbouring strings. */
-export const STRING_GAP = 28;
+export const STRING_GAP = 36;
 /** Distance from the nut to the last fret wire. */
 export const NECK_WIDTH = 1300;
 /** Largest dot radius; the root square has the same half width. */
-export const MAX_DOT_RADIUS = 10.5;
+export const MAX_DOT_RADIUS = 13;
 /** Room kept free between a dot and the fret wires of its space. */
 export const DOT_CLEARANCE = 5;
 /** Space left of the nut for open-string dots. */
@@ -26,9 +26,10 @@ const NUMBERS_HEIGHT = 22;
 export const DRAWING_WIDTH = 2 * PAD_X + OPEN_WIDTH + NUT_WIDTH + NECK_WIDTH + TAIL;
 /**
  * The smallest scale (CSS pixels per user unit) the Scales page draws its neck at (ADR-55).
- * At 0.7 a full-size dot is about 15 px across, its label and the 10-unit fret numbers about
- * 7 px high, and neighbouring strings 20 px apart; any smaller and the labels stop being
- * readable and the dots hard to hit.
+ * At 0.7 a 24-fret neck's dots (limited by the last fret space, not MAX_DOT_RADIUS) are about
+ * 15 px across, their labels and the 11-unit fret numbers about 7–8 px high, and neighbouring
+ * strings 25 px apart; any smaller and the labels stop being readable and the dots hard to
+ * hit. Kept at 0.7 when ADR-56 made the neck roomier (ADR-58).
  */
 export const MIN_NECK_SCALE = 0.7;
 /** The neck's minimum width in CSS pixels: below it the neck scrolls sideways (954 px). */

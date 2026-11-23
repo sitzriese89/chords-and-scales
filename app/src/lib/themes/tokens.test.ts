@@ -10,6 +10,8 @@ import {
   contrastProblems,
   contrastRatio,
   degreeMinimum,
+  DIM_MINIMUM,
+  DIM_PAIRS,
   GRAPHIC_MINIMUM,
   GRAPHIC_PAIRS,
   perceivedDistance,
@@ -95,6 +97,10 @@ describe('built-in themes', () => {
             expect(contrastRatio(tokens[fg], tokens[bg])).toBeGreaterThanOrEqual(GRAPHIC_MINIMUM);
           },
         );
+
+        it.each(DIM_PAIRS)(`%s on %s stays visible as a ring (${DIM_MINIMUM}:1)`, (fg, bg) => {
+          expect(contrastRatio(tokens[fg], tokens[bg])).toBeGreaterThanOrEqual(DIM_MINIMUM);
+        });
 
         it.each(Object.entries(VISION))(
           'keeps the 12 degree colours apart with %s vision',

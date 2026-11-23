@@ -22,12 +22,13 @@ function dots(): Dot[] {
       shape.tagName === 'circle'
         ? Number(shape.getAttribute('cx'))
         : Number(shape.getAttribute('x')) + Number(shape.getAttribute('width')) / 2;
-    return {
-      string: Number(g.dataset.string),
-      fret: Number(g.dataset.fret),
-      label: g.querySelector('text')?.textContent ?? '',
-      x,
-    };
+    const string = Number(g.dataset.string);
+    const fret = Number(g.dataset.fret);
+    // The note from the position's accessible name ("String 5, open, B, dimmed"): dimmed
+    // notes are drawn as rings without a label (ADR-56).
+    const cell = g.ownerSVGElement!.querySelector(`[data-cell="${string}:${fret}"]`);
+    const label = cell?.getAttribute('aria-label')?.split(', ')[2] ?? '';
+    return { string, fret, label, x };
   });
 }
 
