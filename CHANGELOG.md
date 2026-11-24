@@ -8,6 +8,37 @@ into its GitHub Release, and refuses to build a tag without one
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-24
+
+A style pass: the neck comes first on the Scales page and is roomier, controls look the same
+everywhere, and empty pages tell you what to do next.
+
+### Added
+
+- **Empty states.** With no chord chosen, the Chords page explains how to pick one and offers
+  **☰ Choose chord**, which opens the chord drawer. An empty Sheet explains how to collect
+  items and offers **Go to Scales**; its export buttons and preview appear once it has an item.
+
+### Changed
+
+- **The Scales page puts the neck first.** One summary row holds the scale's name, its notes
+  inline ("C 1 · D 2 · E 3 …", the root underlined) and the Labels and Accidentals toggles.
+  The neck follows, then Harmonize, Select notes and "Add scale to sheet" in a strip docked
+  under the neck, then the tab in a card. On a narrow window the neck keeps a readable size
+  and scrolls sideways.
+- **A roomier neck.** Strings sit further apart and the note dots are larger, on screen and
+  on the export sheet. Notes outside the tab position are drawn as small hollow rings without
+  a label, so the position stands out. Screen readers still name them.
+- **One look for controls.** Buttons, menus and fields share one height, shape and border.
+  The page tabs sit in their own strip with the current page raised, so they no longer look
+  like options. Labels, Accidentals, Position and Direction are each one joined control.
+  Field labels are small and muted, so the values stand out.
+- **The chord shapes fill the window's width,** in as many columns as fit.
+- **A footer** with the version sits at the bottom of the window.
+- **Theme colours.** The colour of de-emphasised dots is darker in Atom One, Catppuccin,
+  Dracula and Nord, in Default light and in Print, so the rings stay visible on each
+  fretboard. User themes whose rings would be too faint get a note in the theme's problems.
+
 ## [0.6.0] - 2026-11-22
 
 A new layout: Scales, Chords and Sheet pages under one toolbar, the pickers in a drawer, and
@@ -219,7 +250,8 @@ folder.
   `.deb`). They are not code-signed yet, so Windows SmartScreen and macOS Gatekeeper will warn
   on first start.
 
-[Unreleased]: https://github.com/sitzriese89/chords-and-scales/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/sitzriese89/chords-and-scales/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/sitzriese89/chords-and-scales/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/sitzriese89/chords-and-scales/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/sitzriese89/chords-and-scales/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/sitzriese89/chords-and-scales/compare/v0.4.0...v0.4.1
