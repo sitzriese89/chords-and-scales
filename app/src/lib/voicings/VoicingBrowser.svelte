@@ -4,10 +4,11 @@
   heading row by a rule: the constraints (max fret span, start fret, and open strings, muted
   strings and inversions as toggle chips) in one toolbar, saved in the settings, and the
   core's ranked shapes of the chosen chord on the current instrument, tuning, fret count and
-  capo, best first, as a grid of chord diagrams (ADR-49) across the page's width, drawn larger
-  than on the sheet, with no shape text under them: the shape (`x32010`) is the button's and the
-  diagram's accessible name. Choosing a shape marks it (`aria-pressed`) and strums it; choosing
-  it again unchooses it. No neck shows it. Nothing is shown while no chord is chosen. "Add shape
+  capo, best first, as a grid of cards across the page's width (ADR-59): each a chord diagram
+  (ADR-49) drawn to its card's width, over a footer with the shape (`x32010`) and, where they
+  apply, its bass and left-out tones. The footer is visual: the shape is the button's and the
+  diagram's accessible name. Choosing a shape marks it (`aria-pressed`, an accent-tinted card,
+  a 2px ring and a tick) and strums it; choosing it again unchooses it. No neck shows it. Nothing is shown while no chord is chosen. "Add shape
   to sheet", at the heading's far end and enabled while a shape is chosen, puts its diagram on
   the export sheet (ADR-43).
 
@@ -35,10 +36,11 @@
 
   const SPANS = Array.from({ length: MAX_VOICING_SPAN }, (_, i) => i + 1);
   /**
-   * The grid's diagrams are drawn larger than the sheet's: about 190 px wide for a 6-string
-   * shape, so a laptop-wide window holds six in a row (ADR-54).
+   * The grid's diagrams are drawn larger than the sheet's (ADR-54). This is their natural
+   * size; the card has the last word: the diagram is drawn to its width (ADR-59), about 200 px
+   * on a laptop-wide window, six cards in a row.
    */
-  const DIAGRAM_SCALE = 1.5;
+  const DIAGRAM_SCALE = 1.75;
 
   const active = $derived(chordState.active);
   const chord = $derived(active ? { root: active.root, chordId: active.chord.id } : null);
@@ -99,12 +101,17 @@
     return voicingItem(settings.current, chord, shapeKey(voicing));
   }
 
-  /** What a shape is called: `x32010`, with its bass and left-out tones. */
-  function describe(voicing: ChordVoicing): string {
-    const parts = [shapeText(voicing)];
+  /** A shape's bass when it is an inversion and the tones it leaves out: `bass 3`, `no 5`. */
+  function notes(voicing: ChordVoicing): string[] {
+    const parts: string[] = [];
     if (voicing.bass !== '1') parts.push(`bass ${voicing.bass}`);
     if (voicing.omitted.length > 0) parts.push(`no ${voicing.omitted.join(', ')}`);
-    return parts.join(', ');
+    return parts;
+  }
+
+  /** What a shape is called: `x32010`, with its bass and left-out tones. */
+  function describe(voicing: ChordVoicing): string {
+    return [shapeText(voicing), ...notes(voicing)].join(', ');
   }
 </script>
 
@@ -189,11 +196,13 @@
       <ol class="list" aria-label="Voicings of {symbol}">
         {#each list as voicing, index (shapeKey(voicing))}
           {@const text = describe(voicing)}
+          {@const extra = notes(voicing)}
+          {@const pressed = chosen === shapeKey(voicing)}
           <li>
             <button
               type="button"
               class="voicing"
-              aria-pressed={chosen === shapeKey(voicing)}
+              aria-pressed={pressed}
               aria-label="{index + 1}. {text}"
               onclick={() => choose(voicing)}
             >
@@ -205,16 +214,12 @@
                 scale={DIAGRAM_SCALE}
                 ariaLabel="{symbol}: {text}"
               />
-              {#if voicing.bass !== '1' || voicing.omitted.length > 0}
-                <span class="note">
-                  {[
-                    voicing.bass !== '1' ? `bass ${voicing.bass}` : '',
-                    voicing.omitted.length > 0 ? `no ${voicing.omitted.join(', ')}` : '',
-                  ]
-                    .filter(Boolean)
-                    .join(' · ')}
-                </span>
-              {/if}
+              <!-- The footer repeats the accessible name, so screen readers skip it. -->
+              <span class="footer" aria-hidden="true">
+                {#if pressed}<span class="tick">✓</span>{/if}
+                <span class="shape">{shapeText(voicing)}</span>
+                {#if extra.length > 0}<span class="note">{extra.join(' · ')}</span>{/if}
+              </span>
             </button>
           </li>
         {/each}
@@ -351,7 +356,7 @@
   /* The shapes fill the width (ADR-56): as many columns as fit, the cards stretched to them. */
   .list {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(11.5rem, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
     gap: 0.75rem;
     margin: 0;
     padding: 0;
@@ -362,18 +367,20 @@
     min-width: 0;
   }
 
-  /* A voicing card: the diagram, at its own size and centred, over its note. */
+  /* A voicing card (ADR-59): the diagram across its width, the footer at the bottom. */
   .voicing {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 0.125rem;
+    align-items: stretch;
+    gap: 0.25rem;
     box-sizing: border-box;
     width: 100%;
     height: 100%;
-    padding: 0.375rem 0.25rem 0.25rem;
+    padding: 0.25rem 0.25rem 0.375rem;
     transition:
+      background-color 120ms ease,
       border-color 120ms ease,
+      box-shadow 120ms ease,
       transform 120ms ease;
   }
 
@@ -381,23 +388,62 @@
     transform: translateY(-1px);
   }
 
-  /* A diagram wider than its column (a long fret span) shrinks to fit instead of spilling. */
+  /*
+    The diagram fills the card's width, keeping its proportions: a wide shape (five or six
+    frets) shrinks to that width instead of spilling.
+  */
   .voicing :global(svg) {
-    max-width: 100%;
+    display: block;
+    width: 100%;
     height: auto;
   }
 
+  /* The chosen shape: an accent-tinted card, a 2px accent ring and a tick. Hover is a border. */
   .voicing[aria-pressed='true'] {
+    background: color-mix(in srgb, var(--accent) 16%, var(--surface-raised));
     border-color: var(--accent);
     box-shadow: 0 0 0 1px var(--accent);
   }
 
-  .note {
-    color: var(--text-muted);
-    font-size: 0.75rem;
+  .footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 0 0.5rem;
+    margin-top: auto;
+    font-size: 0.8125rem;
+    line-height: 1.25rem;
   }
 
-  /* A phone-wide window: two shapes in a row; a diagram shrinks only if it doesn't fit. */
+  .shape {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+  }
+
+  .note {
+    color: var(--text-muted);
+  }
+
+  .tick {
+    width: 1.125rem;
+    height: 1.125rem;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--accent-text);
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1.125rem;
+    text-align: center;
+  }
+
+  /* On the tint the note takes the full text colour, so it stays readable in every theme. */
+  .voicing[aria-pressed='true'] .note {
+    color: var(--text);
+  }
+
+  /* A phone-wide window: two shapes in a row. */
   @media (max-width: 40rem) {
     .list {
       grid-template-columns: repeat(2, minmax(0, 1fr));

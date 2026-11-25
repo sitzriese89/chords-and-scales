@@ -56,16 +56,17 @@ ADR-1 to ADR-13 come from the design interview behind [SPEC.md](SPEC.md) (decisi
 | 43 | [The export sheet: items store their inputs, one `sheet.toml`, its own scoped theme](#adr-43-the-export-sheet-items-store-their-inputs-one-sheettoml-its-own-scoped-theme) | Accepted |
 | 46 | [The root picker is an editable combobox whose list always shows all 17 names](#adr-46-the-root-picker-is-an-editable-combobox-whose-list-always-shows-all-17-names) | Accepted |
 | 48 | [Built-in themes after editor palettes: the original's own variants, nudged to pass the rules, credited in the file](#adr-48-built-in-themes-after-editor-palettes-the-originals-own-variants-nudged-to-pass-the-rules-credited-in-the-file) | Accepted |
-| 49 | [Chord diagrams lie like the neck: strings across, the nut on the left, the lowest fret numbered under its column](#adr-49-chord-diagrams-lie-like-the-neck-strings-across-the-nut-on-the-left-the-lowest-fret-numbered-under-its-column) | Accepted; superseded in part by ADR-60 (the fret number reads `3fr`) |
+| 49 | [Chord diagrams lie like the neck: strings across, the nut on the left, the lowest fret numbered under its column](#adr-49-chord-diagrams-lie-like-the-neck-strings-across-the-nut-on-the-left-the-lowest-fret-numbered-under-its-column) | Accepted; superseded in part by ADR-59 (the shape is written under the list's diagrams again) and ADR-60 (the fret number reads `3fr`) |
 | 50 | [Collapsible side panels: one stateless component, the parent keeps the state and the width, a table per panel](#adr-50-collapsible-side-panels-one-stateless-component-the-parent-keeps-the-state-and-the-width-a-table-per-panel) | Superseded by ADR-51 |
 | 51 | [Three pages under one toolbar, pickers in a drawer, instrument in the toolbar, Sound and Appearance in a dialog](#adr-51-three-pages-under-one-toolbar-pickers-in-a-drawer-instrument-in-the-toolbar-sound-and-appearance-in-a-dialog) | Accepted; the Chords page detailed by ADR-54; the Scales page's order superseded by ADR-55 |
 | 52 | [The Scales tool row: the toggles in one row, their panels under it, in button order](#adr-52-the-scales-tool-row-the-toggles-in-one-row-their-panels-under-it-in-button-order) | Accepted; the row's place above the neck superseded by ADR-55 |
 | 53 | [The app shell: stateless drawer, light-dismiss overlays, a native Settings dialog, pages kept mounted, `page` at the top of the settings](#adr-53-the-app-shell-stateless-drawer-light-dismiss-overlays-a-native-settings-dialog-pages-kept-mounted-page-at-the-top-of-the-settings) | Accepted |
-| 54 | [The Chords page: the picker in the drawer, a heading row over the shapes, no chord on any neck](#adr-54-the-chords-page-the-picker-in-the-drawer-a-heading-row-over-the-shapes-no-chord-on-any-neck) | Accepted |
+| 54 | [The Chords page: the picker in the drawer, a heading row over the shapes, no chord on any neck](#adr-54-the-chords-page-the-picker-in-the-drawer-a-heading-row-over-the-shapes-no-chord-on-any-neck) | Accepted; the grid's fixed diagram scale superseded by ADR-59 |
 | 55 | [The Scales page, neck first: summary row, neck, tool row, tab](#adr-55-the-scales-page-neck-first-summary-row-neck-tool-row-tab) | Accepted; the minimum width's figures updated by ADR-58 |
 | 56 | [The UI style pass: shared control styles, segmented toggles, quieter neck, cards, empty states](#adr-56-the-ui-style-pass-shared-control-styles-segmented-toggles-quieter-neck-cards-empty-states) | Accepted; control styles detailed by ADR-57; the neck's open questions decided by ADR-58 |
 | 57 | [Shared control styles in base.css under `:where()`; text fields keep the strong border](#adr-57-shared-control-styles-in-basecss-under-where-text-fields-keep-the-strong-border) | Accepted |
 | 58 | [The roomier neck everywhere, the same minimum width, dimmed rings held to 1.5:1](#adr-58-the-roomier-neck-everywhere-the-same-minimum-width-dimmed-rings-held-to-151) | Accepted |
+| 59 | [Voicing cards: the diagram fills its card, a shape footer, an unmistakable chosen card](#adr-59-voicing-cards-the-diagram-fills-its-card-a-shape-footer-an-unmistakable-chosen-card) | Accepted |
 | 60 | [Clearer chord diagrams: a narrow barre in the dot colour, `3fr` in text colour, drawn × and ○ beside the nut](#adr-60-clearer-chord-diagrams-a-narrow-barre-in-the-dot-colour-3fr-in-text-colour-drawn--and--beside-the-nut) | Accepted |
 
 ---
@@ -2008,6 +2009,10 @@ it does to the list's cards and the sheet.
   stored sheet items are unchanged (they store the shape, not the drawing, ADR-43).
 - Players used to chord books read a turned diagram; the neck beside it is the reference.
 
+*Superseded in part by ADR-59:* the voicing list writes the shape (`x32010`) under each diagram
+again, in a footer with its bass and left-out tones, hidden from screen readers; the accessible
+names are unchanged.
+
 *Superseded in part by ADR-60:* the fret number under the first column reads `3fr` (in text
 colour, 12px semibold), not `3`; it stays under its column. The barre is a narrow bar in the
 dot colour, and × and ○ are drawn shapes just beyond the nut; the rest stands.
@@ -2258,6 +2263,9 @@ drawn at the sheet's size, about five frets in 124 px.
 - Tests reach the parts through `chordPicker()` (opens the drawer) and `chordsPage()` in
   `src/test-shell.ts`; `chordPanel()` is gone.
 
+*Superseded in part by ADR-59:* the grid's diagrams are drawn to their card's width (about 203
+px at 1400 px), not at a fixed 1.5.
+
 ## ADR-55: The Scales page, neck first: summary row, neck, tool row, tab
 
 **Context.** The neck is what the Scales page is for, but after M6 it came fourth: the view
@@ -2434,6 +2442,50 @@ label on it, but a 2-unit ring in that colour all but disappears.
   problem when it loads; it still loads and is used as written.
 - ADR-55's figures for the minimum width (strings 20 px apart, 10-unit fret numbers) are
   replaced by the ones above; its decision is unchanged.
+
+## ADR-59: Voicing cards: the diagram fills its card, a shape footer, an unmistakable chosen card
+
+**Context.** M9.3 (#117). On the Chords page each voicing card was about 190 px wide at
+1400 px, its diagram drawn at a fixed 1.5 (ADR-54) and centred, so dots and their labels stayed
+small and the card's slack showed. The chosen shape had only an accent border and a 1px ring,
+about as strong as hover. ADR-49 dropped the shape text under each diagram, reasoning that the
+diagram and its fret number say where the shape is. With 50 shapes in the grid that does not
+hold up: scanning for one shape means reading 50 drawings, and shapes in the same position
+carry the same fret number (or none at the nut), so the number alone doesn't tell them apart.
+Only a stray "bass 3 · no 5" caption gave any text.
+
+**Decision.**
+- **The diagram is drawn to its card's width.** The SVG keeps its proportions and fills the
+  card (`width: 100%`), so the card, not a fixed scale, sets its size. Columns are
+  `minmax(12rem, 1fr)` with 0.25rem card padding: six cards of about 213 px at 1400 px, the
+  diagram about 203 px (about 1.65 times a four-fret drawing). `DIAGRAM_SCALE` (now 1.75) is
+  only the drawing's natural size, used when CSS doesn't apply. A wide shape (five or six
+  frets) is drawn at the same width, so it shrinks to fit, as before; a phone-wide window
+  still shows two cards in a row. A change to the drawing's own size (M9.2) follows the card.
+- **One footer line under each diagram:** the shape as players write it (`x32010`, from
+  `shapeText`), semibold with tabular figures, then, muted, the bass when it is an inversion
+  and the left-out tones (`bass 3 · no 5`). It replaces the old caption.
+- **The footer is visual** (`aria-hidden`). The button's and the diagram's accessible names
+  stay as they were (`1. x32010, bass 3`, `C: x32010`), so screen readers hear the shape once.
+- **The chosen card is unmistakable:** a background of `--accent` mixed 16% into
+  `--surface-raised` (`color-mix()`), an accent border plus a 1px accent ring (2px in all),
+  and a tick (✓ in `--accent-text` on an `--accent` disc) at the start of its footer. On the
+  tint the footer's note takes `--text`. Hover stays the shared `--border-strong` border and
+  the 1px lift. 16% is the most that keeps `--text` on the tint at 4.5:1 in every built-in
+  theme (Atom One dark is the tightest, 4.6:1; at 20% it drops to 4.3:1).
+- No new theme tokens, settings or core calls.
+- Rejected: a larger fixed scale with wider columns (the auto-fill slack stays, and the
+  column count drops); a corner badge for the tick (it covers the diagram's top string at one
+  end or the other, left- or right-handed).
+
+**Consequences.**
+- Supersedes ADR-49's "No shape text under the diagrams in the list", and ADR-54's fixed 1.5
+  scale for the grid. The sheet is unchanged: it draws diagrams at their natural size and
+  titles them as before.
+- A user theme whose `--text` is close to its `--accent` may get a weak chosen card; the
+  contrast rules don't check the mix, since it is not a token.
+- Cards are about 40 px taller (the bigger diagram and the footer): about two and a half rows
+  fit a 900 px window.
 
 ## ADR-60: Clearer chord diagrams: a narrow barre in the dot colour, `3fr` in text colour, drawn × and ○ beside the nut
 
