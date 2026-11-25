@@ -56,7 +56,7 @@ ADR-1 to ADR-13 come from the design interview behind [SPEC.md](SPEC.md) (decisi
 | 43 | [The export sheet: items store their inputs, one `sheet.toml`, its own scoped theme](#adr-43-the-export-sheet-items-store-their-inputs-one-sheettoml-its-own-scoped-theme) | Accepted |
 | 46 | [The root picker is an editable combobox whose list always shows all 17 names](#adr-46-the-root-picker-is-an-editable-combobox-whose-list-always-shows-all-17-names) | Accepted |
 | 48 | [Built-in themes after editor palettes: the original's own variants, nudged to pass the rules, credited in the file](#adr-48-built-in-themes-after-editor-palettes-the-originals-own-variants-nudged-to-pass-the-rules-credited-in-the-file) | Accepted |
-| 49 | [Chord diagrams lie like the neck: strings across, the nut on the left, the lowest fret numbered under its column](#adr-49-chord-diagrams-lie-like-the-neck-strings-across-the-nut-on-the-left-the-lowest-fret-numbered-under-its-column) | Accepted |
+| 49 | [Chord diagrams lie like the neck: strings across, the nut on the left, the lowest fret numbered under its column](#adr-49-chord-diagrams-lie-like-the-neck-strings-across-the-nut-on-the-left-the-lowest-fret-numbered-under-its-column) | Accepted; superseded in part by ADR-59 (the fret number reads `3fr`) |
 | 50 | [Collapsible side panels: one stateless component, the parent keeps the state and the width, a table per panel](#adr-50-collapsible-side-panels-one-stateless-component-the-parent-keeps-the-state-and-the-width-a-table-per-panel) | Superseded by ADR-51 |
 | 51 | [Three pages under one toolbar, pickers in a drawer, instrument in the toolbar, Sound and Appearance in a dialog](#adr-51-three-pages-under-one-toolbar-pickers-in-a-drawer-instrument-in-the-toolbar-sound-and-appearance-in-a-dialog) | Accepted; the Chords page detailed by ADR-54; the Scales page's order superseded by ADR-55 |
 | 52 | [The Scales tool row: the toggles in one row, their panels under it, in button order](#adr-52-the-scales-tool-row-the-toggles-in-one-row-their-panels-under-it-in-button-order) | Accepted; the row's place above the neck superseded by ADR-55 |
@@ -66,6 +66,7 @@ ADR-1 to ADR-13 come from the design interview behind [SPEC.md](SPEC.md) (decisi
 | 56 | [The UI style pass: shared control styles, segmented toggles, quieter neck, cards, empty states](#adr-56-the-ui-style-pass-shared-control-styles-segmented-toggles-quieter-neck-cards-empty-states) | Accepted; control styles detailed by ADR-57; the neck's open questions decided by ADR-58 |
 | 57 | [Shared control styles in base.css under `:where()`; text fields keep the strong border](#adr-57-shared-control-styles-in-basecss-under-where-text-fields-keep-the-strong-border) | Accepted |
 | 58 | [The roomier neck everywhere, the same minimum width, dimmed rings held to 1.5:1](#adr-58-the-roomier-neck-everywhere-the-same-minimum-width-dimmed-rings-held-to-151) | Accepted |
+| 59 | [Clearer chord diagrams: a narrow barre in the nut's colour, `3fr` in text colour, drawn × and ○ beside the nut](#adr-59-clearer-chord-diagrams-a-narrow-barre-in-the-nuts-colour-3fr-in-text-colour-drawn--and--beside-the-nut) | Accepted |
 
 ---
 
@@ -2007,6 +2008,10 @@ it does to the list's cards and the sheet.
   stored sheet items are unchanged (they store the shape, not the drawing, ADR-43).
 - Players used to chord books read a turned diagram; the neck beside it is the reference.
 
+*Superseded in part by ADR-59:* the fret number under the first column reads `3fr` (in text
+colour, 12px semibold), not `3`; it stays under its column. The barre is a narrow bar in the
+nut's colour, and × and ○ are drawn shapes just beyond the nut; the rest stands.
+
 ## ADR-50: Collapsible side panels: one stateless component, the parent keeps the state and the width, a table per panel
 
 **Context.** M5.2 (#82): the user wants as much width as possible for the fretboard. The chord
@@ -2429,3 +2434,47 @@ label on it, but a 2-unit ring in that colour all but disappears.
   problem when it loads; it still loads and is used as written.
 - ADR-55's figures for the minimum width (strings 20 px apart, 10-unit fret numbers) are
   replaced by the ones above; its decision is unchanged.
+
+## ADR-59: Clearer chord diagrams: a narrow barre in the nut's colour, `3fr` in text colour, drawn × and ○ beside the nut
+
+**Context.** M9.2 (#116). A visual review of the Chords page found three things hard to read
+in the chord diagrams (ADR-37, ADR-49). The barre was a bar as wide as a dot in
+`--fretboard-dot`, painted under the dots: in the dark schemes, where that colour is light,
+it read as a pale smear over the root squares and merged with the tone dots. The fret number
+of a shape up the neck (`3`, `8`) was 11px in `--text-muted`, though it is the first thing a
+player looks for. × and ○ were 12px text glyphs in `--text-muted`, centred about 12 units left
+of the nut, and × was faint. Theme tokens are a fixed contract (ADR-11, ADR-19): no new ones.
+
+**Decision.**
+- **The barre is a narrow bar in `--fretboard-nut`.** 5 units wide (a third of a dot), upright
+  in its fret's column from the middle of its highest string to the middle of its lowest,
+  with rounded ends, drawn under the dots, so its ends hide under its outer dots and it shows
+  as a bar joining them. A barre is a finger doing the nut's job, so it is drawn like the
+  nut. `--fretboard-nut` is at least 5:1 on the wood in every built-in scheme (it is held to
+  3:1 like every board colour), neutral where the dots and the root are coloured, and the root
+  square stays on top. In Print and High contrast light the nut and the dots are both near
+  black: there the bar differs from the dots by its width, not its colour. No existing token
+  differs from the dots in colour in every theme without also being weak on the wood
+  (`--fretboard-dim`) or doubling a fret wire (`--fretboard-fret`).
+- **The fret number says `3fr`,** under its column as ADR-49 has it, in `--text` at 12px
+  semibold. `fr` marks it as a fret, not a finger or a count, as chord books write it; the
+  number stays under its column so it still names that column. `diagramWindow().label` stays
+  a number; `fretLabel` writes it.
+- **× and ○ are drawn, not typed:** a 7-unit × of two strokes and a ○ of radius 3.5, stroked
+  1.6 in `--text`, centred 10 units beyond the starting edge's wire (`MARKER_OFFSET`), about
+  2 units clear of the nut or capo, on their string; mirrored left-handed. Drawn shapes have
+  the same weight in every font, and in the SVG/PNG/HTML exports. They stand on the page, not
+  the wood, so they take the text colour, held to 4.5:1 on the surfaces.
+- Geometry stays in `diagram.ts` (`barreRect`, `markerX`, `fretLabel`, `BARRE_WIDTH`,
+  `MARKER_OFFSET`, `MARKER_RADIUS`); the diagram's size is unchanged.
+
+*Supersedes in part ADR-49:* the fret number under the first column is written `3fr`, not
+`3`; where it sits is unchanged.
+
+**Consequences.**
+- The sheet and its SVG, HTML and PNG exports draw the same component, so they change with
+  it; stored sheet items don't (ADR-43). A sheet exported again looks different.
+- A user theme whose `--fretboard-nut` matches its `--fretboard-dot` draws a barre told apart
+  by width only, as Print does.
+- `3fr` is wider than `3`: a two-digit fret (`12fr`) is wider than its column and reaches
+  into the next one's space under the board, where nothing else is drawn.
