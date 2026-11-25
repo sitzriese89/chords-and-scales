@@ -99,20 +99,28 @@ describe('voicing browser', () => {
     expect(on('Chords').getByRole('img', { name: 'C: x32010' })).toBeInTheDocument();
   });
 
-  it('writes no shape text under the diagrams; the shape is in their names', async () => {
-    await startApp();
+  it('writes the shape under each diagram, a footer hidden from screen readers', async () => {
+    await startApp({ change: (s) => (s.voicings.inversions = true) });
     await pick('Chord quality', 'major');
     const list = on('Chords').getByRole('list', { name: 'Voicings of C' });
     const button = within(list).getByRole('button', { name: /^\d+\. x32010$/ });
     // The diagram and the button carry the shape for screen readers…
     expect(within(button).getByRole('img', { name: 'C: x32010' })).toBeInTheDocument();
-    // …but no visible text spells it out: only the diagram's own numbers and labels.
-    const visible = [...button.childNodes]
-      .filter((n) => !(n instanceof SVGElement))
-      .map((n) => n.textContent!.trim())
-      .join('');
-    expect(visible).toBe('');
-    expect(list.textContent).not.toMatch(/x32010/);
+    // …and the footer shows it, without saying it twice.
+    const footer = (b: HTMLElement) => b.querySelector('.footer')!;
+    expect(footer(button)).toHaveAttribute('aria-hidden', 'true');
+    expect(footer(button)).toHaveTextContent(/^x32010$/);
+    // Every card has one, in the order of the list.
+    const buttons = within(list).getAllByRole('button');
+    expect(buttons.map((b) => b.querySelector('.footer .shape')?.textContent)).toEqual(shapes());
+
+    // An inversion adds its bass; a shape without the 5th says so.
+    const bass = shapeButton('032010');
+    expect(bass).toHaveAccessibleName(/, bass 3$/);
+    expect(footer(bass)).toHaveTextContent(/^032010\s*bass 3$/);
+    const omitted = buttons.find((b) => /, bass 3, no 5$/.test(b.getAttribute('aria-label')!))!;
+    const shape = shapes()[buttons.indexOf(omitted)];
+    expect(footer(omitted).textContent!.replace(/\s+/g, ' ').trim()).toBe(`${shape} bass 3 · no 5`);
   });
 
   it('heads a slash chord by the chord alone and says its bass is not voiced', async () => {
@@ -236,9 +244,15 @@ describe('voicing browser', () => {
     expect(chordsPage().queryByRole('button', { pressed: true })).not.toBeInTheDocument();
     gesture.happen();
 
+    const tick = (shape: string) => shapeButton(shape).querySelector('.footer .tick');
+    expect(document.querySelectorAll('.voicings .tick')).toHaveLength(0);
+
     await fireEvent.click(shapeButton('x32010'));
     expect(shapeButton('x32010')).toHaveAttribute('aria-pressed', 'true');
     expect(chordsPage().getAllByRole('button', { pressed: true })).toHaveLength(1);
+    // The chosen card shows a tick in its footer; only it does.
+    expect(tick('x32010')).toHaveTextContent('✓');
+    expect(document.querySelectorAll('.voicings .tick')).toHaveLength(1);
     expect(addShape()).toBeEnabled();
     // C3 E3 G3 C4 E4, lowest string first: pitches from the core.
     expect(frequencies).toEqual([48, 52, 55, 60, 64].map(midiToHz));
@@ -250,6 +264,7 @@ describe('voicing browser', () => {
 
     await fireEvent.click(shapeButton('x32010'));
     expect(shapeButton('x32010')).toHaveAttribute('aria-pressed', 'false');
+    expect(tick('x32010')).not.toBeInTheDocument();
     expect(addShape()).toBeDisabled();
   });
 
@@ -314,8 +329,8 @@ describe('voicing browser', () => {
     await pick('Chord quality', 'major');
     const svg = on('Chords').getByRole('img', { name: 'C: x32010' });
     const [, , width, height] = svg.getAttribute('viewBox')!.split(' ').map(Number);
-    expect(Number(svg.getAttribute('width'))).toBe(width * 1.5);
-    expect(Number(svg.getAttribute('height'))).toBe(height * 1.5);
+    expect(Number(svg.getAttribute('width'))).toBe(width * 1.75);
+    expect(Number(svg.getAttribute('height'))).toBe(height * 1.75);
   });
 
   it('mirrors the diagrams when left-handed', async () => {
