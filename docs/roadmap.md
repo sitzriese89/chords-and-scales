@@ -29,8 +29,9 @@ each PR names its issue with `Fixes #n`.
 6. **M5**, small adjustments before the UI redesign, then release **v0.5.0** (released 2026-11-22).
 7. **M6**, the UI redesign (M6.1 and M6.2, then M6.3), then release **v0.6.0**.
 8. **M7**, the Scales page layout (M7.1).
-9. **M8**, the UI style pass (M8.1 and M8.2, then M8.3 and M8.4). **Now**
-10. Next scope: not planned yet. New items get a row and an issue before work starts.
+9. **M8**, the UI style pass (M8.1 and M8.2, then M8.3 and M8.4).
+10. **M9**, Chords page polish (M9.1 and M9.2, then M9.3). **Now**
+11. Next scope: not planned yet. New items get a row and an issue before work starts.
 
 Items whose dependencies are done can run in parallel. The coordinator groups them into waves
 of issues that don't touch the same files (`implement` skill). Suggested waves from the
@@ -168,6 +169,22 @@ the neck, the tab in a card, a footer and a chord grid that fills the width; emp
 Suggested waves: (1) M8.1, M8.2 → (2) M8.3, M8.4. M8.1 restyles the controls in every
 component, so the items that change those components wait; M8.2 owns `lib/fretboard`.
 
+## M9 · Chords page polish
+
+A clearer hierarchy on the Chords page: the chord as the page's headline with its tags as
+chips, the voicing constraints as one toolbar, chord diagrams whose barre, fret number and
+open/muted markers read at a glance, and voicing cards that fill with their diagram, show the
+chosen shape plainly and name each shape.
+
+| Item | Issue | Depends on | Status |
+|---|---|---|---|
+| M9.1 Chord heading, tag chips, voicing toolbar | [#115][115] |  | Done (#114) |
+| M9.2 Clearer chord diagrams: barre, fret number, open/muted markers | [#116][116] |  | Open |
+| M9.3 Voicing cards: size, chosen state, shape footer | [#117][117] | M9.1 | Open |
+
+Suggested waves: (1) M9.1, M9.2 → (2) M9.3. M9.2 owns `ChordDiagram.svelte` and `diagram.ts`
+(the sheet draws them too); M9.1 and M9.3 both change `VoicingBrowser.svelte`.
+
 ## Release gates
 
 A milestone is released when all its items are Done, main is green, and the release workflow
@@ -227,3 +244,6 @@ A milestone is released when all its items are Done, main is green, and the rele
 [105]: https://github.com/sitzriese89/chords-and-scales/issues/105
 [106]: https://github.com/sitzriese89/chords-and-scales/issues/106
 [107]: https://github.com/sitzriese89/chords-and-scales/issues/107
+[115]: https://github.com/sitzriese89/chords-and-scales/issues/115
+[116]: https://github.com/sitzriese89/chords-and-scales/issues/116
+[117]: https://github.com/sitzriese89/chords-and-scales/issues/117
