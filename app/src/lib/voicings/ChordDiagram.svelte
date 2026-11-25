@@ -1,12 +1,13 @@
 <!--
   @component
-  A chord diagram drawn as SVG (SPEC §5.6, ADR-3, ADR-37, ADR-49), lying like the neck: one
-  row per string, the lowest at the bottom, the nut (drawn thick) or the capo on the left and
-  one column per fret to the right; left-handed the diagram is mirrored, the nut on the right,
-  as the fretboard is. At each string's nut end × marks a muted string and ○ an open one (the
-  capo fret, with a capo); a dot marks each fretted note, the root as a square (ADR-18), and a
-  barre is a bar across its strings. A shape higher up the neck starts at its lowest fret, with
-  that fret's number under its column instead of the nut.
+  A chord diagram drawn as SVG (SPEC §5.6, ADR-3, ADR-37, ADR-49, ADR-60), lying like the
+  neck: one row per string, the lowest at the bottom, the nut (drawn thick) or the capo on the
+  left and one column per fret to the right; left-handed the diagram is mirrored, the nut on
+  the right, as the fretboard is. Just beyond the nut end of each string × marks a muted string
+  and ○ an open one (the capo fret, with a capo); a dot marks each fretted note, the root as a
+  square (ADR-18), and a barre is a narrow bar in the dots' colour joining them. A shape
+  higher up the neck starts at its lowest fret, written under its column (`3fr`) instead of
+  the nut.
 
   Presentational: it draws a `ChordVoicing` from the core as given and knows no theory. Works
   for any number of strings. Colours are the theme's fretboard tokens (ADR-11).
@@ -14,9 +15,13 @@
 <script lang="ts">
   import type { ChordVoicing, VoicedString } from '../theory';
   import {
+    BARRE_WIDTH,
     DOT_RADIUS,
+    MARKER_RADIUS,
+    barreRect,
     diagramSize,
     diagramWindow,
+    fretLabel,
     fretX,
     labelY,
     markerX,
@@ -74,17 +79,14 @@
   const dots = $derived(
     voicing.strings.flatMap((note) => (note !== null && note.fret > capo ? [note] : [])),
   );
-  const barre = $derived.by(() => {
-    const b = voicing.barre;
-    if (!b) return null;
-    const ys = [b.lowestString, b.highestString].map((s) => y(stringIndex(s, count)));
-    return {
-      fret: b.fret,
-      x: x(b.fret) - DOT_RADIUS,
-      y: Math.min(...ys) - DOT_RADIUS,
-      height: Math.abs(ys[1] - ys[0]) + 2 * DOT_RADIUS,
-    };
-  });
+  const barre = $derived(
+    voicing.barre
+      ? { ...barreRect(voicing.barre, count, frame, leftHanded), fret: voicing.barre.fret }
+      : null,
+  );
+  /** The markers' x and half-size. */
+  const mx = $derived(markerX(frame, leftHanded));
+  const mr = MARKER_RADIUS;
   /** The nut or capo: a thick bar on the starting edge, reaching a little past it. */
   const edgeX = $derived(leftHanded ? wire(0) - 1 : wire(0) - 4);
 </script>
@@ -115,19 +117,21 @@
       x={x(frame.firstFret)}
       y={labelY(count)}
       text-anchor="middle"
-      dominant-baseline="central">{frame.label}</text
+      dominant-baseline="central">{fretLabel(frame.label)}</text
     >
   {/if}
 
   {#each markers as marker (marker.index)}
-    <text
-      class="marker"
-      data-marker={marker.kind}
-      x={markerX(frame, leftHanded)}
-      y={y(marker.index)}
-      text-anchor="middle"
-      dominant-baseline="central">{marker.kind === 'muted' ? '×' : '○'}</text
-    >
+    {@const my = y(marker.index)}
+    {#if marker.kind === 'muted'}
+      <path
+        class="marker"
+        data-marker="muted"
+        d="M{mx - mr} {my - mr}L{mx + mr} {my + mr}M{mx - mr} {my + mr}L{mx + mr} {my - mr}"
+      />
+    {:else}
+      <circle class="marker" data-marker="open" cx={mx} cy={my} r={mr} />
+    {/if}
   {/each}
 
   {#if barre}
@@ -136,9 +140,9 @@
       data-fret={barre.fret}
       x={barre.x}
       y={barre.y}
-      width={2 * DOT_RADIUS}
+      width={barre.width}
       height={barre.height}
-      rx={DOT_RADIUS}
+      rx={BARRE_WIDTH / 2}
     />
   {/if}
 
@@ -196,16 +200,24 @@
     fill: var(--fretboard-capo, #2b2724);
   }
 
-  .fret-label,
-  .marker {
-    fill: var(--text-muted, #5d5952);
-    font-size: 11px;
-  }
-
-  .marker {
+  /* The fret number and the markers stand beside the board, on the page: text colour. */
+  .fret-label {
+    fill: var(--text, #1d1c1a);
     font-size: 12px;
+    font-weight: 600;
   }
 
+  .marker {
+    fill: none;
+    stroke: var(--text, #1d1c1a);
+    stroke-width: 1.6;
+    stroke-linecap: round;
+  }
+
+  /*
+   * The dots' colour, thinner than the nut: it joins its dots without hiding them, and isn't
+   * taken for the nut or the capo next to it (ADR-60).
+   */
   .barre,
   .dot circle {
     fill: var(--fretboard-dot, #2e4057);

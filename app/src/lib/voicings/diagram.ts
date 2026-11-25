@@ -1,12 +1,12 @@
 /**
- * Where a chord diagram draws a voicing (ADR-37, ADR-49): which frets the window shows, what
+ * Where a chord diagram draws a voicing (ADR-37, ADR-49, ADR-60): which frets the window shows, what
  * its starting edge is, and the x of every fret and the y of every string. The diagram lies
  * like the neck: strings run across, the lowest at the bottom, the nut (or capo) on the left
  * and the frets counting up to the right; left-handed it is mirrored, the nut on the right.
  * Geometry only: the voicing, its frets and its labels come from the core (`chordVoicings`,
  * ADR-35).
  */
-import type { ChordVoicing } from '../theory';
+import type { ChordVoicing, VoicingBarre } from '../theory';
 
 /** Fret columns a diagram shows at least. */
 export const MIN_FRETS = 4;
@@ -24,6 +24,15 @@ export const TOP = 10;
 export const BOTTOM = 24;
 /** Radius of a dot. */
 export const DOT_RADIUS = 7.5;
+/**
+ * Width of a barre's bar: under a quarter of a dot and thinner than the nut, so it joins its
+ * dots without hiding them and isn't taken for a second nut (ADR-60).
+ */
+export const BARRE_WIDTH = 3.5;
+/** How far the muted and open markers' centres sit from the starting edge's wire. */
+export const MARKER_OFFSET = 10;
+/** Half the width of a muted or open marker. */
+export const MARKER_RADIUS = 3.5;
 
 /** What the diagram's starting edge (left, or right when left-handed) is. */
 export type DiagramStart = 'nut' | 'capo' | 'fret';
@@ -38,7 +47,7 @@ export interface DiagramWindow {
    * part. `fret`: it starts higher up the neck.
    */
   start: DiagramStart;
-  /** The fret number written under the first column; `null` at the nut. */
+  /** The fret under the first column, written as `fretLabel` (`3fr`); `null` at the nut. */
   label: number | null;
 }
 
@@ -102,9 +111,38 @@ export function fretX(fret: number, window: DiagramWindow, leftHanded: boolean):
   return mirror(NUT_SIDE + (fret - window.firstFret + 0.5) * FRET_WIDTH, window, leftHanded);
 }
 
-/** The x of the muted and open markers: at the strings' end, beyond the starting edge. */
+/**
+ * The x of the muted and open markers: at the strings' end, just beyond the starting edge (the
+ * nut, the capo or the first fret's wire).
+ */
 export function markerX(window: DiagramWindow, leftHanded: boolean): number {
-  return mirror(NUT_SIDE / 2 - 1, window, leftHanded);
+  return mirror(NUT_SIDE - MARKER_OFFSET, window, leftHanded);
+}
+
+/** What the first column's fret number says: the fret, marked as one (`3fr`, ADR-60). */
+export function fretLabel(fret: number): string {
+  return `${fret}fr`;
+}
+
+/**
+ * Where a barre's bar goes: upright in its fret's column, from the middle of its highest
+ * string to the middle of its lowest, a narrow bar its dots sit on (ADR-60).
+ */
+export function barreRect(
+  barre: VoicingBarre,
+  strings: number,
+  window: DiagramWindow,
+  leftHanded: boolean,
+): { x: number; y: number; width: number; height: number } {
+  const ys = [barre.lowestString, barre.highestString].map((s) =>
+    stringY(stringIndex(s, strings), strings),
+  );
+  return {
+    x: fretX(barre.fret, window, leftHanded) - BARRE_WIDTH / 2,
+    y: Math.min(...ys),
+    width: BARRE_WIDTH,
+    height: Math.abs(ys[1] - ys[0]),
+  };
 }
 
 /** The y of the lowest fret's number: under the lowest string, below its column. */

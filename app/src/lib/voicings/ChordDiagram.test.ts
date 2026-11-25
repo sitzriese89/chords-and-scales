@@ -3,8 +3,14 @@ import { describe, expect, it } from 'vitest';
 import { chordVoicings, getTuning, type ChordVoicing, type VoicingBarre } from '../theory';
 import ChordDiagram from './ChordDiagram.svelte';
 import {
+  BARRE_WIDTH,
+  DOT_RADIUS,
+  MARKER_OFFSET,
+  MARKER_RADIUS,
+  barreRect,
   diagramSize,
   diagramWindow,
+  fretLabel,
   fretX,
   labelY,
   markerX,
@@ -138,11 +144,35 @@ describe('diagram geometry', () => {
     expect(fretX(3, high, false)).toBe(fretX(1, nut, false));
   });
 
-  it('puts the markers beyond the nut, and the fret number under the lowest string', () => {
-    expect(markerX(nut, false)).toBeLessThan(wireX(0, nut, false));
-    expect(markerX(nut, true)).toBeGreaterThan(wireX(0, nut, true));
+  it('puts the markers just beyond the nut, and the fret number under the lowest string', () => {
+    expect(markerX(nut, false)).toBe(wireX(0, nut, false) - MARKER_OFFSET);
+    expect(markerX(nut, true)).toBe(wireX(0, nut, true) + MARKER_OFFSET);
+    // Closer to the nut than to the diagram's outer edge, and inside the drawing.
+    const { width } = diagramSize(6, nut.frets);
+    expect(markerX(nut, false)).toBeGreaterThan(wireX(0, nut, false) / 2);
+    expect(markerX(nut, false) - MARKER_RADIUS).toBeGreaterThan(0);
+    expect(markerX(nut, true) + MARKER_RADIUS).toBeLessThan(width);
     expect(labelY(6)).toBeGreaterThan(stringY(0, 6));
     expect(labelY(6)).toBeLessThan(diagramSize(6, 4).height);
+  });
+
+  it('writes the fret under the first column as a fret: 3fr', () => {
+    expect(fretLabel(3)).toBe('3fr');
+    expect(fretLabel(12)).toBe('12fr');
+  });
+
+  it('draws a barre as a narrow bar from its highest string to its lowest', () => {
+    const bar = barreRect(gBarre.barre!, 6, high, false);
+    expect(bar.width).toBe(BARRE_WIDTH);
+    expect(bar.width).toBeLessThan(DOT_RADIUS);
+    expect(bar.x + bar.width / 2).toBe(fretX(3, high, false));
+    expect(bar.y).toBe(stringY(5, 6));
+    expect(bar.y + bar.height).toBe(stringY(0, 6));
+    // Part of the neck: three strings of a bass, mirrored left-handed.
+    const partial = barreRect({ fret: 3, lowestString: 3, highestString: 1 }, 4, high, true);
+    expect(partial.y).toBe(stringY(3, 4));
+    expect(partial.y + partial.height).toBe(stringY(1, 4));
+    expect(partial.x + partial.width / 2).toBe(fretX(3, high, true));
   });
 });
 
@@ -150,6 +180,21 @@ describe('ChordDiagram', () => {
   const num = (e: Element | null, name: string) => Number(e!.getAttribute(name));
   const dotAt = (c: Element, string: number) =>
     c.querySelector(`g.dot[data-string="${string}"] text`)!;
+  /** A marker's extent: ○ is a circle, × a path of two strokes through its centre. */
+  const box = (e: Element) => {
+    if (e.localName === 'circle') {
+      const [cx, cy, r] = ['cx', 'cy', 'r'].map((a) => num(e, a));
+      return { left: cx - r, right: cx + r, cx, cy };
+    }
+    const n = e
+      .getAttribute('d')!
+      .match(/-?[\d.]+/g)!
+      .map(Number);
+    const xs = n.filter((_, i) => i % 2 === 0);
+    const ys = n.filter((_, i) => i % 2 === 1);
+    const [left, right] = [Math.min(...xs), Math.max(...xs)];
+    return { left, right, cx: (left + right) / 2, cy: (Math.min(...ys) + Math.max(...ys)) / 2 };
+  };
 
   it('draws the open C shape: a nut, × and ○ markers, five dots', () => {
     const c = draw(openC);
@@ -181,13 +226,39 @@ describe('ChordDiagram', () => {
     expect(num(d, 'y')).toBeGreaterThan(num(b, 'y'));
     expect(num(a, 'x')).toBeGreaterThan(num(d, 'x'));
     expect(num(d, 'x')).toBeGreaterThan(num(b, 'x'));
-    // The nut is the left edge; the markers sit left of it, on their strings.
+    // The nut is the left edge; the markers sit just left of it, clear of it, on their strings.
     const nutX = num(c.querySelector('rect.nut'), 'x');
     expect(nutX).toBeLessThan(num(b, 'x'));
-    const muted = markers(c, 'muted')[0];
-    expect(num(muted, 'x')).toBeLessThan(nutX);
-    expect(num(muted, 'y')).toBe(stringY(0, 6));
-    expect(markers(c, 'open').map((m) => num(m, 'y'))).toEqual([stringY(3, 6), stringY(5, 6)]);
+    const muted = box(markers(c, 'muted')[0]);
+    expect(muted.right).toBeLessThan(nutX - 1);
+    expect(muted.right).toBeGreaterThan(nutX - 4);
+    expect(muted.right - muted.left).toBe(2 * MARKER_RADIUS);
+    expect(muted.cy).toBe(stringY(0, 6));
+    const open = markers(c, 'open').map(box);
+    expect(open.map((m) => m.cy)).toEqual([stringY(3, 6), stringY(5, 6)]);
+    for (const m of open) {
+      expect(m.cx).toBe(muted.cx);
+      expect(m.right).toBeLessThan(nutX - 1);
+    }
+  });
+
+  it('draws a barre as a narrow bar under its dots', () => {
+    const c = draw(gBarre);
+    const barre = c.querySelector('rect.barre')!;
+    expect(num(barre, 'width')).toBe(BARRE_WIDTH);
+    expect(num(barre, 'width')).toBeLessThan(2 * DOT_RADIUS);
+    // Thinner than the nut and the capo, so a barre beside them isn't a second edge.
+    const nut = draw(openC).querySelector('rect.nut')!;
+    const capo = draw(openC, { capo: 2 }).querySelector('rect.capo')!;
+    expect(num(barre, 'width')).toBeLessThan(num(nut, 'width'));
+    expect(num(barre, 'width')).toBeLessThan(num(capo, 'width'));
+    // It ends at its outer dots' middles, so its ends hide under them.
+    expect(num(barre, 'y')).toBe(stringY(5, 6));
+    expect(num(barre, 'y') + num(barre, 'height')).toBe(stringY(0, 6));
+    // Drawn before the dots, so every dot is on top of it.
+    for (const g of all(c, 'g.dot')) {
+      expect(barre.compareDocumentPosition(g) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    }
   });
 
   it('draws a barre across its strings and numbers the lowest fret under its column', () => {
@@ -195,7 +266,7 @@ describe('ChordDiagram', () => {
     expect(all(c, 'rect.nut')).toHaveLength(0);
     expect(c.querySelector('svg')).toHaveAttribute('data-start', 'fret');
     const label = c.querySelector('.fret-label')!;
-    expect(label.textContent).toBe('3');
+    expect(label.textContent).toBe('3fr');
     const window = diagramWindow(gBarre);
     expect(num(label, 'x')).toBe(fretX(3, window, false));
     // Under the lowest string, and under every dot.
@@ -205,7 +276,7 @@ describe('ChordDiagram', () => {
     expect(barre.getAttribute('data-fret')).toBe('3');
     // Upright on fret 3, from the high E string down to the low one.
     expect(num(barre, 'x') + num(barre, 'width') / 2).toBe(fretX(3, window, false));
-    expect(num(barre, 'height')).toBeCloseTo(stringY(0, 6) - stringY(5, 6) + 15);
+    expect(num(barre, 'height')).toBe(stringY(0, 6) - stringY(5, 6));
     expect(markers(c, 'muted')).toHaveLength(0);
     expect(markers(c, 'open')).toHaveLength(0);
     expect(dots(c)).toHaveLength(6);
@@ -216,7 +287,7 @@ describe('ChordDiagram', () => {
     expect(all(c, 'line.string')).toHaveLength(4);
     expect(markers(c, 'muted')).toHaveLength(1);
     expect(dots(c)).toEqual(['3:3', '2:5', '1:5']);
-    expect(c.querySelector('.fret-label')?.textContent).toBe('3');
+    expect(c.querySelector('.fret-label')?.textContent).toBe('3fr');
   });
 
   it.each([
@@ -248,7 +319,7 @@ describe('ChordDiagram', () => {
     expect(all(c, 'rect.nut')).toHaveLength(0);
     expect(c.querySelector('svg')).toHaveAttribute('data-start', 'capo');
     const label = c.querySelector('.fret-label')!;
-    expect(label.textContent).toBe('3');
+    expect(label.textContent).toBe('3fr');
     // The capo is the left edge, the first fret above it numbered under its column.
     expect(num(c.querySelector('rect.capo'), 'x')).toBeLessThan(num(label, 'x'));
     expect(markers(c, 'open')).toHaveLength(2);
@@ -268,7 +339,31 @@ describe('ChordDiagram', () => {
     expect(num(dotAt(left, 5), 'x')).toBeLessThan(num(dotAt(left, 2), 'x'));
     const nut = left.querySelector('rect.nut')!;
     expect(num(nut, 'x')).toBeGreaterThan(num(dotAt(left, 5), 'x'));
-    expect(num(markers(left, 'muted')[0], 'x')).toBeGreaterThan(num(nut, 'x'));
+    // The markers just right of the nut, clear of it, mirrored from the right-handed ones.
+    const nutRight = num(nut, 'x') + num(nut, 'width');
+    for (const kind of ['muted', 'open']) {
+      const l = markers(left, kind).map(box);
+      const r = markers(right, kind).map(box);
+      expect(l.map((m) => m.cx)).toEqual(r.map((m) => width - m.cx));
+      for (const m of l) {
+        expect(m.left).toBeGreaterThan(nutRight + 1);
+        expect(m.left).toBeLessThan(nutRight + 4);
+      }
+    }
+  });
+
+  it('puts the markers just beyond the capo, and beyond the first wire higher up', () => {
+    const capo = draw(voicing('x 5 4 2 3 2', ['1', '3', '5', '1', '3']), { capo: 2 });
+    const edge = num(capo.querySelector('rect.capo'), 'x');
+    for (const m of all(capo, '[data-marker]').map(box)) {
+      expect(m.right).toBeLessThan(edge - 1);
+      expect(m.right).toBeGreaterThan(edge - 4);
+    }
+    const high = draw(voicing('x 10 12 12 12 0', ['1', '5', '1', '3', '3']));
+    const window = diagramWindow(voicing('x 10 12 12 12 0', ['1', '5', '1', '3', '3']));
+    const [muted] = markers(high, 'muted').map(box);
+    expect(muted.cx).toBe(wireX(0, window, false) - MARKER_OFFSET);
+    expect(markers(high, 'open')).toHaveLength(1);
   });
 
   it('mirrors the fret number with its column when left-handed', () => {
@@ -277,7 +372,7 @@ describe('ChordDiagram', () => {
     const width = diagramSize(6, 4).width;
     expect(num(left, 'x')).toBe(width - num(right, 'x'));
     expect(num(left, 'y')).toBe(num(right, 'y'));
-    expect(left.textContent).toBe('3');
+    expect(left.textContent).toBe('3fr');
   });
 
   it('labels dots as asked and has an accessible name', () => {

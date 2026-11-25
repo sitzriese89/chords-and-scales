@@ -127,7 +127,7 @@ Everything below is listed under the theme picker ("N problems with your theme f
 | `--surface-sunken` | Inputs, wells and list backgrounds set into a surface |
 | `--border` | Dividers and decorative outlines (no contrast requirement) |
 | `--border-strong` | Outlines that identify a control, such as an input's border |
-| `--text` | Body text and headings |
+| `--text` | Body text and headings; a chord diagram's fret number and × / ○ markers |
 | `--text-muted` | Secondary text: hints, captions, fret numbers |
 | `--text-link` | Links and text-styled buttons |
 | `--text-danger` | Error and validation messages |
@@ -147,7 +147,7 @@ Also used by the tab view and chord diagrams (ADR-3).
 | `--fretboard-fret` | Fret wires |
 | `--fretboard-string` | Strings |
 | `--fretboard-inlay` | Inlay markers (decorative, deliberately low contrast) |
-| `--fretboard-dot` | Note dots when degree colouring is off |
+| `--fretboard-dot` | Note dots when degree colouring is off; a chord diagram's dots and its barre, a narrow bar joining them (ADR-60) |
 | `--fretboard-dot-text` | Dot labels on `--fretboard-dot` and on every `--degree-*` |
 | `--fretboard-root` | Root note dots (same colour as `--degree-0` in the built-in themes) |
 | `--fretboard-root-text` | Labels on `--fretboard-root` |

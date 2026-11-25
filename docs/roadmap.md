@@ -30,8 +30,8 @@ each PR names its issue with `Fixes #n`.
 7. **M6**, the UI redesign (M6.1 and M6.2, then M6.3), then release **v0.6.0**.
 8. **M7**, the Scales page layout (M7.1).
 9. **M8**, the UI style pass (M8.1 and M8.2, then M8.3 and M8.4).
-10. **M9**, Chords page polish (M9.1 and M9.2, then M9.3). **Now**
-11. Next scope: not planned yet. New items get a row and an issue before work starts.
+10. **M9**, Chords page polish (M9.1 and M9.2, then M9.3).
+11. Next scope: not planned yet. New items get a row and an issue before work starts. **Now**
 
 Items whose dependencies are done can run in parallel. The coordinator groups them into waves
 of issues that don't touch the same files (`implement` skill). Suggested waves from the
@@ -179,7 +179,7 @@ chosen shape plainly and name each shape.
 | Item | Issue | Depends on | Status |
 |---|---|---|---|
 | M9.1 Chord heading, tag chips, voicing toolbar | [#115][115] |  | Done (#114) |
-| M9.2 Clearer chord diagrams: barre, fret number, open/muted markers | [#116][116] |  | Open |
+| M9.2 Clearer chord diagrams: barre, fret number, open/muted markers | [#116][116] |  | Done (#119) |
 | M9.3 Voicing cards: size, chosen state, shape footer | [#117][117] | M9.1 | Done (#120) |
 
 Suggested waves: (1) M9.1, M9.2 → (2) M9.3. M9.2 owns `ChordDiagram.svelte` and `diagram.ts`
