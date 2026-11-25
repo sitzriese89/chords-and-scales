@@ -82,10 +82,12 @@ describe('page layout', () => {
     });
     const list = chordsPage().getByRole('list', { name: 'Voicings of C' });
     expect(style(list).display).toBe('grid');
-    // 11.5rem columns, 0.75rem apart.
-    expect(style(list).gridTemplateColumns).toBe('repeat(auto-fill, minmax(184px, 1fr))');
+    // 12rem columns, 0.75rem apart.
+    expect(style(list).gridTemplateColumns).toBe('repeat(auto-fill, minmax(192px, 1fr))');
     expect(style(list).gap).toBe('12px');
     const card = within(list).getAllByRole('button')[0];
     expect(style(card).width).toBe('100%');
+    // The diagram is drawn to the card's width (ADR-59).
+    expect(style(card.querySelector('svg')!).width).toBe('100%');
   });
 });

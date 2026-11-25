@@ -588,14 +588,15 @@ Algorithmic (works for any tuning and 4–9 strings; no static shape library).
   small cost for muted strings between played ones, inversions and barres. The default list
   has the best 50 (ADR-35).
 - **Output:** chord diagrams (SVG).
-- **In the app** (ADR-37, ADR-54): the Chords page (§5.3) lists the voicings of the chosen
-  chord under its heading row, on the current instrument, tuning, fret count and capo, best
-  first (the best 50), as a grid of chord diagrams across the page's width, drawn at 1.5
-  times the sheet's size (a 6-string shape is about 190 px wide, six to a row on a
-  laptop-wide window, two on a phone-wide one), each with its bass when it is an inversion
-  and the tones it leaves out.
-  No shape text is written under a diagram; its accessible name gives the shape (`x32010`,
-  lowest string first) for screen readers. The list is headed by the
+- **In the app** (ADR-37, ADR-54, ADR-59): the Chords page (§5.3) lists the voicings of the
+  chosen chord under its heading row, on the current instrument, tuning, fret count and capo,
+  best first (the best 50), as a grid of cards across the page's width (six to a row on a
+  laptop-wide window, two on a phone-wide one). Each card's diagram is drawn to the card's
+  width (about 200 px on a laptop-wide window; a wide shape shrinks to the same width), over
+  one footer line: the shape as players write it (`x32010`, lowest string first) and, where
+  they apply, its bass when it is an inversion and the tones it leaves out (`bass 3 · no 5`).
+  The footer is visual only; the card's and the diagram's accessible names give the same
+  (`1. x32010, bass 3`, `C: x32010`). The list is headed by the
   chord's name; a slash chord's bass is not voiced, so `Am7/G` is headed "Voicings of Am7"
   with a note that the G bass isn't voiced.
   - **Diagrams** (ADR-49): lying like the neck, one row per string with the lowest at the
@@ -612,7 +613,8 @@ Algorithmic (works for any tuning and 4–9 strings; no static shape library).
     tab view's), open strings, muted strings and inversions, as above; changing one updates the
     list at once. They are saved in `settings.toml` (`[voicings]`: `max_span`, `start_fret`,
     `open_strings`, `muted_strings`, `inversions`; missing keys take the defaults above).
-  - **Choosing a shape** marks it in the grid, strums it lowest string first and enables
+  - **Choosing a shape** marks it in the grid (an accent-tinted card with a 2px accent ring
+    and a ✓ in its footer), strums it lowest string first and enables
     **Add shape to sheet** (disabled while none is chosen); while it is chosen, the page's
     **Strum** plays it too. No neck shows it. Choosing it again unchooses it. The choice is
     not saved, and it is dropped when the chord, the instrument (tuning, fret count, capo) or
