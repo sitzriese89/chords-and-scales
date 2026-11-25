@@ -435,9 +435,10 @@ How the tab is shown (`app/src/lib/tab/`, ADR-25):
 - Shown on the **Chords** page of the main window (§5.1), not a separate OS window, and
   chosen in the **chord picker**, in the drawer behind **☰ Choose chord** (ADR-51, ADR-54).
   The page has no fretboard, and no chord or shape is drawn on the Scales page's neck.
-- **Display:** a heading row with the chord's symbol, its name, its notes, **▶ Strum**,
-  **Clear chord** and "Add chord to sheet", its tags under it; then the voicing constraints
-  and the chord's shapes across the full width (§5.6). While no chord is chosen the page says
+- **Display:** a heading row with the chord's symbol (large, with **Clear chord** as a ✕
+  beside it) and under it its name and its tags as chips; then its notes, the root filled in
+  the root colour; then **▶ Strum** and "Add chord to sheet". Under a rule, the voicing
+  constraints as one toolbar and the chord's shapes across the full width (§5.6). While no chord is chosen the page says
   how to choose one (or, for a degree with none, that no chord forms there).
 - **Input modes:**
   1. Root + quality

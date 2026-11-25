@@ -1,14 +1,15 @@
 <!--
   @component
   The heading row of the Chords page (SPEC §5.3, ADR-54): the chosen chord's symbol in the
-  display style (ADR-33), its name (with a slash chord's bass, the Roman numeral and the degree
-  it was chosen on), its tags (ADR-41) and its notes, then **▶ Strum**, **Clear chord** and
-  "Add chord to sheet". Strum plays the shape chosen in the voicing browser if there is one,
-  else the chord stacked up from its lowest root (lowest string first, ADR-28, ADR-32, ADR-37).
-  "Add chord to sheet" puts the chord on the export sheet as a neck diagram: alone, or over the
-  scale for a chord on a degree (ADR-43). While no chord is chosen it shows the empty state
-  (ADR-56), whose **☰ Choose chord** calls `onchoose` (the app opens the chord drawer); with
-  the symbol mode it says where to type one, and for a degree without a chord why.
+  display style (ADR-33) with **✕** (Clear chord) beside it, and under it its name (with a slash
+  chord's bass, the Roman numeral and the degree it was chosen on) and its tags as chips
+  (ADR-41); then its notes, the root filled in the root colour as the diagrams draw it; then
+  **▶ Strum** and "Add chord to sheet". Strum plays the shape chosen in the voicing browser if
+  there is one, else the chord stacked up from its lowest root (lowest string first, ADR-28,
+  ADR-32, ADR-37). "Add chord to sheet" puts the chord on the export sheet as a neck diagram:
+  alone, or over the scale for a chord on a degree (ADR-43). While no chord is chosen it shows
+  the empty state (ADR-56), whose **☰ Choose chord** calls `onchoose` (the app opens the chord
+  drawer); with the symbol mode it says where to type one, and for a degree without a chord why.
 
   The page has no fretboard: the chord's shapes follow in the voicing browser, which the app
   places under this row.
@@ -55,14 +56,32 @@
 <section class="chord-summary" aria-live="polite" aria-label="Chosen chord">
   {#if active && view}
     <div class="heading">
-      <h2>{view.symbol}</h2>
-      <span class="name">
-        {view.name}{active.bass ? `, bass ${active.bass}` : ''}{active.numeral
-          ? ` (${active.numeral})`
-          : ''}{active.fromScale
-          ? ` on degree ${(chordState.degree ?? 0) + 1} of ${chordState.scale.root} ${chordState.scale.info.name}`
-          : ''}
-      </span>
+      <div class="title">
+        <div class="symbol">
+          <h2>{view.symbol}</h2>
+          <button
+            type="button"
+            class="clear"
+            aria-label="Clear chord"
+            title="Clear chord"
+            onclick={() => chordState.clear()}><span aria-hidden="true">✕</span></button
+          >
+        </div>
+        <p class="name">
+          {view.name}{active.bass ? `, bass ${active.bass}` : ''}{active.numeral
+            ? ` (${active.numeral})`
+            : ''}{active.fromScale
+            ? ` on degree ${(chordState.degree ?? 0) + 1} of ${chordState.scale.root} ${chordState.scale.info.name}`
+            : ''}
+        </p>
+        {#if activeChordTags.length > 0}
+          <ul class="tags" aria-label="Tags of {view.symbol}">
+            {#each activeChordTags as tag (tag)}
+              <li>{tag}</li>
+            {/each}
+          </ul>
+        {/if}
+      </div>
       <dl class="notes" aria-label="Notes of {view.symbol}">
         {#each view.notes as note (note.semitones)}
           <div class="note" class:root={note.semitones === 0}>
@@ -81,16 +100,12 @@
         >
           <span aria-hidden="true">▶</span> Strum
         </button>
-        <button type="button" onclick={() => chordState.clear()}>Clear chord</button>
         <AddToSheet what="chord" make={addChord} />
         {#if settings.current.audio.muted}
           <span class="muted">Sound is muted.</span>
         {/if}
       </div>
     </div>
-    <p class="muted chord-tags">
-      Tags: {activeChordTags.length > 0 ? activeChordTags.join(', ') : 'none'}
-    </p>
   {:else if chordState.problem}
     <p class="muted">{chordState.problem}</p>
   {:else if chordState.mode === 'symbol'}
@@ -111,21 +126,72 @@
     min-width: 0;
   }
 
+  /* The chord, its notes, then its actions; they wrap under each other in a narrow window. */
   .heading {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.5rem 1.25rem;
+    gap: 0.75rem 2rem;
+  }
+
+  /* The symbol is the page's headline; its name and tags sit under it. */
+  .title {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+  }
+
+  .symbol {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
 
   h2 {
     margin: 0;
-    font-size: 1.5rem;
+    font-size: 2.25rem;
+    line-height: 1.1;
+  }
+
+  /* Clear chord: a quiet icon beside the symbol, not one of the chord's actions. */
+  .clear {
+    width: 1.75rem;
+    min-height: 1.75rem;
+    padding: 0;
+    border-color: transparent;
+    background: transparent;
+    color: var(--text-muted);
+  }
+
+  .clear:hover {
+    border-color: var(--border);
+    color: var(--text);
   }
 
   .name {
+    margin: 0;
     color: var(--text-muted);
     font-size: 0.875rem;
+  }
+
+  /* The tags drawn like the picker's chips, but read-only. */
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .tags li {
+    padding: 0 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    line-height: 1.375rem;
   }
 
   .notes {
@@ -139,16 +205,11 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    min-width: 2.25rem;
-    padding: 0.125rem 0.375rem;
+    min-width: 2.5rem;
+    padding: 0.25rem 0.5rem;
     border: 1px solid var(--border);
     border-radius: var(--radius);
     background: var(--surface-raised);
-  }
-
-  .note.root {
-    border-color: var(--fretboard-root);
-    border-width: 2px;
   }
 
   dt {
@@ -158,7 +219,19 @@
 
   dd {
     margin: 0;
+    font-size: 1.125rem;
     font-weight: 600;
+  }
+
+  /* The root as the diagrams draw it: in the root colour, with its text token for contrast. */
+  .note.root {
+    border-color: var(--fretboard-root);
+    background: var(--fretboard-root);
+  }
+
+  .note.root dt,
+  .note.root dd {
+    color: var(--fretboard-root-text);
   }
 
   .actions {

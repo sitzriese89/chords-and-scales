@@ -84,6 +84,16 @@ export function chordsPage() {
   return within(screen.getByRole('main', { name: 'Chords' }));
 }
 
+/** The tag chips under the chosen chord `symbol` on the Chords page; none when it has no tags. */
+export function shownChordTags(symbol: string): string[] {
+  const list = chordsPage().queryByRole('list', { name: `Tags of ${symbol}` });
+  return list
+    ? within(list)
+        .getAllByRole('listitem')
+        .map((item) => item.textContent ?? '')
+    : [];
+}
+
 /** The toolbar's instrument button; its name is the neck's summary. */
 export function instrumentButton(): HTMLElement {
   return screen.getByRole('button', { name: /^Instrument: / });

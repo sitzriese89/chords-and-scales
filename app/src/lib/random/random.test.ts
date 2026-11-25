@@ -3,7 +3,7 @@
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import App from '../../App.svelte';
-import { chordPicker, chordsPage, scalePicker } from '../../test-shell';
+import { chordPicker, chordsPage, scalePicker, shownChordTags } from '../../test-shell';
 import { chordSymbol } from '../chords/display';
 import { defaultSettings, SETTINGS_DOCUMENT, serializeSettings, type Settings } from '../settings';
 import { BrowserStorage, type Storage } from '../storage';
@@ -233,9 +233,7 @@ describe('Random scale and Random chord', { timeout: 30_000 }, () => {
       const symbol = chordSymbol(root, getChord(chord)!, 'standard');
       expect(chordsPage().getByRole('heading', { level: 2, name: symbol })).toBeInTheDocument();
       expect(chordsPage().getByLabelText(`Notes of ${symbol}`)).toBeInTheDocument();
-      expect(chordsPage().getByText(/^Tags: /)).toHaveTextContent(
-        `Tags: ${chordTags(chord).join(', ')}`,
-      );
+      expect(shownChordTags(symbol)).toEqual(chordTags(chord));
     }
     expect(seen.size).toBeGreaterThan(1);
   });
