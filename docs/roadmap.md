@@ -31,7 +31,7 @@ each PR names its issue with `Fixes #n`.
 8. **M7**, the Scales page layout (M7.1).
 9. **M8**, the UI style pass (M8.1 and M8.2, then M8.3 and M8.4).
 10. **M9**, Chords page polish (M9.1 and M9.2, then M9.3).
-11. Next scope: not planned yet. **Now** New items get a row and an issue before work starts.
+11. Next scope: not planned yet. New items get a row and an issue before work starts. **Now**
 
 Items whose dependencies are done can run in parallel. The coordinator groups them into waves
 of issues that don't touch the same files (`implement` skill). Suggested waves from the
