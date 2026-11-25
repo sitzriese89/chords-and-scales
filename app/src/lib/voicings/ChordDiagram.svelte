@@ -1,11 +1,11 @@
 <!--
   @component
-  A chord diagram drawn as SVG (SPEC §5.6, ADR-3, ADR-37, ADR-49, ADR-59), lying like the
+  A chord diagram drawn as SVG (SPEC §5.6, ADR-3, ADR-37, ADR-49, ADR-60), lying like the
   neck: one row per string, the lowest at the bottom, the nut (drawn thick) or the capo on the
   left and one column per fret to the right; left-handed the diagram is mirrored, the nut on
   the right, as the fretboard is. Just beyond the nut end of each string × marks a muted string
   and ○ an open one (the capo fret, with a capo); a dot marks each fretted note, the root as a
-  square (ADR-18), and a barre is a narrow bar in the nut's colour joining its dots. A shape
+  square (ADR-18), and a barre is a narrow bar in the dots' colour joining them. A shape
   higher up the neck starts at its lowest fret, written under its column (`3fr`) instead of
   the nut.
 
@@ -214,11 +214,11 @@
     stroke-linecap: round;
   }
 
-  /* Drawn like the nut, a third of a dot wide: it joins its dots without hiding them. */
-  .barre {
-    fill: var(--fretboard-nut, #3b332b);
-  }
-
+  /*
+   * The dots' colour, thinner than the nut: it joins its dots without hiding them, and isn't
+   * taken for the nut or the capo next to it (ADR-60).
+   */
+  .barre,
   .dot circle {
     fill: var(--fretboard-dot, #2e4057);
   }

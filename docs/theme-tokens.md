@@ -143,11 +143,11 @@ Also used by the tab view and chord diagrams (ADR-3).
 | Token | Use |
 |---|---|
 | `--fretboard-wood` | The fingerboard |
-| `--fretboard-nut` | The nut; also a chord diagram's barre, a narrow bar joining its dots (ADR-59) |
+| `--fretboard-nut` | The nut |
 | `--fretboard-fret` | Fret wires |
 | `--fretboard-string` | Strings |
 | `--fretboard-inlay` | Inlay markers (decorative, deliberately low contrast) |
-| `--fretboard-dot` | Note dots when degree colouring is off; a chord diagram's dots |
+| `--fretboard-dot` | Note dots when degree colouring is off; a chord diagram's dots and its barre, a narrow bar joining them (ADR-60) |
 | `--fretboard-dot-text` | Dot labels on `--fretboard-dot` and on every `--degree-*` |
 | `--fretboard-root` | Root note dots (same colour as `--degree-0` in the built-in themes) |
 | `--fretboard-root-text` | Labels on `--fretboard-root` |

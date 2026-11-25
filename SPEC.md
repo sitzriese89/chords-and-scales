@@ -598,7 +598,7 @@ Algorithmic (works for any tuning and 4–9 strings; no static shape library).
   lowest string first) for screen readers. The list is headed by the
   chord's name; a slash chord's bass is not voiced, so `Am7/G` is headed "Voicings of Am7"
   with a note that the G bass isn't voiced.
-  - **Diagrams** (ADR-49, ADR-59): lying like the neck, one row per string with the lowest
+  - **Diagrams** (ADR-49, ADR-60): lying like the neck, one row per string with the lowest
     at the bottom, the nut on the left and one column per fret to the right (mirrored when
     left-handed, like the neck: the nut on the right), four fret columns or as many as the
     shape spans. A shape within the first four frets is drawn from the nut (drawn thick);
@@ -607,7 +607,7 @@ Algorithmic (works for any tuning and 4–9 strings; no static shape library).
     colour. Frets keep their numbers (ADR-18). × just beyond the nut end of a string mutes
     it, ○ plays it open (at the capo fret, with a capo). Dots carry the dot label setting
     (note names, intervals or none), the root as a square; a barre is a narrow bar in the
-    nut's colour joining its dots, which sit on top of it. Works for 4–9 strings, in every
+    dot colour, under its dots, joining them. Works for 4–9 strings, in every
     built-in theme, light and dark.
   - **Constraints:** max fret span (1–6), start fret (0 to the neck's last fret, typed like the
     tab view's), open strings, muted strings and inversions, as above; changing one updates the

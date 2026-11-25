@@ -247,6 +247,11 @@ describe('ChordDiagram', () => {
     const barre = c.querySelector('rect.barre')!;
     expect(num(barre, 'width')).toBe(BARRE_WIDTH);
     expect(num(barre, 'width')).toBeLessThan(2 * DOT_RADIUS);
+    // Thinner than the nut and the capo, so a barre beside them isn't a second edge.
+    const nut = draw(openC).querySelector('rect.nut')!;
+    const capo = draw(openC, { capo: 2 }).querySelector('rect.capo')!;
+    expect(num(barre, 'width')).toBeLessThan(num(nut, 'width'));
+    expect(num(barre, 'width')).toBeLessThan(num(capo, 'width'));
     // It ends at its outer dots' middles, so its ends hide under them.
     expect(num(barre, 'y')).toBe(stringY(5, 6));
     expect(num(barre, 'y') + num(barre, 'height')).toBe(stringY(0, 6));

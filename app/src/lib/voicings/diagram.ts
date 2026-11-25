@@ -1,5 +1,5 @@
 /**
- * Where a chord diagram draws a voicing (ADR-37, ADR-49, ADR-59): which frets the window shows, what
+ * Where a chord diagram draws a voicing (ADR-37, ADR-49, ADR-60): which frets the window shows, what
  * its starting edge is, and the x of every fret and the y of every string. The diagram lies
  * like the neck: strings run across, the lowest at the bottom, the nut (or capo) on the left
  * and the frets counting up to the right; left-handed it is mirrored, the nut on the right.
@@ -24,8 +24,11 @@ export const TOP = 10;
 export const BOTTOM = 24;
 /** Radius of a dot. */
 export const DOT_RADIUS = 7.5;
-/** Width of a barre's bar: a third of a dot, so it joins its dots without hiding them. */
-export const BARRE_WIDTH = 5;
+/**
+ * Width of a barre's bar: under a quarter of a dot and thinner than the nut, so it joins its
+ * dots without hiding them and isn't taken for a second nut (ADR-60).
+ */
+export const BARRE_WIDTH = 3.5;
 /** How far the muted and open markers' centres sit from the starting edge's wire. */
 export const MARKER_OFFSET = 10;
 /** Half the width of a muted or open marker. */
@@ -116,14 +119,14 @@ export function markerX(window: DiagramWindow, leftHanded: boolean): number {
   return mirror(NUT_SIDE - MARKER_OFFSET, window, leftHanded);
 }
 
-/** What the first column's fret number says: the fret, marked as one (`3fr`, ADR-59). */
+/** What the first column's fret number says: the fret, marked as one (`3fr`, ADR-60). */
 export function fretLabel(fret: number): string {
   return `${fret}fr`;
 }
 
 /**
  * Where a barre's bar goes: upright in its fret's column, from the middle of its highest
- * string to the middle of its lowest, a narrow bar its dots sit on (ADR-59).
+ * string to the middle of its lowest, a narrow bar its dots sit on (ADR-60).
  */
 export function barreRect(
   barre: VoicingBarre,
