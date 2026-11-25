@@ -4,7 +4,7 @@
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import App from '../../App.svelte';
-import { chordPicker, chordsPage, scalePicker } from '../../test-shell';
+import { chordPicker, chordsPage, scalePicker, shownChordTags } from '../../test-shell';
 import { defaultSettings, SETTINGS_DOCUMENT, serializeSettings } from '../settings';
 import { BrowserStorage, TauriStorage, type Storage } from '../storage';
 import { fakeCommands } from '../storage/fake-commands';
@@ -202,9 +202,7 @@ describe('tag filters', () => {
     await startApp(storage);
     await fireEvent.change(quality(), { target: { value: 'major' } });
     expect(chordsPage().getByRole('heading', { level: 2, name: 'C' })).toBeInTheDocument();
-    expect(chordsPage().getByText(/^Tags: /)).toHaveTextContent(
-      `Tags: ${chordTags('major').join(', ') || 'none'}`,
-    );
+    expect(shownChordTags('C')).toEqual(chordTags('major'));
 
     expect(scaleTags('major')).not.toContain('dark');
     await fireEvent.click(scaleChips().getByRole('button', { name: 'dark' }));

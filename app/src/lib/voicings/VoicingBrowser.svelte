@@ -1,13 +1,15 @@
 <!--
   @component
-  The voicing browser on the Chords page (SPEC §5.6, ADR-37, ADR-54): the constraints (max fret
-  span, start fret, open strings, muted strings, inversions), saved in the settings, and the
+  The voicing browser on the Chords page (SPEC §5.6, ADR-37, ADR-54), set off from the chord's
+  heading row by a rule: the constraints (max fret span, start fret, and open strings, muted
+  strings and inversions as toggle chips) in one toolbar, saved in the settings, and the
   core's ranked shapes of the chosen chord on the current instrument, tuning, fret count and
   capo, best first, as a grid of chord diagrams (ADR-49) across the page's width, drawn larger
   than on the sheet, with no shape text under them: the shape (`x32010`) is the button's and the
   diagram's accessible name. Choosing a shape marks it (`aria-pressed`) and strums it; choosing
   it again unchooses it. No neck shows it. Nothing is shown while no chord is chosen. "Add shape
-  to sheet", enabled while a shape is chosen, puts its diagram on the export sheet (ADR-43).
+  to sheet", at the heading's far end and enabled while a shape is chosen, puts its diagram on
+  the export sheet (ADR-43).
 
   The shapes are the chord's own: a slash chord's bass (`Am7/G`) is not voiced, so the list is
   headed by the chord without it and says so.
@@ -117,7 +119,9 @@
             ? '1 shape'
             : `${list.length} shapes, best first`}
       </span>
-      <AddToSheet what="shape" disabled={!chordState.voicing} make={addShape} />
+      <span class="add-shape">
+        <AddToSheet what="shape" disabled={!chordState.voicing} make={addShape} />
+      </span>
     </div>
     {#if active.bass}
       <p class="muted">Shapes of {symbol}; the {active.bass} bass isn't voiced.</p>
@@ -147,29 +151,32 @@
           onchange={setStartFret}
         />
       </label>
-      <label>
+      <span class="divider" aria-hidden="true"></span>
+      <!-- Toggle chips: the native checkbox lies invisibly over its chip, so focus, Space and
+           screen readers work as for any checkbox. -->
+      <label class="toggle">
         <input
           type="checkbox"
           checked={constraints.openStrings}
           onchange={(e) => constrain({ openStrings: e.currentTarget.checked })}
         />
-        Open strings
+        <span>Open strings</span>
       </label>
-      <label>
+      <label class="toggle">
         <input
           type="checkbox"
           checked={constraints.mutedStrings}
           onchange={(e) => constrain({ mutedStrings: e.currentTarget.checked })}
         />
-        Muted strings
+        <span>Muted strings</span>
       </label>
-      <label>
+      <label class="toggle">
         <input
           type="checkbox"
           checked={constraints.inversions}
           onchange={(e) => constrain({ inversions: e.currentTarget.checked })}
         />
-        Inversions
+        <span>Inversions</span>
       </label>
     </fieldset>
     {#if startProblem}
@@ -217,24 +224,33 @@
 {/if}
 
 <style>
+  /* A section of its own under the chord's heading row: a rule and room above it. */
   .voicings {
     flex: 1 1 100%;
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.75rem;
     min-width: 0;
+    margin-top: 0.75rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border);
   }
 
   .heading {
     display: flex;
     flex-wrap: wrap;
-    align-items: baseline;
+    align-items: center;
     gap: 0.25rem 0.75rem;
   }
 
   h3 {
     margin: 0;
-    font-size: 1rem;
+    font-size: 1.125rem;
+  }
+
+  /* "Add shape to sheet" belongs to the chosen shape, not the title: it sits at the far end. */
+  .add-shape {
+    margin-left: auto;
   }
 
   .muted {
@@ -243,20 +259,28 @@
     font-size: 0.875rem;
   }
 
+  /* The constraints as one toolbar. */
   fieldset {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.25rem 1rem;
+    gap: 0.5rem 1rem;
     margin: 0;
-    padding: 0;
-    border: 0;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface-raised);
+    min-width: 0;
   }
 
   legend {
     float: left;
     padding: 0;
-    margin-right: 0.25rem;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
   }
 
   fieldset label {
@@ -264,6 +288,54 @@
     align-items: center;
     gap: 0.375rem;
     font-size: 0.875rem;
+  }
+
+  .divider {
+    align-self: stretch;
+    width: 1px;
+    background: var(--border);
+  }
+
+  .toggle {
+    position: relative;
+  }
+
+  .toggle input {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .toggle span {
+    display: block;
+    box-sizing: border-box;
+    min-height: 1.75rem;
+    padding: 0 0.75rem;
+    border: 1px solid var(--border-strong);
+    border-radius: 999px;
+    background: var(--surface);
+    line-height: calc(1.75rem - 2px);
+    transition:
+      background-color 120ms ease,
+      border-color 120ms ease,
+      color 120ms ease;
+  }
+
+  .toggle:hover span {
+    border-color: var(--text-muted);
+  }
+
+  .toggle input:checked + span {
+    color: var(--accent-text);
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .toggle input:focus-visible + span {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
   }
 
   input[type='number'] {
