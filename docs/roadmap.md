@@ -179,7 +179,7 @@ chosen shape plainly and name each shape.
 | Item | Issue | Depends on | Status |
 |---|---|---|---|
 | M9.1 Chord heading, tag chips, voicing toolbar | [#115][115] |  | Done (#114) |
-| M9.2 Clearer chord diagrams: barre, fret number, open/muted markers | [#116][116] |  | Open |
+| M9.2 Clearer chord diagrams: barre, fret number, open/muted markers | [#116][116] |  | Done (#119) |
 | M9.3 Voicing cards: size, chosen state, shape footer | [#117][117] | M9.1 | Open |
 
 Suggested waves: (1) M9.1, M9.2 → (2) M9.3. M9.2 owns `ChordDiagram.svelte` and `diagram.ts`
